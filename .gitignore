@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Database
+*.db
+*.sqlite3
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.idea/
+.vscode/
+
+# Local environment variables
+.env
+
+# Prompt related (user specific)
+.prompt/
