@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ポケモン対戦補助AIツール</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Google Fonts (Poppins) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container-fluid vh-100 p-4 d-flex flex-column">
+        <header class="mb-4">
+            <h1 class="neon-text-purple">ポケモン対戦補助AIツール</h1>
+        </header>
+
+        <main class="row flex-grow-1 gx-4">
+            <!-- 左カラム: パーティ情報と選出予測 -->
+            <section class="col-md-5 d-flex flex-column">
+                <!-- ここにパーティ表示コンポーネントなどを配置 -->
+                <div class="glass-card flex-grow-1 p-3">
+                    <h2 class="neon-text-blue mb-3">選出予測</h2>
+                    <p>ここに自パーティと相手パーティの入力UI、予測結果を表示します。</p>
+                </div>
+            </section>
+
+            <!-- 右カラム: リアルタイム対戦補助 -->
+            <section class="col-md-7 d-flex flex-column">
+                 <!-- ここに対戦画面プレビューと行動提案コンポーネントを配置 -->
+                 <div class="glass-card flex-grow-1 p-3">
+                    <h2 class="neon-text-blue mb-3">リアルタイム解析</h2>
+                                     <div class="glass-card p-3 mt-4 neon-border">
+                    <h4 class="neon-text-blue"><i class="bi bi-lightbulb-fill"></i> AIの推奨アクション</h4>
+                    <div class="text-center my-3">
+                        <p class="lead mb-1">技選択</p>
+                        <h2 class="display-6 fw-bold">10まんボルト</h2>
+                    </div>
+                    <p class="text-muted small">
+                        <span class="fw-bold">理由:</span> 相手の「ギャラドス」に対して効果抜群(x4)です。
+                    </p>
+                </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+ン名</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="https://placehold.co/80x80/7e72b0/e5bfff?text=P" class="rounded-circle mb-2" alt="ポケモンアイコン">
+                                <p class="mb-0 small">ポケモン名</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="https://placehold.co/80x80/7e72b0/e5bfff?text=P" class="rounded-circle mb-2" alt="ポケモンアイコン">
+                                <p class="mb-0 small">ポケモン名</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h5 class="mb-3">相手パーティ</h5>
+                        <div class="d-flex justify-content-around">
+                            <div class="text-center">
+                                <img src="https://placehold.co/80x80/7e72b0/e5bfff?text=P" class="rounded-circle mb-2" alt="ポケモンアイコン">
+                                <p class="mb-0 small">ポケモン名</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="https://placehold.co/80x80/7e72b0/e5bfff?text=P" class="rounded-circle mb-2" alt="ポケモンアイコン">
+                                <p class="mb-0 small">ポケモン名</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="https://placehold.co/80x80/7e72b0/e5bfff?text=P" class="rounded-circle mb-2" alt="ポケモンアイコン">
+                                <p class="mb-0 small">ポケモン名</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="https://placehold.co/80x80/7e72b0/e5bfff?text=P" class="rounded-circle mb-2" alt="ポケモンアイコン">
+                                <p class="mb-0 small">ポケモン名</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="https://placehold.co/80x80/7e72b0/e5bfff?text=P" class="rounded-circle mb-2" alt="ポケモンアイコン">
+                                <p class="mb-0 small">ポケモン名</p>
+                            </div>
+                            <div class="text-center">
+                                <img src="https://placehold.co/80x80/7e72b0/e5bfff?text=P" class="rounded-circle mb-2" alt="ポケモンアイコン">
+                                <p class="mb-0 small">ポケモン名</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右カラム: リアルタイム対戦補助 -->
+            <section class="col-md-7 d-flex flex-column">
+                 <!-- ここに対戦画面プレビューと行動提案コンポーネントを配置 -->
+                 <div class="glass-card flex-grow-1 p-3">
+                    <h2 class="neon-text-blue mb-3">リアルタイム解析</h2>
+                    <p>ここにゲームキャプチャのプレビューとAIの行動提案を表示します。</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

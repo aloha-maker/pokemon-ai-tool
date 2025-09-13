@@ -1,0 +1,39 @@
+body {
+    background-color: #0c0a24; /* 深い紺色 */
+    color: #f0f0f0;
+    font-family: 'Poppins', 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+}
+
+/* グラスモーフィズム効果を持つカード */
+.glass-card {
+    background: rgba(43, 40, 80, 0.4); /* 半透明の紫がかった背景 */
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Safari対応 */
+    box-shadow: 0 8px 32px 0 rgba(16, 14, 48, 0.37);
+}
+
+/* 青いネオンテキスト */
+.neon-text-blue {
+    color: #9bf8ff;
+    text-shadow:
+        0 0 5px #00e1ff,
+        0 0 10px #00e1ff,
+        0 0 15px #00e1ff;
+}
+
+/* 紫のネオンテキスト */
+.neon-text-purple {
+    color: #e5bfff;
+    text-shadow:
+        0 0 5px #c36cff,
+        0 0 10px #c36cff,
+        0 0 15px #c36cff;
+}
+
+/* ネオン効果のあるボーダー */
+.neon-border {
+    border: 1px solid #c36cff;
+    box-shadow: 0 0 10px #c36cff;
+}
