@@ -1,25 +1,38 @@
 # type_chart.py
 
-# タイプ相性表データ
-# キー: 攻撃側のタイプ, 値: {防御側タイプ: 倍率} の辞書
+# Type effectiveness data for Pokémon battles.
+# Generation VI and later.
 TYPE_EFFECTIVENESS = {
-    'ノーマル': {'いわ': 0.5, 'はがね': 0.5, 'ゴースト': 0},
-    'ほのお': {'くさ': 2, 'こおり': 2, 'むし': 2, 'はがね': 2, 'ほのお': 0.5, 'みず': 0.5, 'いわ': 0.5, 'ドラゴン': 0.5},
-    'みず': {'ほのお': 2, 'じめん': 2, 'いわ': 2, 'みず': 0.5, 'くさ': 0.5, 'ドラゴン': 0.5},
-    'でんき': {'みず': 2, 'ひこう': 2, 'でんき': 0.5, 'くさ': 0.5, 'ドラゴン': 0.5, 'じめん': 0},
-    'くさ': {'みず': 2, 'じめん': 2, 'いわ': 2, 'ほのお': 0.5, 'くさ': 0.5, 'どく': 0.5, 'ひこう': 0.5, 'むし': 0.5, 'ドラゴン': 0.5, 'はがね': 0.5},
-    # ... 他の全18タイプの相性をここに追加 ...
-    'フェアリー': {'かくとう': 2, 'ドラゴン': 2, 'あく': 2, 'ほのお': 0.5, 'どく': 0.5, 'はがね': 0.5}
+    'normal': {'rock': 0.5, 'ghost': 0, 'steel': 0.5},
+    'fire': {'fire': 0.5, 'water': 0.5, 'grass': 2, 'ice': 2, 'bug': 2, 'rock': 0.5, 'dragon': 0.5, 'steel': 2},
+    'water': {'fire': 2, 'water': 0.5, 'grass': 0.5, 'ground': 2, 'rock': 2, 'dragon': 0.5},
+    'electric': {'water': 2, 'electric': 0.5, 'grass': 0.5, 'ground': 0, 'flying': 2, 'dragon': 0.5},
+    'grass': {'fire': 0.5, 'water': 2, 'grass': 0.5, 'poison': 0.5, 'ground': 2, 'flying': 0.5, 'bug': 0.5, 'rock': 2, 'dragon': 0.5, 'steel': 0.5},
+    'ice': {'fire': 0.5, 'water': 0.5, 'grass': 2, 'ice': 0.5, 'ground': 2, 'flying': 2, 'dragon': 2, 'steel': 0.5},
+    'fighting': {'normal': 2, 'ice': 2, 'poison': 0.5, 'flying': 0.5, 'psychic': 0.5, 'bug': 0.5, 'rock': 2, 'ghost': 0, 'dark': 2, 'steel': 2, 'fairy': 0.5},
+    'poison': {'grass': 2, 'poison': 0.5, 'ground': 0.5, 'rock': 0.5, 'ghost': 0.5, 'steel': 0, 'fairy': 2},
+    'ground': {'fire': 2, 'electric': 2, 'grass': 0.5, 'poison': 2, 'flying': 0, 'bug': 0.5, 'rock': 2, 'steel': 2},
+    'flying': {'electric': 0.5, 'grass': 2, 'fighting': 2, 'bug': 2, 'rock': 0.5, 'steel': 0.5},
+    'psychic': {'fighting': 2, 'poison': 2, 'psychic': 0.5, 'dark': 0, 'steel': 0.5},
+    'bug': {'fire': 0.5, 'grass': 2, 'fighting': 0.5, 'poison': 0.5, 'flying': 0.5, 'psychic': 2, 'ghost': 0.5, 'dark': 2, 'steel': 0.5, 'fairy': 0.5},
+    'rock': {'fire': 2, 'ice': 2, 'fighting': 0.5, 'ground': 0.5, 'flying': 2, 'bug': 2, 'steel': 0.5},
+    'ghost': {'normal': 0, 'psychic': 2, 'ghost': 2, 'dark': 0.5},
+    'dragon': {'dragon': 2, 'steel': 0.5, 'fairy': 0},
+    'dark': {'fighting': 0.5, 'psychic': 2, 'ghost': 2, 'dark': 0.5, 'fairy': 0.5},
+    'steel': {'fire': 0.5, 'water': 0.5, 'electric': 0.5, 'ice': 2, 'rock': 2, 'steel': 0.5, 'fairy': 2},
+    'fairy': {'fighting': 2, 'poison': 0.5, 'dragon': 2, 'dark': 2, 'steel': 0.5}
 }
 
 def get_effectiveness(attack_type, defense_types):
     """
-    技のタイプ相性倍率を計算する関数
+    Calculates the damage multiplier for a given attack type against a defending Pokémon's type(s).
+
     Args:
-        attack_type (str): 攻撃技のタイプ
-        defense_types (list[str]): 防御側ポケモンのタイプ（1つまたは2つ）
+        attack_type (str): The type of the attacking move.
+        defense_types (list[str]): A list of the defending Pokémon's types (one or two).
+
     Returns:
-        float: ダメージ倍率
+        float: The damage multiplier.
     """
     if not attack_type:
         return 1.0
@@ -27,7 +40,7 @@ def get_effectiveness(attack_type, defense_types):
     total_effectiveness = 1.0
     if attack_type in TYPE_EFFECTIVENESS:
         for def_type in defense_types:
-            if def_type: # タイプ2が存在しない場合を考慮
+            if def_type:  # Ignore if the second type is not present
                 total_effectiveness *= TYPE_EFFECTIVENESS[attack_type].get(def_type, 1.0)
-    
+
     return total_effectiveness

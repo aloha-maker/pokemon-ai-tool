@@ -1,7 +1,7 @@
 import cv2
 from core.capture import ScreenCapturer
 from core.ocr import GameStateParser
-from ai.predictor import ActionAIModel # 追加
+from ai.predictor import ActionAIModel
 import time
 import pprint
 
