@@ -4,7 +4,7 @@ import numpy as np
 
 # Tesseractの実行ファイルのパスを指定 (Windowsの場合)
 # Mac/Linuxの場合は不要なことが多い
-# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 class GameStateParser:
     """

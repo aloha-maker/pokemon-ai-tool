@@ -87,8 +87,7 @@ def initialize_database():
     """
     データベースファイルを初期化し、スキーマに基づいてテーブルを作成する
     """
-    print("
---- データベースの初期化開始 ---")
+    print("--- データベースの初期化開始 ---")
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
         print(f"既存のデータベース '{DB_PATH}' を削除しました。")
@@ -117,8 +116,7 @@ def seed_data(conn):
     """
     CSVファイルからデータを読み込み、データベースに投入する
     """
-    print("
---- データベースへのデータ投入開始 ---")
+    print("--- データベースへのデータ投入開始 ---")
     if not conn:
         print("エラー: データベース接続がありません。")
         return
@@ -173,8 +171,7 @@ def main():
     if conn:
         seed_data(conn)
 
-    print("
-✅ データベースのセットアップがすべて完了しました。")
+    print("データベースのセットアップがすべて完了しました。")
 
 if __name__ == '__main__':
     main()

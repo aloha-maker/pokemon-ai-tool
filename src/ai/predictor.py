@@ -1,14 +1,18 @@
 import sqlite3
-from type_chart import get_effectiveness
+import os
+from core.type_chart import get_effectiveness
 
-DB_NAME = "pokemon_ai.db"
+# データベースファイルのパスをプロジェクトルートからの相対パスで解決
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DB_PATH = os.path.join(BASE_DIR, "data", "pokemon_ai.db")
+
 
 class ActionAIModel:
     """
     ルールベースで行動を予測するAIモデルのプロトタイプ。
     """
     def __init__(self):
-        self.conn = sqlite3.connect(DB_NAME)
+        self.conn = sqlite3.connect(DB_PATH)
         self.conn.row_factory = sqlite3.Row # カラム名でアクセスできるようにする
 
     def _get_pokemon_types(self, pokemon_name):

@@ -1,11 +1,11 @@
 import cv2
-from screen_capture import ScreenCapturer
-from game_state_parser import GameStateParser
-from action_model import ActionAIModel # 追加
+from core.capture import ScreenCapturer
+from core.ocr import GameStateParser
+from ai.predictor import ActionAIModel # 追加
 import time
 import pprint
 
-TARGET_WINDOW_TITLE = "電卓" 
+TARGET_WINDOW_TITLE = "ChatGPT Image 2025年9月13日 11_52_02.png" 
 
 def main():
     capturer = ScreenCapturer(TARGET_WINDOW_TITLE)
