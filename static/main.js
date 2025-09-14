@@ -3,20 +3,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let winRateChart = null; // チャートのインスタンスを保持する変数
 
     // ダッシュボードモーダルが表示されたときにデータを取得
-    dashboardModal.addEventListener('show.bs.modal', async () => {
-        try {
-            const response = await fetch('/api/history');
-            const data = await response.json();
+    if (dashboardModal) {
+        dashboardModal.addEventListener('show.bs.modal', async () => {
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
 
-            if (data.error) {
-                console.error(data.error);
-                return;
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+                updateDashboardUI(data);
+            } catch (error) {
+                console.error('履歴の取得に失敗しました:', error);
             }
-            updateDashboardUI(data);
-        } catch (error) {
-            console.error('履歴の取得に失敗しました:', error);
-        }
-    });
+        });
+    }
 
     function updateDashboardUI(data) {
         // 1. サマリー情報を更新
@@ -86,48 +88,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const generatePartyButton = document.getElementById('generate-party-button');
     const resultArea = document.getElementById('party-generation-result-area');
 
-    generatePartyButton.addEventListener('click', async () => {
-        const availablePokemonText = document.getElementById('available-pokemon').value;
-        const concept = document.getElementById('tactical-concept').value;
-        const availablePokemon = availablePokemonText.split('\n').filter(p => p.trim() !== '');
+    if (generatePartyButton) {
+        generatePartyButton.addEventListener('click', async () => {
+            const availablePokemonText = document.getElementById('available-pokemon').value;
+            const concept = document.getElementById('tactical-concept').value;
+            const availablePokemon = availablePokemonText.split('\n').filter(p => p.trim() !== '');
 
-        if (availablePokemon.length === 0 || concept.trim() === '') {
-            resultArea.innerHTML = '<div class="text-danger">使用可能なポケモンと戦術コンセプトを入力してください。</div>';
-            return;
-        }
-
-        // Show spinner
-        generatePartyButton.querySelector('.spinner-border').classList.remove('d-none');
-        generatePartyButton.disabled = true;
-
-        try {
-            const response = await fetch('/generate-party', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    available_pokemon: availablePokemon,
-                    concept: concept,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                displayGeneratedParty(data);
-            } else {
-                resultArea.innerHTML = `<div class="text-danger">${data.error || 'エラーが発生しました。'}</div>`;
+            if (availablePokemon.length === 0 || concept.trim() === '') {
+                resultArea.innerHTML = '<div class="text-danger">使用可能なポケモンと戦術コンセプトを入力してください。</div>';
+                return;
             }
-        } catch (error) {
-            console.error('パーティ生成に失敗しました:', error);
-            resultArea.innerHTML = '<div class="text-danger">通信エラーが発生しました。</div>';
-        } finally {
-            // Hide spinner
-            generatePartyButton.querySelector('.spinner-border').classList.add('d-none');
-            generatePartyButton.disabled = false;
-        }
-    });
+
+            // Show spinner
+            generatePartyButton.querySelector('.spinner-border').classList.remove('d-none');
+            generatePartyButton.disabled = true;
+
+            try {
+                const response = await fetch('/generate-party', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        available_pokemon: availablePokemon,
+                        concept: concept,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayGeneratedParty(data);
+                } else {
+                    resultArea.innerHTML = `<div class="text-danger">${data.error || 'エラーが発生しました。'}</div>`;
+                }
+            } catch (error) {
+                console.error('パーティ生成に失敗しました:', error);
+                resultArea.innerHTML = '<div class="text-danger">通信エラーが発生しました。</div>';
+            } finally {
+                // Hide spinner
+                generatePartyButton.querySelector('.spinner-border').classList.add('d-none');
+                generatePartyButton.disabled = false;
+            }
+        });
+    }
 
     function displayGeneratedParty(data) {
         let partyHtml = '<div class="row g-2">';
@@ -156,6 +160,77 @@ document.addEventListener('DOMContentLoaded', () => {
             ${partyHtml}
             <h5 class="neon-text-purple mt-4">運用ガイド</h5>
             <div class="glass-card p-3 small">${manualHtml}</div>
+        `;
+    }
+
+    const predictButton = document.getElementById('predict-button');
+    const predictionResultArea = document.getElementById('prediction-result-area');
+
+    if (predictButton) {
+        predictButton.addEventListener('click', async () => {
+            const myPartyInputs = document.querySelectorAll('#my-party-form input');
+            const opponentPartyInputs = document.querySelectorAll('#opponent-party-form input');
+
+            const myParty = Array.from(myPartyInputs).map(input => input.value).filter(name => name.trim() !== '');
+            const opponentParty = Array.from(opponentPartyInputs).map(input => input.value).filter(name => name.trim() !== '');
+
+            if (myParty.length !== 6 || opponentParty.length !== 6) {
+                predictionResultArea.innerHTML = '<div class="text-danger">自パーティと相手パーティの両方に6体のポケモンを入力してください。</div>';
+                return;
+            }
+
+            // Show spinner
+            predictButton.querySelector('.spinner-border').classList.remove('d-none');
+            predictButton.disabled = true;
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        my_party: myParty,
+                        opponent_party: opponentParty,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayPrediction(data);
+                } else {
+                    predictionResultArea.innerHTML = `<div class="text-danger">${data.error || 'エラーが発生しました。'}</div>`;
+                }
+            } catch (error) {
+                console.error('予測に失敗しました:', error);
+                predictionResultArea.innerHTML = '<div class="text-danger">通信エラーが発生しました。</div>';
+            } finally {
+                // Hide spinner
+                predictButton.querySelector('.spinner-border').classList.add('d-none');
+                predictButton.disabled = false;
+            }
+        });
+    }
+
+    function displayPrediction(data) {
+        const teamHtml = data.recommended_team.map(pokemon =>
+            `<div class="col-4 text-center">
+                <div class="glass-card p-2">
+                    <h6 class="neon-text-blue mb-0">${pokemon}</h6>
+                </div>
+            </div>`
+        ).join('');
+
+        predictionResultArea.innerHTML = `
+            <h5 class="neon-text-purple">AIの推奨選出</h5>
+            <div class="row g-2 justify-content-center my-3">
+                ${teamHtml}
+            </div>
+            <div class="glass-card p-3 small">
+                <p class="mb-1"><strong class="neon-text-purple">選出理由:</strong></p>
+                <p class="mb-0">${data.reason}</p>
+            </div>
         `;
     }
 });

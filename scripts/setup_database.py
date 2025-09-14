@@ -1,4 +1,3 @@
-
 import csv
 import requests
 import sqlite3
@@ -41,15 +40,25 @@ def generate_csv_files():
     print(f"ポケモンデータを取得中 (1-{MAX_POKEMON_ID})...")
     with open(POKEMONS_CSV_PATH, "w", newline='', encoding="utf-8") as pfile:
         pw = csv.writer(pfile)
-        pw.writerow(["id", "name", "type1", "type2", "hp", "attack", "defense", "sp_attack", "sp_defense", "speed"])
+        pw.writerow(["id", "name", "name_ja", "type1", "type2", "hp", "attack", "defense", "sp_attack", "sp_defense", "speed"])
         for i in range(1, MAX_POKEMON_ID + 1):
             data = fetch_from_pokeapi("pokemon", i)
-            if data:
+            species_data = fetch_from_pokeapi("pokemon-species", i)
+            
+            if data and species_data:
+                # 日本語名を取得
+                name_ja = ""
+                for name_info in species_data.get('names', []):
+                    if name_info['language']['name'] == 'ja-Hrkt':
+                        name_ja = name_info['name']
+                        break
+
                 types = [t['type']['name'] for t in data['types']]
                 stats = {s['stat']['name']: s['base_stat'] for s in data['stats']}
                 row = [
                     data['id'],
                     data['name'],
+                    name_ja,
                     types[0] if len(types) > 0 else "",
                     types[1] if len(types) > 1 else "",
                     stats.get('hp'),
@@ -129,7 +138,7 @@ def seed_data(conn):
             reader = csv.reader(f)
             next(reader)  # ヘッダーをスキップ
             cursor.executemany(
-                "INSERT INTO pokemons (id, name, type1, type2, hp, attack, defense, sp_attack, sp_defense, speed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO pokemons (id, name, name_ja, type1, type2, hp, attack, defense, sp_attack, sp_defense, speed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 reader
             )
         print("ポケモンデータの投入が完了しました。")

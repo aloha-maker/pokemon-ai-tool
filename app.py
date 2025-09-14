@@ -3,6 +3,7 @@ import json
 import sqlite3
 import os
 from src.ai.party_generator import PartyGenerator
+from src.ai.win_rate_predictor import WinRatePredictor
 
 app = Flask(__name__)
 
@@ -30,6 +31,24 @@ def init_db():
 def index():
     # index.htmlをレンダリングして返す
     return render_template('index.html')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.json
+    my_party = data.get('my_party', [])
+    opponent_party = data.get('opponent_party', [])
+
+    if len(my_party) != 6 or len(opponent_party) != 6:
+        return jsonify({"error": "パーティはそれぞれ6体入力してください。"}), 400
+
+    predictor = WinRatePredictor()
+    result = predictor.predict_best_team(my_party, opponent_party)
+    del predictor # to close the db connection
+
+    if 'error' in result:
+        return jsonify(result), 400
+
+    return jsonify(result)
 
 @app.route('/generate-party', methods=['POST'])
 def generate_party():

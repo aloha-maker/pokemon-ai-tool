@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS analysis_results;
 CREATE TABLE pokemons (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
+    name_ja TEXT,
     type1 TEXT NOT NULL,
     type2 TEXT,
     hp INTEGER NOT NULL,
