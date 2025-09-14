@@ -37,3 +37,23 @@ body {
     border: 1px solid #c36cff;
     box-shadow: 0 0 10px #c36cff;
 }
+
+/* オーバーレイのアニメーション */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#suggestion-overlay .glass-card {
+    background: rgba(12, 10, 36, 0.7); /* 少し濃いめの背景 */
+}
