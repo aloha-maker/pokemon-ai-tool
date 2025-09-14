@@ -2,6 +2,7 @@ import csv
 import requests
 import sqlite3
 import os
+import time
 
 # --- 設定項目 ---
 # データベースとデータファイルのパスをプロジェクトルートからの相対パスで指定
@@ -13,21 +14,35 @@ SCHEMA_PATH = os.path.join(DATA_DIR, "schema.sql")
 POKEMONS_CSV_PATH = os.path.join(MASTER_DATA_DIR, "pokemons.csv")
 MOVES_CSV_PATH = os.path.join(MASTER_DATA_DIR, "moves.csv")
 
-# PokeAPIから取得するデータ範囲
-MAX_POKEMON_ID = 151  # 初代151匹
-MAX_MOVE_ID = 165     # 初代の技の数
-
 # --- データ取得 (generate_csv.py) ---
-def fetch_from_pokeapi(endpoint, resource_id):
-    """PokeAPIからデータを取得する共通関数"""
-    url = f"https://pokeapi.co/api/v2/{endpoint}/{resource_id}"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        print(f"APIリクエストエラー: {e}")
-        return None
+def fetch_from_pokeapi(endpoint=None, resource_id=None, url=None, retries=3, backoff_factor=0.5):
+    """PokeAPIからデータを取得する共通関数（リトライ機能付き）"""
+    if url is None:
+        url = f"https://pokeapi.co/api/v2/{endpoint}/{resource_id}"
+    
+    for i in range(retries):
+        try:
+            response = requests.get(url, timeout=10) # タイムアウトを設定
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            # print(f"APIリクエストエラー: {e} (試行 {i + 1}/{retries})")
+            # if i < retries - 1:
+            #     time.sleep(backoff_factor * (2 ** i)) # Exponential backoff
+            # else:
+            print(f"URLの取得に失敗しました: {url}")
+            return None
+
+def get_all_resources(endpoint):
+    """指定されたエンドポイントからすべてのリソースリストを取得する"""
+    results = []
+    limit = 1500 if endpoint == 'pokemon' else 1200
+    url = f"https://pokeapi.co/api/v2/{endpoint}?limit={limit}"
+    data = fetch_from_pokeapi(url=url)
+    if data:
+        results.extend(data.get('results', []))
+    return results
+
 
 def generate_csv_files():
     """
@@ -37,13 +52,16 @@ def generate_csv_files():
     os.makedirs(MASTER_DATA_DIR, exist_ok=True)
 
     # ポケモンデータのCSV生成
-    print(f"ポケモンデータを取得中 (1-{MAX_POKEMON_ID})...")
+    all_pokemons = get_all_resources("pokemon")
+    print(f"ポケモンデータを取得中 ({len(all_pokemons)}匹)...")
     with open(POKEMONS_CSV_PATH, "w", newline='', encoding="utf-8") as pfile:
         pw = csv.writer(pfile)
         pw.writerow(["id", "name", "name_ja", "type1", "type2", "hp", "attack", "defense", "sp_attack", "sp_defense", "speed"])
-        for i in range(1, MAX_POKEMON_ID + 1):
-            data = fetch_from_pokeapi("pokemon", i)
-            species_data = fetch_from_pokeapi("pokemon-species", i)
+        
+        for pokemon_ref in all_pokemons:
+            pokemon_id = pokemon_ref['url'].split('/')[-2]
+            data = fetch_from_pokeapi(url=pokemon_ref['url'])
+            species_data = fetch_from_pokeapi("pokemon-species", pokemon_id)
             
             if data and species_data:
                 # 日本語名を取得
@@ -72,12 +90,13 @@ def generate_csv_files():
     print(f"'{POKEMONS_CSV_PATH}' を作成しました。")
 
     # 技データのCSV生成
-    print(f"技データを取得中 (1-{MAX_MOVE_ID})...")
+    all_moves = get_all_resources("move")
+    print(f"技データを取得中 ({len(all_moves)}個)...")
     with open(MOVES_CSV_PATH, "w", newline='', encoding="utf-8") as mfile:
         mw = csv.writer(mfile)
         mw.writerow(["id", "name", "type", "category", "power", "accuracy"])
-        for i in range(1, MAX_MOVE_ID + 1):
-            data = fetch_from_pokeapi("move", i)
+        for move_ref in all_moves:
+            data = fetch_from_pokeapi(url=move_ref['url'])
             if data:
                 mw.writerow([
                     data['id'],
