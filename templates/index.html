@@ -25,9 +25,14 @@
     <div class="container-fluid vh-100 p-4 d-flex flex-column">
         <header class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="neon-text-purple mb-0">ポケモン対戦補助AIツール</h1>
-            <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#dashboard-modal">
-                <i class="bi bi-graph-up"></i> 分析ダッシュボード
-            </button>
+            <div>
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#party-generator-modal">
+                    <i class="bi bi-magic"></i> パーティ自動生成
+                </button>
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#dashboard-modal">
+                    <i class="bi bi-graph-up"></i> 分析ダッシュボード
+                </button>
+            </div>
         </header>
 
         <main class="row flex-grow-1 gx-4">
@@ -158,6 +163,59 @@
                                     </tbody>
                                 </table>
                              </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- パーティ自動生成モーダル -->
+    <div class="modal fade" id="party-generator-modal" tabindex="-1" aria-labelledby="partyGeneratorLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content glass-card">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title neon-text-blue" id="partyGeneratorLabel"><i class="bi bi-magic"></i> パーティ自動生成</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- 左: 入力フォーム -->
+                        <div class="col-md-5">
+                            <h4 class="neon-text-purple">条件入力</h4>
+                            <form id="party-generator-form">
+                                <div class="mb-3">
+                                    <label for="available-pokemon" class="form-label">使用可能なポケモン</label>
+                                    <textarea class="form-control" id="available-pokemon" rows="6" placeholder="ピカチュウ\nリザードン\nフシギバナ\nカメックス\n...">ピカチュウ
+リザードン
+フシギバナ
+カメックス
+ゲンガー
+ラプラス
+カビゴン
+サンダース</textarea>
+                                    <div class="form-text">1行に1匹ずつ入力してください。</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="tactical-concept" class="form-label">戦術コンセプト</label>
+                                    <input type="text" class="form-control" id="tactical-concept" placeholder="例: 対面構築、サイクル戦重視" value="対面構築">
+                                </div>
+                                <div class="d-grid">
+                                    <button type="button" id="generate-party-button" class="btn btn-primary neon-border">
+                                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                        生成を開始
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- 右: 生成結果 -->
+                        <div class="col-md-7">
+                            <h4 class="neon-text-purple">生成結果</h4>
+                            <div id="party-generation-result-area" class="p-3" style="min-height: 300px;">
+                                <div class="text-center text-muted pt-5">
+                                    <p>条件を入力して「生成を開始」を押してください</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

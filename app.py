@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import json
 import sqlite3
 import os
+from src.ai.party_generator import PartyGenerator
 
 app = Flask(__name__)
 
@@ -29,6 +30,23 @@ def init_db():
 def index():
     # index.htmlをレンダリングして返す
     return render_template('index.html')
+
+@app.route('/generate-party', methods=['POST'])
+def generate_party():
+    data = request.json
+    available_pokemon = data.get('available_pokemon', [])
+    concept = data.get('concept', '')
+
+    if not available_pokemon or not concept:
+        return jsonify({"error": "使用可能なポケモンと戦術コンセプトを入力してください。"}), 400
+
+    generator = PartyGenerator()
+    result = generator.generate(available_pokemon, concept)
+
+    if 'error' in result:
+        return jsonify(result), 400
+
+    return jsonify(result)
 
 # 【仮設】対戦結果を保存するためのAPIエンドポイント
 @app.route('/api/history/add', methods=['POST'])

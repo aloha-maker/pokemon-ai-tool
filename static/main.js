@@ -82,4 +82,80 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    const generatePartyButton = document.getElementById('generate-party-button');
+    const resultArea = document.getElementById('party-generation-result-area');
+
+    generatePartyButton.addEventListener('click', async () => {
+        const availablePokemonText = document.getElementById('available-pokemon').value;
+        const concept = document.getElementById('tactical-concept').value;
+        const availablePokemon = availablePokemonText.split('\n').filter(p => p.trim() !== '');
+
+        if (availablePokemon.length === 0 || concept.trim() === '') {
+            resultArea.innerHTML = '<div class="text-danger">使用可能なポケモンと戦術コンセプトを入力してください。</div>';
+            return;
+        }
+
+        // Show spinner
+        generatePartyButton.querySelector('.spinner-border').classList.remove('d-none');
+        generatePartyButton.disabled = true;
+
+        try {
+            const response = await fetch('/generate-party', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    available_pokemon: availablePokemon,
+                    concept: concept,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                displayGeneratedParty(data);
+            } else {
+                resultArea.innerHTML = `<div class="text-danger">${data.error || 'エラーが発生しました。'}</div>`;
+            }
+        } catch (error) {
+            console.error('パーティ生成に失敗しました:', error);
+            resultArea.innerHTML = '<div class="text-danger">通信エラーが発生しました。</div>';
+        } finally {
+            // Hide spinner
+            generatePartyButton.querySelector('.spinner-border').classList.add('d-none');
+            generatePartyButton.disabled = false;
+        }
+    });
+
+    function displayGeneratedParty(data) {
+        let partyHtml = '<div class="row g-2">';
+        data.party.forEach(pokemon => {
+            partyHtml += `
+                <div class="col-6">
+                    <div class="glass-card p-2">
+                        <h6 class="neon-text-blue mb-1">${pokemon.name}</h6>
+                        <ul class="list-unstyled small mb-0">
+                            <li><strong>持ち物:</strong> ${pokemon.item}</li>
+                            <li><strong>特性:</strong> ${pokemon.ability}</li>
+                            <li><strong>テラスタイプ:</strong> ${pokemon.terastal_type}</li>
+                            <li><strong>技:</strong> ${pokemon.moves.join(', ')}</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+        });
+        partyHtml += '</div>';
+
+        // Using a library like 'marked' would be better for real markdown parsing
+        const manualHtml = data.manual.replace(/\n/g, '<br>');
+
+        resultArea.innerHTML = `
+            <h5 class="neon-text-purple">生成されたパーティ</h5>
+            ${partyHtml}
+            <h5 class="neon-text-purple mt-4">運用ガイド</h5>
+            <div class="glass-card p-3 small">${manualHtml}</div>
+        `;
+    }
 });
