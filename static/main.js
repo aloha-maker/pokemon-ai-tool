@@ -233,4 +233,31 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
     }
+
+    // --- WebSocket Logic for Real-time Suggestions ---
+    const socket = io();
+
+    const suggestionOverlay = document.getElementById('suggestion-overlay');
+    const suggestionAction = document.getElementById('suggestion-action');
+    const suggestionValue = document.getElementById('suggestion-value');
+    const suggestionReason = document.getElementById('suggestion-reason');
+
+    socket.on('connect', () => {
+        console.log('WebSocket connected!');
+    });
+
+    socket.on('suggestion_update', (data) => {
+        console.log('Suggestion received:', data);
+        
+        // Update UI
+        suggestionAction.textContent = data.action;
+        suggestionValue.textContent = data.value;
+        suggestionReason.textContent = data.reason;
+
+        // Show overlay with animation
+        suggestionOverlay.style.display = 'block';
+        suggestionOverlay.classList.remove('fade-in'); // remove to re-trigger animation
+        void suggestionOverlay.offsetWidth; // trigger reflow
+        suggestionOverlay.classList.add('fade-in');
+    });
 });

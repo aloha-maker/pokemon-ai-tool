@@ -1,11 +1,42 @@
 from flask import Flask, render_template, request, jsonify
+from flask_socketio import SocketIO, emit
 import json
 import sqlite3
 import os
+import time
+import threading
 from src.ai.party_generator import PartyGenerator
 from src.ai.win_rate_predictor import WinRatePredictor
 
 app = Flask(__name__)
+socketio = SocketIO(app, async_mode='threading')
+
+# --- Background Task ---
+thread = None
+thread_lock = threading.Lock()
+
+def background_task():
+    """Example of a background task that emits server-generated events."""
+    count = 0
+    while True:
+        socketio.sleep(2) # 2秒ごとに更新
+        count += 1
+        dummy_action = "10まんボルト" if count % 2 == 0 else "なみのり"
+        dummy_reason = "相手のギャラドスに効果抜群(x4)です。" if count % 2 == 0 else "相手のサイドンに効果抜群(x4)です。"
+        
+        socketio.emit(
+            'suggestion_update',
+            {'action': '技選択', 'value': dummy_action, 'reason': dummy_reason}
+        )
+
+@socketio.on('connect')
+def connect():
+    global thread
+    with thread_lock:
+        if thread is None:
+            thread = socketio.start_background_task(target=background_task)
+    emit('my_response', {'data': 'Connected', 'count': 0})
+
 
 # Database path
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'pokemon_ai.db')
@@ -126,4 +157,4 @@ def get_history():
 if __name__ == '__main__':
     init_db()
     # デバッグモードでアプリケーションを起動
-    app.run(debug=True)
+    socketio.run(app, debug=True)
