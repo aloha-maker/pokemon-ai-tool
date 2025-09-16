@@ -25,7 +25,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const generatePartyButton = document.getElementById('generate-party-button');
-    // ... (パーティ生成関連のロジックも変更なし) ...
+    if (generatePartyButton) {
+        generatePartyButton.addEventListener('click', async () => {
+            const availablePokemonEl = document.getElementById('available-pokemon');
+            const conceptEl = document.getElementById('tactical-concept');
+            const resultArea = document.getElementById('party-generation-result-area');
+
+            const available_pokemon = availablePokemonEl.value.split('\n').filter(p => p.trim() !== '');
+            const concept = conceptEl.value;
+
+            if (available_pokemon.length < 6) {
+                alert('使用可能なポケモンを6体以上入力してください。');
+                return;
+            }
+            if (!concept) {
+                alert('戦術コンセプトを入力してください。');
+                return;
+            }
+
+            const spinner = generatePartyButton.querySelector('.spinner-border');
+            spinner.classList.remove('d-none');
+            generatePartyButton.disabled = true;
+
+            try {
+                const response = await fetch('/generate-party', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ available_pokemon, concept }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayGeneratedParty(data, resultArea);
+                } else {
+                    resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${data.error || '不明なエラー'}</div>`;
+                }
+            } catch (error) {
+                console.error('パーティ生成APIの呼び出し中にエラーが発生しました:', error);
+                resultArea.innerHTML = `<div class="alert alert-danger">APIの呼び出しに失敗しました。</div>`;
+            } finally {
+                spinner.classList.add('d-none');
+                generatePartyButton.disabled = false;
+            }
+        });
+    }
+
+    function displayGeneratedParty(data, container) {
+        let partyHtml = '<h5>提案パーティ</h5><div class="row g-2 mb-3">';
+        data.party.forEach(p => {
+            partyHtml += `
+                <div class="col-6">
+                    <div class="glass-card p-2 small">
+                        <div class="fw-bold">${p.name}</div>
+                        <div class="text-muted">役割: ${p.role}</div>
+                    </div>
+                </div>
+            `;
+        });
+        partyHtml += '</div>';
+
+        let manualHtml = '<h5>運用ガイド</h5>';
+        // 改行を<br>に変換して表示
+        manualHtml += `<div class="glass-card p-3 small">${data.manual.replace(/\n/g, '<br>')}</div>`;
+
+        container.innerHTML = partyHtml + manualHtml;
+    }
 
     const predictButton = document.getElementById('predict-button');
     // ... (予測関連のロジックも変更なし) ...
