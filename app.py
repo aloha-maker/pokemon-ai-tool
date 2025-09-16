@@ -96,7 +96,7 @@ def start_analysis(data):
     emit('analysis_started')
 
 @socketio.on('stop_analysis')
-def stop_analysis():
+def stop_analysis(data=None):
     """クライアントからの要求で解析スレッドを停止する"""
     global background_thread
     print("解析スレッドの停止を要求されました。")

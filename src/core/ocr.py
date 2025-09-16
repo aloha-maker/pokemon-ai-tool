@@ -73,9 +73,21 @@ class GameStateParser:
             if isinstance(roi, list) and len(roi) == 4:
                 try:
                     x, y, w, h = map(int, roi)
+                    # ROIがフレームの範囲内にあるかチェック
+                    if x + w > frame.shape[1] or y + h > frame.shape[0]:
+                        print(f"警告: ROI '{key}' が画像サイズ({frame.shape[1]}x{frame.shape[0]})を超えています。スキップします。")
+                        game_state[key] = "Error: ROI out of bounds"
+                        continue
+
                     # ROIを切り出し
                     cropped_img = frame[y:y+h, x:x+w]
                     
+                    # 切り出した画像が空でないかチェック
+                    if cropped_img.size == 0:
+                        print(f"警告: ROI '{key}' で切り抜かれた画像が空です。スキップします。")
+                        game_state[key] = "Error: Cropped image is empty"
+                        continue
+
                     # 前処理を適用
                     preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
                     
@@ -94,7 +106,19 @@ class GameStateParser:
                 for i, r in enumerate(roi):
                     try:
                         x, y, w, h = map(int, r)
+                        # ROIがフレームの範囲内にあるかチェック
+                        if x + w > frame.shape[1] or y + h > frame.shape[0]:
+                            print(f"警告: ROI '{key}[{i}]' が画像サイズ({frame.shape[1]}x{frame.shape[0]})を超えています。スキップします。")
+                            texts.append("Error: ROI out of bounds")
+                            continue
+
                         cropped_img = frame[y:y+h, x:x+w]
+
+                        if cropped_img.size == 0:
+                            print(f"警告: ROI '{key}[{i}]' で切り抜かれた画像が空です。スキップします。")
+                            texts.append("Error: Cropped image is empty")
+                            continue
+
                         preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
                         config = '--psm 7 -l jpn'
                         text = pytesseract.image_to_string(preprocessed_img, config=config).strip()

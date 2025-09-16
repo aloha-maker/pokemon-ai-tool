@@ -18,17 +18,33 @@ class ScreenCapturer:
     def _find_window(self):
         """
         指定されたタイトルのウィンドウを検索し、情報を更新する。
+        完全一致するタイトルを持つウィンドウを優先する。
         """
         try:
-            # ウィンドウタイトルに部分一致するものを取得
-            windows = gw.getWindowsWithTitle(self.window_title)
-            if not windows:
-                print(f"警告: ウィンドウ '{self.window_title}' が見つかりません。")
-                self.target_window = None
-                return False
-            # 最初のウィンドウを対象とする
-            self.target_window = windows[0]
-            return True
+            all_windows = gw.getAllWindows()
+            target_win = None
+            
+            # まずタイトルが完全に一致するものを探す
+            for win in all_windows:
+                if win.title == self.window_title:
+                    target_win = win
+                    break
+            
+            if target_win:
+                self.target_window = target_win
+                return True
+            else:
+                # 完全一致がない場合、警告を出しつつ部分一致を試みる（フォールバック）
+                windows = gw.getWindowsWithTitle(self.window_title)
+                if not windows:
+                    print(f"警告: ウィンドウ '{self.window_title}' が見つかりません。")
+                    self.target_window = None
+                    return False
+                
+                print(f"警告: ウィンドウ名 '{self.window_title}' に完全一致するウィンドウが見つかりませんでした。部分一致する '{windows[0].title}' を対象とします。")
+                self.target_window = windows[0]
+                return True
+
         except Exception as e:
             print(f"ウィンドウ検索中にエラーが発生しました: {e}")
             self.target_window = None
