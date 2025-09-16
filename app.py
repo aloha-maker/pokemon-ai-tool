@@ -18,59 +18,97 @@ socketio = SocketIO(app)
 
 # --- Background OCR and AI Thread ---
 
-# TODO: このウィンドウタイトルは設定ファイルなどから読み込むように変更する
-TARGET_WINDOW_TITLE = "mGBA"
-
-# スレッド間で共有するデータ
+# スレッドを管理するためのグローバル変数
+background_thread = None
+background_thread_stop_event = threading.Event()
+game_state_lock = threading.Lock()
 shared_game_state = {
     "state": None,
     "last_updated": None
 }
-game_state_lock = threading.Lock()
-background_thread_stop_event = threading.Event()
 
-def ocr_and_suggestion_thread():
+def ocr_and_suggestion_thread(window_title: str):
     """
     バックグラウンドで画面キャプチャ、OCR、AIによる提案を定期的に実行するスレッド
     """
-    print("バックグラウンドOCRスレッドを開始します。")
-    capturer = ScreenCapturer(TARGET_WINDOW_TITLE)
+    print(f"バックグラウンドOCRスレッドを開始します。対象: {window_title}")
+    capturer = ScreenCapturer(window_title)
     parser = GameStateParser()
     
+    if not capturer._find_window():
+        print(f"警告: ウィンドウ '{window_title}' が見つかりません。")
+        socketio.emit('analysis_stopped', {'error': f"ウィンドウ '{window_title}' が見つかりません。"})
+        return
+
     while not background_thread_stop_event.is_set():
         frame = capturer.capture_frame()
         
         if frame is not None:
-            # 1. 盤面情報を抽出
+            # キャプチャした画像をファイルに保存
+            captures_dir = os.path.join('static', 'captures')
+            # 常に同じファイル名で上書きすることで、ストレージを圧迫しない
+            live_capture_path = os.path.join(captures_dir, "live_capture.png")
+            cv2.imwrite(live_capture_path, frame)
+            # ブラウザがキャッシュしないように、URLにタイムスタンプを付与するための準備
+            image_url = f'/{live_capture_path.replace("\\", "/")}'
+
             current_state = parser.parse_frame(frame)
-            
-            # 2. 共有データを更新
             with game_state_lock:
                 shared_game_state["state"] = current_state
                 shared_game_state["last_updated"] = time.time()
             
-            # 3. フロントエンドにOCR結果を送信 (デバッグ用)
-            socketio.emit('ocr_update', {'state': current_state})
+            socketio.emit('ocr_update', {'state': current_state, 'image_url': image_url})
+        else:
+            # ウィンドウが閉じた、最小化されたなどの理由でキャプチャできなくなった場合
+            print("フレームのキャプチャに失敗しました。スレッドを停止します。")
+            socketio.emit('analysis_stopped', {'error': '対象ウィンドウからのキャプチャに失敗しました。'})
+            break
 
-        # 2秒待機
         socketio.sleep(2)
     
     print("バックグラウンドOCRスレッドを停止しました。")
 
-
 @socketio.on('connect')
 def connect():
     print("Client connected")
-    # 新しいクライアントが接続したときにバックグラウンドスレッドがなければ開始
-    global background_thread
-    if 'background_thread' not in globals() or not background_thread.is_alive():
-        print("バックグラウンドスレッドを開始します。")
-        background_thread = socketio.start_background_task(target=ocr_and_suggestion_thread)
     emit('my_response', {'data': 'Connected'})
+
+@socketio.on('start_analysis')
+def start_analysis(data):
+    """クライアントからの要求で解析スレッドを開始する"""
+    global background_thread
+    window_title = data.get('window_title')
+
+    if not window_title:
+        emit('analysis_stopped', {'error': 'ウィンドウが選択されていません。'})
+        return
+
+    if background_thread and background_thread.is_alive():
+        print("既に解析スレッドが実行中です。")
+        return
+
+    print(f"解析スレッドの開始を要求されました。対象: {window_title}")
+    background_thread_stop_event.clear()
+    background_thread = socketio.start_background_task(
+        target=ocr_and_suggestion_thread, 
+        window_title=window_title
+    )
+    emit('analysis_started')
+
+@socketio.on('stop_analysis')
+def stop_analysis():
+    """クライアントからの要求で解析スレッドを停止する"""
+    global background_thread
+    print("解析スレッドの停止を要求されました。")
+    background_thread_stop_event.set()
+    emit('analysis_stopped')
+
 
 @socketio.on('disconnect')
 def disconnect():
     print('Client disconnected')
+    # Consider stopping the thread if the user disconnects
+    # background_thread_stop_event.set()
 
 @socketio.on('get_suggestion')
 def handle_get_suggestion(json_data):
@@ -278,7 +316,4 @@ if __name__ == '__main__':
     captures_dir = os.path.join('static', 'captures')
     os.makedirs(captures_dir, exist_ok=True)
     
-    # Start the background thread
-    # Note: Using Flask's development server with socketio.run will handle threading correctly.
-    # For production, a different setup (e.g., Gunicorn + eventlet/gevent) is needed.
     socketio.run(app, debug=True)
