@@ -34,37 +34,54 @@ class ScreenCapturer:
             self.target_window = None
             return False
 
-    def capture_frame(self):
+    def capture_frame(self, region: tuple[int, int, int, int] | None = None):
         """
         対象ウィンドウの現在のフレームをキャプチャする。
+        領域を指定して、その部分だけを切り出すことも可能。
+
+        Args:
+            region (tuple[int, int, int, int] | None, optional):
+                キャプチャする領域を(left, top, width, height)で指定。
+                ウィンドウ左上からの相対座標。 Defaults to None (ウィンドウ全体).
 
         Returns:
             np.ndarray: キャプチャしたフレームのNumPy配列 (BGR形式)。
-                        ウィンドウが見つからない場合は None を返す。
+                        ウィンドウが見つからない、または領域が不正な場合は None を返す。
         """
         if not self._find_window() or not self.target_window:
             return None
 
-        # ウィンドウの位置とサイズを取得
         win = self.target_window
-        
-        # ウィンドウが最小化されている場合はキャプチャしない
         if win.isMinimized:
             print("警告: ウィンドウが最小化されています。")
             return None
 
-        monitor = {
-            "top": win.top,
-            "left": win.left,
-            "width": win.width,
-            "height": win.height,
-        }
+        if region:
+            # 領域指定がある場合
+            if not (isinstance(region, (list, tuple)) and len(region) == 4):
+                print("エラー: regionは (left, top, width, height) の4要素で指定してください。")
+                return None
+            
+            monitor = {
+                "top": win.top + region[1],
+                "left": win.left + region[0],
+                "width": region[2],
+                "height": region[3],
+            }
+        else:
+            # 領域指定がない場合はウィンドウ全体
+            monitor = {
+                "top": win.top,
+                "left": win.left,
+                "width": win.width,
+                "height": win.height,
+            }
 
         # 画面をキャプチャ
         sct_img = self.sct.grab(monitor)
 
         # mssのBGRA形式からNumPyのBGR形式に変換
         img = np.array(sct_img)
-        img = img[:, :, :3] # アルファチャンネルを削除
+        img = img[:, :, :3]  # アルファチャンネルを削除
 
         return img

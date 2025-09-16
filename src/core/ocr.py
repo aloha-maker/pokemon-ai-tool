@@ -1,24 +1,38 @@
 import cv2
 import pytesseract
 import numpy as np
+import json
+import os
 
 # Tesseractの実行ファイルのパスを指定 (Windowsの場合)
 # Mac/Linuxの場合は不要なことが多い
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
 class GameStateParser:
     """
     キャプチャしたゲーム画面から盤面情報を抽出・構造化するクラス。
     """
-    def __init__(self):
-        # 【重要】各情報が画面のどこに表示されるかを定義する
-        # (x, y, width, height) の形式
-        self.rois = {
-            "my_pokemon_name": (100, 300, 200, 50),
-            "my_pokemon_hp": (120, 350, 150, 40),
-            "opponent_pokemon_name": (600, 50, 200, 50),
-            "moves_list": [(500, 400, 250, 50) for i in range(4)] # 技4つ分など
-        }
+    def __init__(self, roi_config_path='roi_config.json'):
+        """
+        Args:
+            roi_config_path (str): ROI設定が記述されたJSONファイルのパス。
+        """
+        self.rois = self._load_rois(roi_config_path)
+
+    def _load_rois(self, path: str) -> dict:
+        "ROI設定ファイルを読み込む。"
+        if not os.path.exists(path):
+            print(f"警告: ROI設定ファイル '{path}' が見つかりません。ROIは空になります。")
+            return {}
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print(f"警告: ROI設定ファイル '{path}' の解析に失敗しました。ROIは空になります。")
+            return {}
+        except Exception as e:
+            print(f"警告: ROI設定ファイル '{path}' の読み込み中に予期せぬエラーが発生しました: {e}")
+            return {}
 
     def _preprocess_image_for_ocr(self, img: np.ndarray) -> np.ndarray:
         """
@@ -48,34 +62,46 @@ class GameStateParser:
         if frame is None:
             return {}
 
+        if not self.rois:
+            print("エラー: ROIが設定されていません。roi_config.jsonを確認してください。")
+            return {}
+
         game_state = {}
 
         for key, roi in self.rois.items():
-            # ROIが単一の場合 (名前、HPなど)
-            if isinstance(roi, tuple):
-                x, y, w, h = roi
-                # ROIを切り出し
-                cropped_img = frame[y:y+h, x:x+w]
-                
-                # 前処理を適用
-                preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
-                
-                # OCRを実行 (日本語を指定)
-                config = '--psm 7 -l jpn' # psm 7: 1行として認識
-                text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
-                
-                game_state[key] = text
+            # ROIが単一の座標リストの場合 (名前、HPなど)
+            if isinstance(roi, list) and len(roi) == 4:
+                try:
+                    x, y, w, h = map(int, roi)
+                    # ROIを切り出し
+                    cropped_img = frame[y:y+h, x:x+w]
+                    
+                    # 前処理を適用
+                    preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
+                    
+                    # OCRを実行 (日本語を指定)
+                    config = '--psm 7 -l jpn' # psm 7: 1行として認識
+                    text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
+                    
+                    game_state[key] = text
+                except Exception as e:
+                    print(f"エラー: ROI '{key}' の処理中にエラーが発生しました: {e}")
+                    game_state[key] = "Error"
             
-            # ROIがリストの場合 (技リストなど)
+            # ROIが座標リストのリストの場合 (技リストなど)
             elif isinstance(roi, list):
                 texts = []
-                for r in roi:
-                    x, y, w, h = r
-                    cropped_img = frame[y:y+h, x:x+w]
-                    preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
-                    config = '--psm 7 -l jpn'
-                    text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
-                    texts.append(text)
+                for i, r in enumerate(roi):
+                    try:
+                        x, y, w, h = map(int, r)
+                        cropped_img = frame[y:y+h, x:x+w]
+                        preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
+                        config = '--psm 7 -l jpn'
+                        text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
+                        texts.append(text)
+                    except Exception as e:
+                        print(f"エラー: ROI '{key}' の要素 {i} の処理中にエラーが発生しました: {e}")
+                        texts.append("Error")
                 game_state[key] = texts
 
         return game_state

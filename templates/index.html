@@ -92,18 +92,42 @@
 
             <!-- 右カラム: リアルタイム対戦補助 -->
             <section class="col-md-7 d-flex flex-column">
-                <div id="game-preview" class="glass-card flex-grow-1 p-3 position-relative">
-                    <h2 class="neon-text-blue mb-3">リアルタイム解析</h2>
+                <div id="game-preview" class="glass-card flex-grow-1 p-3 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h2 class="neon-text-blue mb-0">リアルタイム解析</h2>
+                        <button id="capture-button" class="btn btn-sm btn-primary neon-border">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-camera-video-fill"></i> キャプチャ実行
+                        </button>
+                    </div>
+                    <div class="row g-2 align-items-center mb-3">
+                        <div class="col">
+                            <label for="window-select" class="form-label visually-hidden">キャプチャ対象ウィンドウ</label>
+                            <select id="window-select" class="form-select form-select-sm">
+                                <option selected>ウィンドウを選択...</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button id="window-refresh-button" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
                     
-                    <!-- ダミーのゲーム画面プレビュー -->
-                    <div class="text-center">
-                        <img src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview" class="img-fluid" alt="ゲーム画面プレビュー">
+                    <!-- ゲーム画面プレビュー -->
+                    <div class="text-center flex-grow-1 d-flex align-items-center justify-content-center bg-black">
+                        <img id="capture-image" src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview" class="img-fluid" alt="ゲーム画面プレビュー">
                     </div>
 
-                    <!-- AIの行動提案オーバーレイ -->
-                    <div id="suggestion-overlay" class="position-absolute top-50 start-50 translate-middle w-75" style="display: none;">
-                        <div class="glass-card p-3 mt-4 neon-border">
-                            <h4 class="neon-text-blue"><i class="bi bi-lightbulb-fill"></i> AIの推奨アクション</h4>
+                    <!-- AIの行動提案 -->
+                    <div id="suggestion-overlay" class="mt-3" style="display: none;">
+                        <div class="glass-card p-3 neon-border">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="neon-text-blue mb-0"><i class="bi bi-lightbulb-fill"></i> AIの推奨アクション</h4>
+                                <button id="suggestion-refresh-button" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-arrow-repeat"></i> 更新
+                                </button>
+                            </div>
                             <div class="text-center my-3">
                                 <p id="suggestion-action" class="lead mb-1">技選択</p>
                                 <h2 id="suggestion-value" class="display-6 fw-bold">10まんボルト</h2>

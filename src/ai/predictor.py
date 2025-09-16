@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from core.type_chart import get_effectiveness
+from ..core.type_chart import get_effectiveness
 
 # データベースファイルのパスをプロジェクトルートからの相対パスで解決
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
