@@ -19,3 +19,7 @@ Thumbs.db
 
 # Prompt related (user specific)
 .prompt/
+
+.img/
+
+static/captures/
