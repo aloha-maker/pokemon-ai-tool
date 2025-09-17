@@ -1,28 +1,20 @@
-import sqlite3
 import itertools
 import os
 from ..core.type_chart import get_effectiveness
-
-# データベースファイルのパスをプロジェクトルートからの相対パスで解決
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DB_PATH = os.path.join(BASE_DIR, "data", "pokemon_ai.db")
+from ..database.manager import DatabaseManager
 
 class WinRatePredictor:
     """
     対戦前の選出フェーズで、有利な選出を予測・推薦するクラス。
     """
     def __init__(self):
-        self.conn = sqlite3.connect(DB_PATH)
-        self.conn.row_factory = sqlite3.Row
+        self.db_manager = DatabaseManager()
 
-    def _get_pokemon_types(self, pokemon_name):
+    def _get_pokemon_types(self, db, pokemon_name):
         """データベースからポケモン名に対応するタイプを取得する"""
-        cursor = self.conn.cursor()
-        # 日本語名で完全一致検索
-        cursor.execute("SELECT type1, type2 FROM pokemons WHERE name_ja = ?", (pokemon_name,))
-        result = cursor.fetchone()
-        if result:
-            return [t for t in [result['type1'], result['type2']] if t]
+        pokemon = db.get_pokemon_by_name(pokemon_name)
+        if pokemon:
+            return [t for t in [pokemon['type1'], pokemon['type2']] if t]
         return []
 
     def _calculate_matchup_score(self, my_types, opponent_types):
@@ -56,42 +48,40 @@ class WinRatePredictor:
         if len(my_party_names) != 6 or len(opponent_party_names) != 6:
             return {"error": "パーティはそれぞれ6体入力してください。"}
 
-        my_party_types = {name: self._get_pokemon_types(name) for name in my_party_names}
-        opponent_party_types = {name: self._get_pokemon_types(name) for name in opponent_party_names}
+        with self.db_manager as db:
+            my_party_types = {name: self._get_pokemon_types(db, name) for name in my_party_names}
+            opponent_party_types = {name: self._get_pokemon_types(db, name) for name in opponent_party_names}
 
-        # DBに存在しないポケモンがいた場合のエラーハンドリング
-        for name, types in {**my_party_types, **opponent_party_types}.items():
-            if not types:
-                return {"error": f"ポケモン「{name}」がデータベースに見つかりません。"}
-        
-        best_team = None
-        best_score = -float('inf')
-
-        # 自パーティから3体選出する全ての組み合わせを試行 (20通り)
-        for team_combination in itertools.combinations(my_party_names, 3):
-            current_team_score = 0
-            # 選出した3体それぞれについて、相手パーティ全体との相性を評価
-            for my_pokemon_name in team_combination:
-                pokemon_score_vs_opponent_party = 0
-                for opponent_pokemon_name in opponent_party_names:
-                    my_types = my_party_types[my_pokemon_name]
-                    opponent_types = opponent_party_types[opponent_pokemon_name]
-                    
-                    # 1対1の相性スコアを加算
-                    pokemon_score_vs_opponent_party += self._calculate_matchup_score(my_types, opponent_types)
-                
-                current_team_score += pokemon_score_vs_opponent_party
+            # DBに存在しないポケモンがいた場合のエラーハンドリング
+            for name, types in {**my_party_types, **opponent_party_types}.items():
+                if not types:
+                    return {"error": f"ポケモン「{name}」がデータベースに見つかりません。"}
             
-            # ベストスコアを更新
-            if current_team_score > best_score:
-                best_score = current_team_score
-                best_team = team_combination
+            best_team = None
+            best_score = -float('inf')
+
+            # 自パーティから3体選出する全ての組み合わせを試行 (20通り)
+            for team_combination in itertools.combinations(my_party_names, 3):
+                current_team_score = 0
+                # 選出した3体それぞれについて、相手パーティ全体との相性を評価
+                for my_pokemon_name in team_combination:
+                    pokemon_score_vs_opponent_party = 0
+                    for opponent_pokemon_name in opponent_party_names:
+                        my_types = my_party_types[my_pokemon_name]
+                        opponent_types = opponent_party_types[opponent_pokemon_name]
+                        
+                        # 1対1の相性スコアを加算
+                        pokemon_score_vs_opponent_party += self._calculate_matchup_score(my_types, opponent_types)
+                    
+                    current_team_score += pokemon_score_vs_opponent_party
+                
+                # ベストスコアを更新
+                if current_team_score > best_score:
+                    best_score = current_team_score
+                    best_team = team_combination
 
         return {
             "recommended_team": list(best_team),
             "score": best_score,
             "reason": f"この選出は、相手パーティ全体に対して最も高い相性スコア({best_score})を獲得しました。"
         }
-    
-    def __del__(self):
-        self.conn.close()
