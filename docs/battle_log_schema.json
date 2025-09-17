@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Battle Log Schema",
+  "description": "Schema for the battle_data field in the battle_logs table.",
+  "type": "object",
+  "properties": {
+    "video_info": {
+      "type": "object",
+      "properties": {
+        "original_filename": { "type": "string" },
+        "duration_seconds": { "type": "number" }
+      }
+    },
+    "turns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "turn": { "type": "integer", "minimum": 1 },
+          "my_pokemon": { "type": "string" },
+          "my_pokemon_hp": { "type": "integer", "minimum": 0 },
+          "opponent_pokemon": { "type": "string" },
+          "opponent_pokemon_hp": { "type": "integer", "minimum": 0 },
+          "action": {
+            "type": "object",
+            "properties": {
+              "type": { "enum": ["move", "switch", "teras"] },
+              "name": { "type": "string" },
+              "target": { "type": "string" }
+            },
+            "required": ["type", "name"]
+          },
+          "damage_dealt": { "type": "integer", "minimum": 0 },
+          "damage_taken": { "type": "integer", "minimum": 0 },
+          "log_text": { "type": "string" }
+        },
+        "required": ["turn", "my_pokemon", "opponent_pokemon", "action"]
+      }
+    }
+  },
+  "required": ["turns"]
+}

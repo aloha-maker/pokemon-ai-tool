@@ -71,7 +71,47 @@ class DatabaseManager:
         """対戦履歴の一覧を取得する。"""
         cursor = self.get_cursor()
         cursor.execute("SELECT * FROM battle_logs ORDER BY created_at DESC LIMIT ?", (limit,))
-        return [dict(row) for row in cursor.fetchall()]
+        rows = cursor.fetchall()
+        
+        # JSONデータをパースして返す
+        logs = []
+        for row in rows:
+            log_data = dict(row)
+            if log_data.get('battle_data'):
+                try:
+                    log_data['battle_data'] = json.loads(log_data['battle_data'])
+                except (json.JSONDecodeError, TypeError):
+                    log_data['battle_data'] = {} # パース失敗時は空のdict
+            if log_data.get('opponent_party'):
+                try:
+                    log_data['opponent_party'] = json.loads(log_data['opponent_party'])
+                except (json.JSONDecodeError, TypeError):
+                    log_data['opponent_party'] = {} # パース失敗時は空のdict
+            logs.append(log_data)
+        return logs
+
+    def get_battle_log_by_id(self, log_id: int) -> dict | None:
+        """IDを指定して対戦ログを取得する。"""
+        cursor = self.get_cursor()
+        cursor.execute("SELECT * FROM battle_logs WHERE id = ?", (log_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        
+        log_data = dict(row)
+        # battle_data と opponent_party はJSON文字列なのでパースする
+        if log_data.get('battle_data'):
+            try:
+                log_data['battle_data'] = json.loads(log_data['battle_data'])
+            except (json.JSONDecodeError, TypeError):
+                log_data['battle_data'] = {}
+        if log_data.get('opponent_party'):
+            try:
+                log_data['opponent_party'] = json.loads(log_data['opponent_party'])
+            except (json.JSONDecodeError, TypeError):
+                log_data['opponent_party'] = {}
+            
+        return log_data
 
     def get_battle_stats(self) -> dict:
         """勝率などの統計データを計算して取得する。"""
@@ -115,6 +155,29 @@ class DatabaseManager:
                 json.dumps(log_data.get('opponent_party')),
                 my_party_id,
                 json.dumps(battle_data)
+            )
+        )
+        self.conn.commit()
+        return cursor.lastrowid
+
+    def add_battle_log_from_video(self, video_task_id: str, turn_data: dict) -> int:
+        """
+        動画解析結果から対戦ログを `battle_logs` テーブルに追加する。
+        video_task_id とターンごとのデータ(turn_data)を受け取る。
+        戻り値は追加されたレコードのID。
+        """
+        cursor = self.get_cursor()
+
+        # battle_data をJSON文字列に変換
+        battle_data_json = json.dumps(turn_data, ensure_ascii=False, indent=2)
+
+        # 新しいログを挿入
+        cursor.execute(
+            "INSERT INTO battle_logs (video_task_id, battle_data, result) VALUES (?, ?, ?)",
+            (
+                video_task_id,
+                battle_data_json,
+                'unknown' # 解析直後は結果不明
             )
         )
         self.conn.commit()

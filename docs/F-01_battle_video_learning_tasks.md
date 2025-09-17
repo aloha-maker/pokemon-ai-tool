@@ -41,25 +41,10 @@
 
 **目的:** ターンごとの詳細な情報を格納できるよう、ログのデータ構造を定義し、保存処理を実装する。
 
--   [ ] **`battle_logs.battle_data` のJSONスキーマ定義:**
-    -   [ ] ターンごとの情報を格納するためのJSON構造を明確に定義する。例:
-        ```json
-        {
-          "turns": [
-            {
-              "turn": 1,
-              "my_pokemon": "ミライドン",
-              "opponent_pokemon": "コライドン",
-              "action": { "type": "move", "name": "イナズマドライブ" },
-              "damage_dealt": 120,
-              "damage_taken": 0
-            },
-            { ... }
-          ]
-        }
-        ```
--   [ ] **`DatabaseManager` の拡張:**
-    -   [ ] `add_battle_log_from_video(video_id, turn_data)` のような、動画解析結果を `battle_logs` に保存するための新しいメソッドを追加する。
+-   [x] **`battle_logs.battle_data` のJSONスキーマ定義:**
+    -   [x] ターンごとの情報を格納するためのJSON構造を明確に定義する。 (`docs/battle_log_schema.json`)
+-   [x] **`DatabaseManager` の拡張:**
+    -   [x] `add_battle_log_from_video(video_id, turn_data)` のような、動画解析結果を `battle_logs` に保存するための新しいメソッドを追加する。
 
 ### タスク3: フロントエンド - UIの構築
 
