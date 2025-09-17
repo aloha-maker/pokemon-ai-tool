@@ -299,4 +299,226 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 初期化処理
     updateWindowList();
+
+    // --- Video Analysis Logic ---
+    const videoManagerModal = document.getElementById('video-manager-modal');
+    const videoFileInput = document.getElementById('video-file-input');
+    const videoUploadButton = document.getElementById('video-upload-button');
+    const videoUploadProgress = document.getElementById('video-upload-progress');
+    const videoUploadAlert = document.getElementById('video-upload-alert');
+    const videoTasksTbody = document.getElementById('video-tasks-tbody');
+
+    const pollingIntervals = {}; // task_id: intervalId
+
+    // アップロードボタンのクリックイベント
+    if (videoUploadButton) {
+        videoUploadButton.addEventListener('click', () => {
+            const file = videoFileInput.files[0];
+            if (!file) {
+                showAlert('video-upload-alert', 'ファイルが選択されていません。', 'danger');
+                return;
+            }
+            uploadVideo(file);
+        });
+    }
+
+    function uploadVideo(file) {
+        const formData = new FormData();
+        formData.append('video', file);
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.open('POST', '/api/videos/upload', true);
+
+        // UIをアップロード中状態に更新
+        const spinner = videoUploadButton.querySelector('.spinner-border');
+        spinner.classList.remove('d-none');
+        videoUploadButton.disabled = true;
+        videoUploadProgress.parentElement.style.display = 'block';
+        videoUploadProgress.style.width = '0%';
+        videoUploadAlert.style.display = 'none';
+
+        // 進捗イベント
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                videoUploadProgress.style.width = percentComplete + '%';
+            }
+        };
+
+        // 完了イベント
+        xhr.onload = () => {
+            spinner.classList.add('d-none');
+            videoUploadButton.disabled = false;
+            videoUploadProgress.parentElement.style.display = 'none';
+
+            if (xhr.status === 202) {
+                const response = JSON.parse(xhr.responseText);
+                showAlert('video-upload-alert', `アップロード成功！解析を開始しました。(Task ID: ${response.task_id})`, 'success');
+                addTaskToList(response.task_id, file.name);
+                startPolling(response.task_id);
+            } else {
+                const errorMsg = JSON.parse(xhr.responseText).error || '不明なエラーが発生しました。';
+                showAlert('video-upload-alert', `アップロード失敗: ${errorMsg}`, 'danger');
+            }
+        };
+
+        // エラーイベント
+        xhr.onerror = () => {
+            spinner.classList.add('d-none');
+            videoUploadButton.disabled = false;
+            videoUploadProgress.parentElement.style.display = 'none';
+            showAlert('video-upload-alert', 'アップロード中にネットワークエラーが発生しました。', 'danger');
+        };
+
+        xhr.send(formData);
+    }
+    
+    function addTaskToList(taskId, fileName) {
+        const placeholder = videoTasksTbody.querySelector('.text-center');
+        if (placeholder) {
+            placeholder.remove();
+        }
+
+        const newRow = document.createElement('tr');
+        newRow.id = `task-${taskId}`;
+        newRow.innerHTML = `
+            <td>${escapeHTML(fileName)}</td>
+            <td><small>${taskId}</small></td>
+            <td><span class="badge bg-secondary">PENDING</span></td>
+            <td><button class="btn btn-sm btn-outline-light" disabled>結果表示</button></td>
+        `;
+        videoTasksTbody.prepend(newRow);
+    }
+
+    function startPolling(taskId) {
+        if (pollingIntervals[taskId]) {
+            clearInterval(pollingIntervals[taskId]);
+        }
+
+        pollingIntervals[taskId] = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/videos/status/${taskId}`);
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+                const data = await response.json();
+                updateTaskStatus(taskId, data);
+
+                if (data.status === 'DONE' || data.status === 'ERROR') {
+                    clearInterval(pollingIntervals[taskId]);
+                    delete pollingIntervals[taskId];
+                }
+            } catch (error) {
+                console.error(`[Task ${taskId}] Polling error:`, error);
+                clearInterval(pollingIntervals[taskId]);
+                delete pollingIntervals[taskId];
+                updateTaskStatus(taskId, { status: 'ERROR', result: { error: 'Polling failed' } });
+            }
+        }, 3000);
+    }
+
+    function updateTaskStatus(taskId, data) {
+        const taskRow = document.getElementById(`task-${taskId}`);
+        if (!taskRow) return;
+
+        const statusBadge = taskRow.querySelector('.badge');
+        const actionButton = taskRow.querySelector('button');
+
+        let badgeClass = 'bg-secondary';
+        switch (data.status) {
+            case 'PENDING':    badgeClass = 'bg-secondary'; break;
+            case 'PROCESSING': badgeClass = 'bg-primary'; break;
+            case 'DONE':       badgeClass = 'bg-success'; break;
+            case 'ERROR':      badgeClass = 'bg-danger'; break;
+        }
+        statusBadge.className = `badge ${badgeClass}`;
+        statusBadge.textContent = data.status;
+
+        if (data.status === 'DONE') {
+            actionButton.disabled = false;
+            if (data.result && data.result.log_id) {
+                actionButton.dataset.logId = data.result.log_id;
+                actionButton.onclick = () => showResult(data.result.log_id);
+            } else {
+                actionButton.textContent = 'IDなし';
+                actionButton.disabled = true;
+            }
+        } else if (data.status === 'ERROR') {
+            actionButton.disabled = true;
+            actionButton.textContent = '失敗';
+        }
+    }
+
+    async function showResult(logId) {
+        const resultBody = document.getElementById('video-result-body');
+        const resultModal = new bootstrap.Modal(document.getElementById('video-result-modal'));
+        
+        resultBody.innerHTML = '<div class="text-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        resultModal.show();
+
+        try {
+            const response = await fetch(`/api/videos/result/${logId}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to fetch result');
+            }
+
+            let html = '';
+            if (data.battle_data && data.battle_data.turns && data.battle_data.turns.length > 0) {
+                html += '<h4 class="neon-text-purple mb-3">ターン詳細</h4>';
+                html += '<div class="accordion" id="turns-accordion">';
+                data.battle_data.turns.forEach((turn, index) => {
+                    const myPokemon = turn.my_pokemon || '不明';
+                    const opponentPokemon = turn.opponent_pokemon || '不明';
+
+                    html += `
+                    <div class="accordion-item glass-card-inside mb-2">
+                        <h2 class="accordion-header" id="turn-heading-${index}">
+                            <button class="accordion-button collapsed bg-transparent neon-text-blue" type="button" data-bs-toggle="collapse" data-bs-target="#turn-collapse-${index}">
+                                Turn ${turn.turn}: ${myPokemon} vs ${opponentPokemon}
+                            </button>
+                        </h2>
+                        <div id="turn-collapse-${index}" class="accordion-collapse collapse" data-bs-parent="#turns-accordion">
+                            <div class="accordion-body">
+                                <pre class="bg-dark text-light p-2 rounded small"><code>${escapeHTML(JSON.stringify(turn, null, 2))}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                });
+                html += '</div>';
+            } else {
+                html = '<p class="text-muted text-center">詳細なターンデータは見つかりませんでした。</p>';
+            }
+            resultBody.innerHTML = html;
+
+        } catch (error) {
+            resultBody.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        }
+    }
+
+    function showAlert(alertId, message, type = 'info') {
+        const alertEl = document.getElementById(alertId);
+        alertEl.className = `alert alert-${type}`;
+        alertEl.textContent = message;
+        alertEl.style.display = 'block';
+    }
+    
+    function escapeHTML(str) {
+        if (typeof str !== 'string') {
+            str = String(str);
+        }
+        return str.replace(/[&<"'\/]/g, function(match) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+                '/': '&#x2F;'
+            }[match];
+        });
+    }
 });

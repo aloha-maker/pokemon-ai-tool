@@ -286,10 +286,11 @@ def upload_video():
     filepath = os.path.join(VIDEO_DIR, filename)
 
     try:
+        os.makedirs(VIDEO_DIR, exist_ok=True)
         file.save(filepath)
         
         # タスクの状態を初期化
-        video_tasks[task_id] = {"status": "PENDING", "result": None}
+        video_tasks[task_id] = {"status": "PENDING", "result": None, "filename": file.filename}
         
         # バックグラウンドで動画解析を実行
         executor.submit(analyze_video_task, task_id, filepath)
@@ -305,41 +306,38 @@ def get_video_status(task_id):
         return jsonify({"error": "Task not found"}), 404
     return jsonify(task)
 
-
 def analyze_video_task(task_id, filepath):
     """バックグラウンドで実行される動画解析タスク"""
     try:
         print(f"[Task {task_id}] Video analysis started for {filepath}")
         video_tasks[task_id]["status"] = "PROCESSING"
         
+        # VideoProcessorは、解析結果としてターンデータのdictを返すと想定
         processor = VideoProcessor(filepath)
-        result = processor.analyze()
+        turn_data = processor.analyze()
 
-        # TODO: 結果をDBに保存し、log_idをresultに含める
-        # with DatabaseManager() as db:
-        #     log_id = db.add_battle_log_from_video(task_id, result)
-        #     video_tasks[task_id]["result"] = {"log_id": log_id}
+        log_id = None
+        with DatabaseManager() as db:
+            log_id = db.add_battle_log_from_video(task_id, turn_data)
 
         video_tasks[task_id]["status"] = "DONE"
-        video_tasks[task_id]["result"] = result # 仮に解析結果をそのまま格納
-        print(f"[Task {task_id}] Video analysis finished.")
+        video_tasks[task_id]["result"] = {"log_id": log_id}
+        print(f"[Task {task_id}] Video analysis finished. Log ID: {log_id}")
 
     except Exception as e:
         print(f"[Task {task_id}] Error during video analysis: {e}")
         video_tasks[task_id]["status"] = "ERROR"
         video_tasks[task_id]["result"] = {"error": str(e)}
 
-@app.route('/api/videos/result/<log_id>', methods=['GET'])
+@app.route('/api/videos/result/<int:log_id>', methods=['GET'])
 def get_video_result(log_id):
-    # TODO: DatabaseManagerからlog_idを使って詳細な対戦ログを取得する
+    """指定されたlog_idの解析結果をデータベースから取得する"""
     try:
         with DatabaseManager() as db:
-            # battle_logsからlog_idで検索するメソッドがまだないので、一旦履歴全体を取得
-            # 将来的に get_battle_log_by_id(log_id) のようなメソッドをDBManagerに実装する
-            log = db.get_battle_history(limit=1) # 仮
+            log = db.get_battle_log_by_id(log_id)
             if not log:
                 return jsonify({"error": "Log not found"}), 404
-            return jsonify(log[0])
+            return jsonify(log)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

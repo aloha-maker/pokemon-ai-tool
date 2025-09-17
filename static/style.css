@@ -57,3 +57,9 @@ body {
 #suggestion-overlay .glass-card {
     background: rgba(12, 10, 36, 0.7); /* 少し濃いめの背景 */
 }
+
+.glass-card-inside {
+    background: rgba(0, 0, 0, 0.2); /* より透明に近い黒 */
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
