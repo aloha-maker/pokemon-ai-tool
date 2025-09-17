@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
+from flask_executor import Executor
+import uuid
 import json
 import os
 import time
@@ -12,9 +14,15 @@ from src.ai.win_rate_predictor import WinRatePredictor
 from src.core.ocr import GameStateParser
 from src.ai.predictor import ActionAIModel
 from src.database.manager import DatabaseManager
+from src.core.video_processor import VideoProcessor
 
 app = Flask(__name__)
 socketio = SocketIO(app)
+executor = Executor(app)
+
+# --- Video Processing Globals ---
+VIDEO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'videos')
+video_tasks = {}
 
 # --- Background OCR and AI Thread ---
 
@@ -262,8 +270,82 @@ def get_windows():
     except Exception as e:
         return jsonify({"error": f"Failed to get window titles: {str(e)}"}), 500
 
+# --- Video Analysis API Endpoints ---
+
+@app.route('/api/videos/upload', methods=['POST'])
+def upload_video():
+    if 'video' not in request.files:
+        return jsonify({"error": "No video file provided"}), 400
+    
+    file = request.files['video']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    task_id = str(uuid.uuid4())
+    filename = f"{task_id}_{file.filename}"
+    filepath = os.path.join(VIDEO_DIR, filename)
+
+    try:
+        file.save(filepath)
+        
+        # タスクの状態を初期化
+        video_tasks[task_id] = {"status": "PENDING", "result": None}
+        
+        # バックグラウンドで動画解析を実行
+        executor.submit(analyze_video_task, task_id, filepath)
+
+        return jsonify({"message": "Video uploaded successfully. Analysis started.", "task_id": task_id}), 202
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/videos/status/<task_id>', methods=['GET'])
+def get_video_status(task_id):
+    task = video_tasks.get(task_id)
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    return jsonify(task)
+
+
+def analyze_video_task(task_id, filepath):
+    """バックグラウンドで実行される動画解析タスク"""
+    try:
+        print(f"[Task {task_id}] Video analysis started for {filepath}")
+        video_tasks[task_id]["status"] = "PROCESSING"
+        
+        processor = VideoProcessor(filepath)
+        result = processor.analyze()
+
+        # TODO: 結果をDBに保存し、log_idをresultに含める
+        # with DatabaseManager() as db:
+        #     log_id = db.add_battle_log_from_video(task_id, result)
+        #     video_tasks[task_id]["result"] = {"log_id": log_id}
+
+        video_tasks[task_id]["status"] = "DONE"
+        video_tasks[task_id]["result"] = result # 仮に解析結果をそのまま格納
+        print(f"[Task {task_id}] Video analysis finished.")
+
+    except Exception as e:
+        print(f"[Task {task_id}] Error during video analysis: {e}")
+        video_tasks[task_id]["status"] = "ERROR"
+        video_tasks[task_id]["result"] = {"error": str(e)}
+
+@app.route('/api/videos/result/<log_id>', methods=['GET'])
+def get_video_result(log_id):
+    # TODO: DatabaseManagerからlog_idを使って詳細な対戦ログを取得する
+    try:
+        with DatabaseManager() as db:
+            # battle_logsからlog_idで検索するメソッドがまだないので、一旦履歴全体を取得
+            # 将来的に get_battle_log_by_id(log_id) のようなメソッドをDBManagerに実装する
+            log = db.get_battle_history(limit=1) # 仮
+            if not log:
+                return jsonify({"error": "Log not found"}), 404
+            return jsonify(log[0])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
-    captures_dir = os.path.join('static', 'captures')
-    os.makedirs(captures_dir, exist_ok=True)
+    # 必要なディレクトリの存在を確認・作成
+    os.makedirs(os.path.join('static', 'captures'), exist_ok=True)
+    os.makedirs(VIDEO_DIR, exist_ok=True)
     
     socketio.run(app, debug=True)
