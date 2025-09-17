@@ -95,7 +95,69 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const predictButton = document.getElementById('predict-button');
-    // ... (予測関連のロジックも変更なし) ...
+    if (predictButton) {
+        predictButton.addEventListener('click', async () => {
+            const myPartyInputs = document.querySelectorAll('#my-party-form input');
+            const opponentPartyInputs = document.querySelectorAll('#opponent-party-form input');
+            const resultArea = document.getElementById('prediction-result-area');
+
+            const my_party = Array.from(myPartyInputs).map(input => input.value).filter(p => p.trim() !== '');
+            const opponent_party = Array.from(opponentPartyInputs).map(input => input.value).filter(p => p.trim() !== '');
+
+            if (my_party.length !== 6 || opponent_party.length !== 6) {
+                alert('自分と相手のパーティをそれぞれ6体ずつ入力してください。');
+                return;
+            }
+
+            const spinner = predictButton.querySelector('.spinner-border');
+            spinner.classList.remove('d-none');
+            predictButton.disabled = true;
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ my_party, opponent_party }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayPredictionResult(data, resultArea);
+                } else {
+                    resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${data.error || '不明なエラー'}</div>`;
+                }
+            } catch (error) {
+                console.error('選出予測APIの呼び出し中にエラーが発生しました:', error);
+                resultArea.innerHTML = `<div class="alert alert-danger">APIの呼び出しに失敗しました。</div>`;
+            } finally {
+                spinner.classList.add('d-none');
+                predictButton.disabled = false;
+            }
+        });
+    }
+
+    function displayPredictionResult(data, container) {
+        let html = '<h5>AI推奨選出</h5>';
+        html += '<div class="row g-3 text-center">';
+        data.recommended_team.forEach(name => {
+            html += `
+                <div class="col-4">
+                    <div class="glass-card p-3">
+                        <div class="fw-bold fs-5">${name}</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        html += '<h5 class="mt-4">選出理由</h5>';
+        html += `<p class="text-muted">${data.reason}</p>`;
+
+        container.innerHTML = html;
+    }
 
     // --- Real-time Analysis Logic ---
     const windowSelect = document.getElementById('window-select');
