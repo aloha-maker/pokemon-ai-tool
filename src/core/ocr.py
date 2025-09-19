@@ -17,22 +17,24 @@ class GameStateParser:
         Args:
             roi_config_path (str): ROI設定が記述されたJSONファイルのパス。
         """
-        self.rois = self._load_rois(roi_config_path)
+        self.reference_resolution, self.rois = self._load_rois(roi_config_path)
 
-    def _load_rois(self, path: str) -> dict:
-        "ROI設定ファイルを読み込む。"
+    def _load_rois(self, path: str) -> tuple[dict | None, dict]:
+        """ROI設定ファイルを読み込み、基準解像度とROIの辞書を返す。"""
         if not os.path.exists(path):
             print(f"警告: ROI設定ファイル '{path}' が見つかりません。ROIは空になります。")
-            return {}
+            return None, {}
         try:
             with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                config = json.load(f)
+                ref_res = config.pop('reference_resolution', None)
+                return ref_res, config
         except json.JSONDecodeError:
             print(f"警告: ROI設定ファイル '{path}' の解析に失敗しました。ROIは空になります。")
-            return {}
+            return None, {}
         except Exception as e:
             print(f"警告: ROI設定ファイル '{path}' の読み込み中に予期せぬエラーが発生しました: {e}")
-            return {}
+            return None, {}
 
     def _preprocess_image_for_ocr(self, img: np.ndarray) -> np.ndarray:
         """
@@ -48,6 +50,15 @@ class GameStateParser:
         )
         
         return binary
+
+    def _scale_roi(self, roi: tuple, scale_w: float, scale_h: float) -> tuple:
+        """ROI座標をフレームサイズに合わせてスケーリングする。"""
+        x, y, w, h = roi
+        scaled_x = int(x * scale_w)
+        scaled_y = int(y * scale_h)
+        scaled_w = int(w * scale_w)
+        scaled_h = int(h * scale_h)
+        return (scaled_x, scaled_y, scaled_w, scaled_h)
 
     def parse_frame(self, frame: np.ndarray) -> dict:
         """
@@ -66,16 +77,31 @@ class GameStateParser:
             print("エラー: ROIが設定されていません。roi_config.jsonを確認してください。")
             return {}
 
+        frame_h, frame_w = frame.shape[:2]
+
+        # スケーリング係数を計算
+        if self.reference_resolution:
+            ref_w = self.reference_resolution.get("width", frame_w)
+            ref_h = self.reference_resolution.get("height", frame_h)
+            scale_w = frame_w / ref_w
+            scale_h = frame_h / ref_h
+        else:
+            # 基準解像度がなければスケーリングしない
+            scale_w, scale_h = 1.0, 1.0
+
         game_state = {}
 
-        for key, roi in self.rois.items():
+        for key, roi_orig in self.rois.items():
             # ROIが単一の座標リストの場合 (名前、HPなど)
-            if isinstance(roi, list) and len(roi) == 4:
+            if isinstance(roi_orig, list) and len(roi_orig) == 4:
                 try:
-                    x, y, w, h = map(int, roi)
+                    # ROIをスケーリング
+                    roi = self._scale_roi(tuple(roi_orig), scale_w, scale_h)
+                    x, y, w, h = roi
+
                     # ROIがフレームの範囲内にあるかチェック
-                    if x + w > frame.shape[1] or y + h > frame.shape[0]:
-                        print(f"警告: ROI '{key}' が画像サイズ({frame.shape[1]}x{frame.shape[0]})を超えています。スキップします。")
+                    if x + w > frame_w or y + h > frame_h:
+                        print(f"警告: ROI '{key}' が画像サイズ({frame_w}x{frame_h})を超えています。スキップします。")
                         game_state[key] = "Error: ROI out of bounds"
                         continue
 
@@ -101,14 +127,17 @@ class GameStateParser:
                     game_state[key] = "Error"
             
             # ROIが座標リストのリストの場合 (技リストなど)
-            elif isinstance(roi, list):
+            elif isinstance(roi_orig, list):
                 texts = []
-                for i, r in enumerate(roi):
+                for i, r_orig in enumerate(roi_orig):
                     try:
-                        x, y, w, h = map(int, r)
+                        # ROIをスケーリング
+                        r = self._scale_roi(tuple(r_orig), scale_w, scale_h)
+                        x, y, w, h = r
+
                         # ROIがフレームの範囲内にあるかチェック
-                        if x + w > frame.shape[1] or y + h > frame.shape[0]:
-                            print(f"警告: ROI '{key}[{i}]' が画像サイズ({frame.shape[1]}x{frame.shape[0]})を超えています。スキップします。")
+                        if x + w > frame_w or y + h > frame_h:
+                            print(f"警告: ROI '{key}[{i}]' が画像サイズ({frame_w}x{frame_h})を超えています。スキップします。")
                             texts.append("Error: ROI out of bounds")
                             continue
 

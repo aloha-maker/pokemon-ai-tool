@@ -1,6 +1,7 @@
 import os
 from ..core.type_chart import get_effectiveness
 from ..database.manager import DatabaseManager
+from .log_analyzer import LogAnalyzer
 
 
 class ActionAIModel:
@@ -10,6 +11,7 @@ class ActionAIModel:
     def __init__(self):
         # DatabaseManagerのインスタンスを保持するが、接続はメソッドごとに行う
         self.db_manager = DatabaseManager()
+        self.log_analyzer = LogAnalyzer()
 
     def _get_pokemon_types(self, db, pokemon_name):
         """ポケモン名からタイプを取得する"""
@@ -56,21 +58,48 @@ class ActionAIModel:
 
             if not my_types or not opp_types:
                 return {"action": "待機", "reason": f"DBからポケモン情報({my_poke_name} or {opp_poke_name})が見つかりません。"}
+
+            # --- 過去の対戦データから相手の行動傾向を分析 ---
+            # 相手視点での対面情報を取得するため、引数を入れ替える
+            opponent_action_stats = self.log_analyzer.calculate_matchup_actions(opp_poke_name, my_poke_name)
             
-            # --- 防御評価 (相手のタイプが自分に抜群か) ---
+            predicted_opponent_moves = []
+            if opponent_action_stats["total_matchups"] > 0:
+                # 頻度が20%以上の技を抽出
+                for action, freq in opponent_action_stats["action_frequencies_percent"].items():
+                    if action.startswith("move:") and freq >= 20.0:
+                        move_name = action.split(": ")[1]
+                        predicted_opponent_moves.append(move_name)
+
+            # --- 防御評価 (相手の予測される行動が自分に抜群か) ---
             is_at_disadvantage = False
+            disadvantage_reason = ""
+            
+            # まずはタイプ相性で不利か判断
             for opp_type in opp_types:
                 effectiveness_on_me = get_effectiveness(opp_type, my_types)
                 if effectiveness_on_me >= 2.0:
                     is_at_disadvantage = True
+                    disadvantage_reason = f"相手のタイプ({opp_type})がこちらの弱点です。"
                     break
+            
+            # 次に、過去データから予測される高頻度の技で不利か判断
+            if not is_at_disadvantage and predicted_opponent_moves:
+                for move_name in predicted_opponent_moves:
+                    move_type = self._get_move_type(db, move_name)
+                    if move_type:
+                        effectiveness_on_me = get_effectiveness(move_type, my_types)
+                        if effectiveness_on_me >= 2.0:
+                            is_at_disadvantage = True
+                            disadvantage_reason = f"過去のデータから、相手は高確率で弱点技「{move_name}」を使用してきます。"
+                            break
 
             # --- 緊急交代の判断 (HPが低く、かつ不利対面) ---
             if my_hp and my_hp['percentage'] < 30 and is_at_disadvantage:
                 return {
                     "action": "交代",
                     "target": "有利なポケモン", # TODO: 控えポケモンとの相性評価を実装
-                    "reason": f"HPが危険水域({my_hp['percentage']:.0f}%)で、相手({opp_poke_name})がタイプ上有利なため、交代を強く推奨します。"
+                    "reason": f"HPが危険水域({my_hp['percentage']:.0f}%)で、{disadvantage_reason} 交代を強く推奨します。"
                 }
 
             # --- 攻撃評価 ---
@@ -92,7 +121,7 @@ class ActionAIModel:
                 return {
                     "action": "交代",
                     "target": "有利なポケモン", # TODO: 控えポケモンとの相性評価を実装
-                    "reason": f"相手のタイプ({', '.join(opp_types)})がこちらの弱点です。交代を推奨します。"
+                    "reason": f"{disadvantage_reason} こちらから有効打がないため、交代を推奨します。"
                 }
             
             if max_effectiveness >= 2.0:

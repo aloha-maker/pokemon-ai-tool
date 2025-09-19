@@ -113,6 +113,31 @@ class DatabaseManager:
             
         return log_data
 
+    def get_all_battle_logs(self) -> list[dict]:
+        """
+        すべての対戦履歴をDBから取得する。
+        JSONデータはパースして返す。
+        """
+        cursor = self.get_cursor()
+        cursor.execute("SELECT * FROM battle_logs ORDER BY created_at DESC")
+        rows = cursor.fetchall()
+        
+        logs = []
+        for row in rows:
+            log_data = dict(row)
+            if log_data.get('battle_data'):
+                try:
+                    log_data['battle_data'] = json.loads(log_data['battle_data'])
+                except (json.JSONDecodeError, TypeError):
+                    log_data['battle_data'] = {}
+            if log_data.get('opponent_party'):
+                try:
+                    log_data['opponent_party'] = json.loads(log_data['opponent_party'])
+                except (json.JSONDecodeError, TypeError):
+                    log_data['opponent_party'] = {}
+            logs.append(log_data)
+        return logs
+
     def get_battle_stats(self) -> dict:
         """勝率などの統計データを計算して取得する。"""
         cursor = self.get_cursor()
