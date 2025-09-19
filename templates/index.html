@@ -152,6 +152,34 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="glass-card mt-4 p-3">
+                    <h2 class="neon-text-blue mb-3"><i class="bi bi-pencil-square"></i> ROIエディタ</h2>
+                    <p class="text-muted small">ここでゲーム画面の読み取り範囲を調整します。「解析開始」でプレビュー画像を表示後、下のドロップダウンから編集したい項目を選び、画像の上をドラッグして範囲を指定してください。</p>
+                    <div class="row">
+                        <div class="col-md-9">
+                            <canvas id="roi-canvas" class="border border-primary" style="max-width: 100%;"></canvas>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="roi-selector" class="form-label">編集対象:</label>
+                                <select id="roi-selector" class="form-select">
+                                    <option value="my_pokemon_name">自分のポケモン名</option>
+                                    <option value="opponent_pokemon_name">相手のポケモン名</option>
+                                    <option value="my_pokemon_hp">自分のHP</option>
+                                    <option value="opponent_pokemon_hp">相手のHP</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">座標 (x, y, w, h):</label>
+                                <div id="roi-coords" class="text-light">N/A</div>
+                            </div>
+                            <button id="save-roi-btn" class="btn btn-primary neon-border w-100">
+                                <i class="bi bi-save"></i> ROI設定を保存
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>

@@ -36,7 +36,14 @@ class VideoProcessor:
         # フレーム間の差分を計算するための閾値
         change_threshold = 1000000 # この値は動画の解像度や内容に応じて調整が必要
 
-        while cap.isOpened():
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        if fps == 0:
+            fps = 30 # FPSが取得できない場合のデフォルト値
+
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+        while frame_count < total_frames:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_count)
             ret, frame = cap.read()
             if not ret:
                 break
@@ -51,14 +58,15 @@ class VideoProcessor:
                 if diff_score > change_threshold:
                     print(f"Significant change detected at frame {frame_count} (diff: {diff_score})")
                     state = self.parser.parse_frame(frame)
-                    if state and state.get('my_pokemon_name'):
+                    if state and any(state.values()): # 何かしらのOCR結果があれば追加
                         extracted_states.append({
                             "frame": frame_count,
                             "state": state
                         })
-
+            
             prev_frame_gray = frame_gray
-            frame_count += 1
+            # 次の処理対象フレームをFPS分だけ進める（約1秒ごと）
+            frame_count += fps
 
         cap.release()
         print(f"Video analysis complete. Total frames: {frame_count}. Extracted states: {len(extracted_states)}")

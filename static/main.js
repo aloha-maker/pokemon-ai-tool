@@ -521,4 +521,149 @@ document.addEventListener('DOMContentLoaded', () => {
             }[match];
         });
     }
+
+    // --- ROI Editor Logic ---
+    const roiCanvas = document.getElementById('roi-canvas');
+    const roiCtx = roiCanvas.getContext('2d');
+    const roiSelector = document.getElementById('roi-selector');
+    const saveRoiBtn = document.getElementById('save-roi-btn');
+    const roiCoordsEl = document.getElementById('roi-coords');
+
+    let roiConfig = {};
+    let roiImage = new Image();
+    let isDrawing = false;
+    let startX, startY;
+
+    async function initRoiEditor() {
+        try {
+            const [imgPathResponse, configResponse] = await Promise.all([
+                fetch('/api/roi/image_path'),
+                fetch('/api/roi/config')
+            ]);
+            const imgPathData = await imgPathResponse.json();
+            roiConfig = await configResponse.json();
+
+            roiImage.onload = () => {
+                roiCanvas.width = roiImage.naturalWidth;
+                roiCanvas.height = roiImage.naturalHeight;
+                drawRoiRects();
+                updateCoordsDisplay();
+            };
+            // Use the captureImage src if available, otherwise use the one from the API
+            const currentSrc = document.getElementById('capture-image').src;
+            if (currentSrc && !currentSrc.includes('placehold.co')) {
+                 roiImage.src = currentSrc;
+            } else {
+                 roiImage.src = imgPathData.image_path + '?t=' + new Date().getTime();
+            }
+
+        } catch (error) {
+            console.error("Error initializing ROI editor:", error);
+        }
+    }
+
+    function drawRoiRects() {
+        roiCtx.clearRect(0, 0, roiCanvas.width, roiCanvas.height);
+        roiCtx.drawImage(roiImage, 0, 0, roiCanvas.width, roiCanvas.height);
+        roiCtx.lineWidth = 2;
+        for (const key in roiConfig) {
+            if (key === 'reference_resolution') continue;
+            const [x, y, w, h] = roiConfig[key];
+            if (key === roiSelector.value) {
+                roiCtx.strokeStyle = '#00ff00'; // Green
+            } else {
+                roiCtx.strokeStyle = '#ff0000'; // Red
+            }
+            roiCtx.strokeRect(x, y, w, h);
+        }
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        const rect = roiCanvas.getBoundingClientRect();
+        startX = (e.clientX - rect.left) * (roiCanvas.width / rect.width);
+        startY = (e.clientY - rect.top) * (roiCanvas.height / rect.height);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = roiCanvas.getBoundingClientRect();
+        const currentX = (e.clientX - rect.left) * (roiCanvas.width / rect.width);
+        const currentY = (e.clientY - rect.top) * (roiCanvas.height / rect.height);
+        drawRoiRects();
+        roiCtx.strokeStyle = '#00ff00';
+        roiCtx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+    }
+
+    function stopDrawing(e) {
+        if (!isDrawing) return;
+        isDrawing = false;
+        const selectedRoi = roiSelector.value;
+        const rect = roiCanvas.getBoundingClientRect();
+        const endX = (e.clientX - rect.left) * (roiCanvas.width / rect.width);
+        const endY = (e.clientY - rect.top) * (roiCanvas.height / rect.height);
+        const x = Math.min(startX, endX);
+        const y = Math.min(startY, endY);
+        const w = Math.abs(startX - endX);
+        const h = Math.abs(startY - endY);
+        if (w > 0 && h > 0) {
+            roiConfig[selectedRoi] = [Math.round(x), Math.round(y), Math.round(w), Math.round(h)];
+        }
+        drawRoiRects();
+        updateCoordsDisplay();
+    }
+
+    function updateCoordsDisplay() {
+        const selectedRoi = roiSelector.value;
+        if (roiConfig[selectedRoi]) {
+            const [x, y, w, h] = roiConfig[selectedRoi];
+            roiCoordsEl.textContent = `[${x}, ${y}, ${w}, ${h}]`;
+        }
+    }
+
+    async function saveRoiConfig() {
+        if (!roiConfig.reference_resolution) {
+            roiConfig.reference_resolution = {};
+        }
+        roiConfig.reference_resolution.width = roiImage.naturalWidth;
+        roiConfig.reference_resolution.height = roiImage.naturalHeight;
+        try {
+            const response = await fetch('/api/roi/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(roiConfig)
+            });
+            const data = await response.json();
+            if (response.ok) {
+                alert('ROI設定を保存しました。');
+            } else {
+                alert(`保存に失敗しました: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error saving ROI config:", error);
+            alert('保存中にエラーが発生しました。');
+        }
+    }
+    
+    // Initialize ROI Editor
+    const captureImageEl = document.getElementById('capture-image');
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+                // Add a small delay to ensure the image is rendered
+                setTimeout(initRoiEditor, 300);
+            }
+        });
+    });
+    observer.observe(captureImageEl, { attributes: true });
+
+    roiCanvas.addEventListener('mousedown', startDrawing);
+    roiCanvas.addEventListener('mousemove', draw);
+    roiCanvas.addEventListener('mouseup', stopDrawing);
+    roiCanvas.addEventListener('mouseleave', stopDrawing);
+    roiSelector.addEventListener('change', updateCoordsDisplay);
+    saveRoiBtn.addEventListener('click', saveRoiConfig);
+
+    initRoiEditor();
+
 });
