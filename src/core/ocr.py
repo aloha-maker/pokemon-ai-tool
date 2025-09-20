@@ -3,6 +3,7 @@ import pytesseract
 import numpy as np
 import json
 import os
+import pandas as pd
 
 # Tesseractの実行ファイルのパスを指定 (Windowsの場合)
 # Mac/Linuxの場合は不要なことが多い
@@ -12,12 +13,14 @@ class GameStateParser:
     """
     キャプチャしたゲーム画面から盤面情報を抽出・構造化するクラス。
     """
-    def __init__(self, roi_config_path='roi_config.json'):
+    def __init__(self, roi_config_path='roi_config.json', pokemon_master_path='data/master_data/pokemons.csv'):
         """
         Args:
             roi_config_path (str): ROI設定が記述されたJSONファイルのパス。
+            pokemon_master_path (str): ポケモンマスターデータが格納されたCSVファイルのパス。
         """
         self.reference_resolution, self.rois = self._load_rois(roi_config_path)
+        self.pokemon_names = self._load_pokemon_names(pokemon_master_path)
 
     def _load_rois(self, path: str) -> tuple[dict | None, dict]:
         """ROI設定ファイルを読み込み、基準解像度とROIの辞書を返す。"""
@@ -35,6 +38,61 @@ class GameStateParser:
         except Exception as e:
             print(f"警告: ROI設定ファイル '{path}' の読み込み中に予期せぬエラーが発生しました: {e}")
             return None, {}
+
+    def _load_pokemon_names(self, path: str) -> list[str]:
+        """ポケモンマスターCSVから日本語名のリストを読み込む。"""
+        if not os.path.exists(path):
+            print(f"警告: ポケモンマスターファイル '{path}' が見つかりません。名前補正は無効になります。")
+            return []
+        try:
+            df = pd.read_csv(path)
+            # カタカナと英字のみを考慮し、不要な文字を除去
+            return [name for name in df['name_ja'].unique() if pd.notna(name)]
+        except Exception as e:
+            print(f"警告: ポケモンマスターファイル '{path}' の読み込み中にエラーが発生しました: {e}")
+            return []
+
+    def _levenshtein_distance(self, s1: str, s2: str) -> int:
+        """2つの文字列間のレーベンシュタイン距離を計算する。"""
+        if len(s1) < len(s2):
+            return self._levenshtein_distance(s2, s1)
+
+        if len(s2) == 0:
+            return len(s1)
+
+        previous_row = range(len(s2) + 1)
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+
+        return previous_row[-1]
+
+    def _find_closest_pokemon_name(self, text: str, threshold: int = 2) -> str:
+        """
+        OCRで読み取ったテキストに最も近いポケモン名を辞書から探す。
+        閾値以下の距離で見つからない場合は元のテキストを返す。
+        """
+        if not self.pokemon_names or not text:
+            return text
+
+        # 完全一致があればそれを返す
+        if text in self.pokemon_names:
+            return text
+
+        # 最も距離が近いポケモン名を見つける
+        closest_name = min(self.pokemon_names, key=lambda name: self._levenshtein_distance(text, name))
+        min_distance = self._levenshtein_distance(text, closest_name)
+
+        # 閾値チェック
+        if min_distance <= threshold:
+            return closest_name
+        else:
+            return text
 
     def _preprocess_image_for_ocr(self, img: np.ndarray) -> np.ndarray:
         """
@@ -120,6 +178,10 @@ class GameStateParser:
                     # OCRを実行 (日本語を指定)
                     config = '--psm 7 -l jpn' # psm 7: 1行として認識
                     text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
+
+                    # ポケモン名フィールドの場合は補正を試みる
+                    if key.endswith('_name'):
+                        text = self._find_closest_pokemon_name(text)
                     
                     game_state[key] = text
                 except Exception as e:
