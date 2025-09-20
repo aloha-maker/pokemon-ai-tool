@@ -529,6 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveRoiBtn = document.getElementById('save-roi-btn');
     const roiCoordsEl = document.getElementById('roi-coords');
 
+    const roiImageUpload = document.getElementById('roi-image-upload');
+
     let roiConfig = {};
     let roiImage = new Image();
     let isDrawing = false;
@@ -544,8 +546,9 @@ document.addEventListener('DOMContentLoaded', () => {
             roiConfig = await configResponse.json();
 
             roiImage.onload = () => {
-                roiCanvas.width = roiImage.naturalWidth;
-                roiCanvas.height = roiImage.naturalHeight;
+                // Set canvas dimensions to a fixed 1920x1080
+                roiCanvas.width = 1920;
+                roiCanvas.height = 1080;
                 drawRoiRects();
                 updateCoordsDisplay();
             };
@@ -564,6 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function drawRoiRects() {
         roiCtx.clearRect(0, 0, roiCanvas.width, roiCanvas.height);
+        // Scale the image to fit the 1920x1080 canvas
         roiCtx.drawImage(roiImage, 0, 0, roiCanvas.width, roiCanvas.height);
         roiCtx.lineWidth = 2;
         for (const key in roiConfig) {
@@ -622,11 +626,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveRoiConfig() {
-        if (!roiConfig.reference_resolution) {
-            roiConfig.reference_resolution = {};
-        }
-        roiConfig.reference_resolution.width = roiImage.naturalWidth;
-        roiConfig.reference_resolution.height = roiImage.naturalHeight;
+        // Always set the reference resolution to 1920x1080
+        roiConfig.reference_resolution = {
+            width: 1920,
+            height: 1080
+        };
         try {
             const response = await fetch('/api/roi/update', {
                 method: 'POST',
@@ -661,9 +665,15 @@ document.addEventListener('DOMContentLoaded', () => {
     roiCanvas.addEventListener('mousemove', draw);
     roiCanvas.addEventListener('mouseup', stopDrawing);
     roiCanvas.addEventListener('mouseleave', stopDrawing);
-    roiSelector.addEventListener('change', updateCoordsDisplay);
-    saveRoiBtn.addEventListener('click', saveRoiConfig);
-
+            roiSelector.addEventListener('change', updateCoordsDisplay);
+            saveRoiBtn.addEventListener('click', saveRoiConfig);
+    
+            roiImageUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    roiImage.src = URL.createObjectURL(file);
+                }
+            });
     initRoiEditor();
 
 });

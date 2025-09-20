@@ -1,30 +1,30 @@
 {
-    "reference_resolution": {
-        "width": 2560,
-        "height": 1440
-    },
-    "my_pokemon_name": [
-        543,
-        1178,
-        373,
-        73
-    ],
-    "opponent_pokemon_name": [
-        2473,
-        124,
-        424,
-        70
-    ],
     "my_pokemon_hp": [
-        561,
-        1250,
-        387,
-        61
+        95,
+        941,
+        293,
+        47
+    ],
+    "my_pokemon_name": [
+        78,
+        881,
+        283,
+        62
     ],
     "opponent_pokemon_hp": [
-        2490,
-        197,
-        385,
-        57
-    ]
+        1530,
+        150,
+        293,
+        47
+    ],
+    "opponent_pokemon_name": [
+        1515,
+        86,
+        320,
+        64
+    ],
+    "reference_resolution": {
+        "width": 1920,
+        "height": 1080
+    }
 }

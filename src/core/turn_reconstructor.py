@@ -39,9 +39,9 @@ class TurnReconstructor:
                 turn_log = {
                     "turn": len(unique_turns) + 1,
                     "my_pokemon": state.get('my_pokemon_name'),
-                    "my_pokemon_hp": state.get('my_pokemon_hp', {}).get('current'),
+                    "my_pokemon_hp": state.get('my_pokemon_hp'),
                     "opponent_pokemon": state.get('opponent_pokemon_name'),
-                    "opponent_pokemon_hp": state.get('opponent_pokemon_hp', {}).get('current'),
+                    "opponent_pokemon_hp": state.get('opponent_pokemon_hp'),
                     "action": {
                         "type": "move", # ダミー
                         "name": "(技不明)", # ダミー

@@ -196,13 +196,17 @@ class DatabaseManager:
         # battle_data をJSON文字列に変換
         battle_data_json = json.dumps(turn_data, ensure_ascii=False, indent=2)
 
+        # TODO: 動画からパーティを特定する機能が実装されるまで、暫定的に1をセットする
+        my_party_id = 1 
+
         # 新しいログを挿入
         cursor.execute(
-            "INSERT INTO battle_logs (video_task_id, battle_data, result) VALUES (?, ?, ?)",
+            "INSERT INTO battle_logs (video_task_id, battle_data, result, my_party_id) VALUES (?, ?, ?, ?)",
             (
                 video_task_id,
                 battle_data_json,
-                'unknown' # 解析直後は結果不明
+                'unknown', # 解析直後は結果不明
+                my_party_id
             )
         )
         self.conn.commit()

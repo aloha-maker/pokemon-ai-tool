@@ -52,6 +52,9 @@ def ocr_and_suggestion_thread(window_title: str):
         frame = capturer.capture_frame()
         
         if frame is not None:
+            # フレームを1920x1080にリサイズ
+            frame = cv2.resize(frame, (1920, 1080))
+
             # キャプチャした画像をファイルに保存
             captures_dir = os.path.join('static', 'captures')
             # 常に同じファイル名で上書きすることで、ストレージを圧迫しない
