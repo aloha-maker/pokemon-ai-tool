@@ -100,11 +100,21 @@ class GameStateParser:
         """
         # 1. グレースケール化
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # 2. 画像の拡大（アップスケーリング）
+        #    補間方法には高品質なものを選択 (LANCZOS4 > CUBIC > LINEAR)
+        height, width = gray.shape
+        scale_factor = 2
+        upscaled = cv2.resize(gray, (width * scale_factor, height * scale_factor), interpolation=cv2.INTER_CUBIC)
+
+        # 3. ノイズ除去（メディアンフィルタ）
+        #    カーネルサイズは奇数である必要があり、3や5が一般的。
+        denoised = cv2.medianBlur(upscaled, 3)
         
-        # 2. 二値化（背景と文字をくっきり分ける）
+        # 4. 二値化（背景と文字をくっきり分ける）
         #    Adaptive Thresholdingは、照明が均一でない場合に特に有効
         binary = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
+            denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
         )
         
         return binary
