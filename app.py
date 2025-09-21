@@ -15,8 +15,11 @@ from src.core.ocr import GameStateParser
 from src.ai.predictor import ActionAIModel
 from src.database.manager import DatabaseManager
 from src.core.video_processor import VideoProcessor
+from src.ui.routes import api_bp # ★ 追加
 
 app = Flask(__name__)
+app.register_blueprint(api_bp) # ★ 追加
+
 socketio = SocketIO(app)
 executor = Executor(app)
 
