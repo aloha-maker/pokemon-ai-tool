@@ -1141,4 +1141,137 @@ document.addEventListener('DOMContentLoaded', () => {
         // イベントリスナーを初期設定
         initPartyManagement();
     }
+
+    // --- F-07: Calculator Logic (Modal) ---
+    const calculatorModal = document.getElementById('calculator-modal');
+    if (calculatorModal) {
+        let isCalcInitialized = false;
+        const statusCalcForm = document.getElementById('status-calc-form');
+        const pokemonSelect = document.getElementById('calc-pokemon-id');
+        const natureSelect = document.getElementById('calc-nature-id');
+        const levelInput = document.getElementById('calc-level');
+        const evInputs = statusCalcForm.querySelectorAll('.ev-calc-input');
+        const evTotalEl = document.getElementById('ev-calc-total');
+        const resultEl = document.getElementById('status-calc-result');
+
+        // モーダル表示時に初期化
+        calculatorModal.addEventListener('show.bs.modal', () => {
+            if (!isCalcInitialized) {
+                initCalculator();
+                isCalcInitialized = true;
+            }
+        });
+
+        // 初期化処理
+        async function initCalculator() {
+            await Promise.all([
+                populateSelect(pokemonSelect.id, [], 'ポケモンを選択...'),
+                populateSelect(natureSelect.id, [], '性格を選択...')
+            ]);
+            
+            try {
+                const [pokemonsRes, naturesRes] = await Promise.all([
+                    fetch('/api/master/pokemons'),
+                    fetch('/api/master/natures')
+                ]);
+                const pokemons = await pokemonsRes.json();
+                const natures = await naturesRes.json();
+
+                populateSelect(pokemonSelect.id, pokemons, 'ポケモンを選択...');
+                populateSelect(natureSelect.id, natures, '性格を選択...');
+
+            } catch (error) {
+                console.error('Calculator initialization failed:', error);
+                resultEl.innerHTML = '<p class="text-danger">初期化に失敗しました。</p>';
+            }
+
+            // イベントリスナーを設定
+            statusCalcForm.addEventListener('change', debounce(calculateStatus, 200));
+            statusCalcForm.addEventListener('input', debounce(calculateStatus, 200));
+            evInputs.forEach(input => input.addEventListener('input', updateEvCalcTotal));
+        }
+
+        // ステータス計算を実行して表示
+        async function calculateStatus() {
+            const pokemonId = pokemonSelect.value;
+            const natureId = natureSelect.value;
+
+            if (!pokemonId || !natureId) {
+                resultEl.innerHTML = '<p class="text-muted">ポケモンと性格を選択してください。</p>';
+                return;
+            }
+
+            const evs = {};
+            const statsOrder = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
+            evInputs.forEach((input, index) => {
+                const statKey = statsOrder[index];
+                // バックエンドのキー名に合わせる
+                const backendStatKey = statKey.replace('atk', 'attack').replace('def', 'defense').replace('spa', 'sp_attack').replace('spd', 'sp_defense').replace('spe', 'speed');
+                evs[backendStatKey] = parseInt(input.value, 10) || 0;
+            });
+
+            const data = {
+                pokemon_id: parseInt(pokemonId, 10),
+                level: parseInt(levelInput.value, 10),
+                nature_id: parseInt(natureId, 10),
+                evs: evs
+            };
+
+            try {
+                const response = await fetch('/api/calculate/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Calculation failed');
+                }
+
+                const stats = await response.json();
+                displayStatusResults(stats);
+
+            } catch (error) {
+                console.error('Status calculation error:', error);
+                resultEl.innerHTML = `<p class="text-danger">計算エラー: ${error.message}</p>`;
+            }
+        }
+
+        // 計算結果を表示
+        function displayStatusResults(stats) {
+            resultEl.innerHTML = `
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr><th>HP</th><td>${stats.hp}</td></tr>
+                        <tr><th>こうげき</th><td>${stats.attack}</td></tr>
+                        <tr><th>ぼうぎょ</th><td>${stats.defense}</td></tr>
+                        <tr><th>とくこう</th><td>${stats.sp_attack}</td></tr>
+                        <tr><th>とくぼう</th><td>${stats.sp_defense}</td></tr>
+                        <tr><th>すばやさ</th><td>${stats.speed}</td></tr>
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // 努力値の合計を更新
+        function updateEvCalcTotal() {
+            let total = 0;
+            evInputs.forEach(input => {
+                total += parseInt(input.value, 10) || 0;
+            });
+            evTotalEl.textContent = total;
+            evTotalEl.classList.toggle('text-danger', total > 510);
+        }
+
+        // debounce関数（入力イベントの発火を間引く）
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+    }
 });

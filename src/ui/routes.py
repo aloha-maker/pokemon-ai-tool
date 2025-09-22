@@ -3,6 +3,7 @@ import traceback
 
 from flask import Blueprint, jsonify, request
 from src.database.manager import DatabaseManager
+from src.core import calculator
 
 # APIエンドポイント用のBlueprintを作成
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -169,4 +170,45 @@ def delete_party(party_id):
         else:
             return jsonify({'error': 'Party not found'}), 404
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# --- F-07: 計算機 (Calculator) ---
+
+@api_bp.route('/calculate/status', methods=['POST'])
+def calculate_status_api():
+    """ポケモンのステータス実数値を計算して返す。"""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    try:
+        pokemon_id = data.get('pokemon_id')
+        level = int(data.get('level', 50))
+        evs = data.get('evs', {})
+        # 個体値は常に31で固定
+        ivs = {'hp': 31, 'attack': 31, 'defense': 31, 'sp_attack': 31, 'sp_defense': 31, 'speed': 31}
+        nature_id = data.get('nature_id')
+
+        with DatabaseManager() as db:
+            # 1. 種族値を取得
+            cursor = db.get_cursor()
+            cursor.execute("SELECT hp, attack, defense, sp_attack, sp_defense, speed FROM pokemons WHERE id = ?", (pokemon_id,))
+            base_stats_row = cursor.fetchone()
+            if not base_stats_row:
+                return jsonify({'error': 'Pokemon not found'}), 404
+            base_stats = dict(base_stats_row)
+
+            # 2. 性格補正を取得
+            cursor.execute("SELECT increased_stat, decreased_stat FROM natures WHERE id = ?", (nature_id,))
+            nature_row = cursor.fetchone()
+            nature = dict(nature_row) if nature_row else None
+
+        # 3. 計算実行
+        calculated_stats = calculator.calculate_status(base_stats, level, evs, ivs, nature)
+
+        return jsonify(calculated_stats), 200
+
+    except Exception as e:
+        print(f"Error in calculate_status_api: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
