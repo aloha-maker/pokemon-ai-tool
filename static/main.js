@@ -1164,21 +1164,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 初期化処理
         async function initCalculator() {
+            // セレクトボックスのプレースホルダーを設定
             await Promise.all([
                 populateSelect(pokemonSelect.id, [], 'ポケモンを選択...'),
-                populateSelect(natureSelect.id, [], '性格を選択...')
+                populateSelect(natureSelect.id, [], '性格を選択...'),
+                populateSelect('attacker-move-id', [], '技を選択...'),
+                populateSelect('attacker-pokemon-id', [], 'ポケモンを選択...'),
+                populateSelect('defender-pokemon-id', [], 'ポケモンを選択...'),
+                populateSelect('attacker-nature-id', [], '性格を選択...'),
+                populateSelect('defender-nature-id', [], '性格を選択...'),
             ]);
             
             try {
-                const [pokemonsRes, naturesRes] = await Promise.all([
+                const [pokemonsRes, naturesRes, movesRes] = await Promise.all([
                     fetch('/api/master/pokemons'),
-                    fetch('/api/master/natures')
+                    fetch('/api/master/natures'),
+                    fetch('/api/master/moves')
                 ]);
                 const pokemons = await pokemonsRes.json();
                 const natures = await naturesRes.json();
+                const moves = await movesRes.json();
 
+                // ステータス計算タブのセレクタ
                 populateSelect(pokemonSelect.id, pokemons, 'ポケモンを選択...');
                 populateSelect(natureSelect.id, natures, '性格を選択...');
+
+                // ダメージ計算タブのセレクタ
+                document.querySelectorAll('.calc-pokemon-selector').forEach(sel => populateSelect(sel.id, pokemons, 'ポケモンを選択...'));
+                document.querySelectorAll('.calc-nature-selector').forEach(sel => populateSelect(sel.id, natures, '性格を選択...'));
+                document.querySelectorAll('.calc-move-selector').forEach(sel => populateSelect(sel.id, moves, '技を選択...'));
 
             } catch (error) {
                 console.error('Calculator initialization failed:', error);
@@ -1189,6 +1203,68 @@ document.addEventListener('DOMContentLoaded', () => {
             statusCalcForm.addEventListener('change', debounce(calculateStatus, 200));
             statusCalcForm.addEventListener('input', debounce(calculateStatus, 200));
             evInputs.forEach(input => input.addEventListener('input', updateEvCalcTotal));
+
+            const damageCalcForm = document.getElementById('damage-calc-form');
+            damageCalcForm.addEventListener('change', debounce(calculateDamage, 200));
+            damageCalcForm.addEventListener('input', debounce(calculateDamage, 200));
+        }
+
+        // ダメージ計算を実行して表示
+        async function calculateDamage() {
+            const damageResultEl = document.getElementById('damage-calc-result');
+            const data = {
+                attacker_level: parseInt(document.getElementById('attacker-level').value, 10) || 50,
+                attack_stat: parseInt(document.getElementById('attacker-stat').value, 10) || 0,
+                defender_hp: parseInt(document.getElementById('defender-hp').value, 10) || 0,
+                defense_stat: parseInt(document.getElementById('defender-stat').value, 10) || 0,
+                move_id: parseInt(document.getElementById('attacker-move-id').value, 10) || null,
+                defender_id: parseInt(document.getElementById('defender-pokemon-id').value, 10) || null,
+            };
+
+            if (!data.attack_stat || !data.defender_hp || !data.defense_stat || !data.move_id || !data.defender_id) {
+                damageResultEl.innerHTML = '<p class="text-muted">必須項目をすべて入力してください。</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/calculate/damage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Calculation failed');
+                }
+
+                const result = await response.json();
+                displayDamageResults(result);
+
+            } catch (error) {
+                console.error('Damage calculation error:', error);
+                damageResultEl.innerHTML = `<p class="text-danger">計算エラー: ${error.message}</p>`;
+            }
+        }
+
+        // ダメージ計算結果を表示
+        function displayDamageResults(result) {
+            const damageResultEl = document.getElementById('damage-calc-result');
+            const hitsToKO = result.min_hits_to_ko === result.max_hits_to_ko ?
+                (result.min_hits_to_ko === Infinity ? '∞' : `確定 ${result.min_hits_to_ko}発`):
+                `乱数 ${result.min_hits_to_ko}発 〜 確定 ${result.max_hits_to_ko}発`;
+
+            damageResultEl.innerHTML = `
+                <div class="row">
+                    <div class="col-6">
+                        <p class="mb-1">ダメージ: <strong>${result.min_damage} 〜 ${result.max_damage}</strong></p>
+                        <p class="mb-0">割合: <strong>${result.min_damage_percent}% 〜 ${result.max_damage_percent}%</strong></p>
+                    </div>
+                    <div class="col-6">
+                        <p class="mb-1">確定数: <strong>${hitsToKO}</strong></p>
+                    </div>
+                </div>
+            `;
         }
 
         // ステータス計算を実行して表示

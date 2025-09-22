@@ -2,6 +2,8 @@
 
 import math
 
+from src.core import type_chart
+
 def calculate_status(base_stats, level, evs, ivs, nature):
     """
     ポケモンのステータス実数値を計算する。
@@ -41,6 +43,38 @@ def calculate_status(base_stats, level, evs, ivs, nature):
         
     return stats
 
-def calculate_damage():
-    # TODO: ダメージ計算ロジックを実装
-    pass
+def calculate_damage(attacker_level, move_power, attack_stat, defense_stat, move_type, defender_type1, defender_type2=None):
+    """
+    基本的なダメージ計算を行う。
+
+    Args:
+        attacker_level (int): 攻撃側のレベル
+        move_power (int): 技の威力
+        attack_stat (int): 攻撃側の能力値（物理なら攻撃、特殊なら特攻）
+        defense_stat (int): 防御側の能力値（物理なら防御、特殊なら特防）
+        move_type (str): 技のタイプ
+        defender_type1 (str): 防御側のタイプ1
+        defender_type2 (str, optional): 防御側のタイプ2
+
+    Returns:
+        tuple: (最小ダメージ, 最大ダメージ)
+    """
+    if move_power == 0:
+        return (0, 0)
+
+    # 基本ダメージ計算
+    base_damage = math.floor(math.floor(math.floor(attacker_level * 2 / 5) + 2) * move_power * attack_stat / defense_stat)
+    base_damage = math.floor(base_damage / 50) + 2
+
+    # タイプ相性
+    effectiveness = type_chart.get_effectiveness(move_type.lower(), [t.lower() for t in [defender_type1, defender_type2] if t])
+    
+    # 乱数以外の補正は一旦1.0とする
+    # TODO: 天候、持ち物、特性などの補正を追加
+    modifiers = effectiveness
+
+    # 16段階のダメージ計算 (乱数 0.85 ~ 1.0)
+    min_damage = math.floor(base_damage * modifiers * 0.85)
+    max_damage = math.floor(base_damage * modifiers * 1.0)
+
+    return (min_damage, max_damage)

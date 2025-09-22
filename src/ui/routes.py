@@ -1,5 +1,6 @@
 
 import traceback
+import math
 
 from flask import Blueprint, jsonify, request
 from src.database.manager import DatabaseManager
@@ -209,6 +210,70 @@ def calculate_status_api():
         return jsonify(calculated_stats), 200
 
     except Exception as e:
-        print(f"Error in calculate_status_api: {e}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/calculate/damage', methods=['POST'])
+def calculate_damage_api():
+    """ダメージ計算を行い、結果を返す。"""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    try:
+        # フロントエンドから送られてくるデータを展開
+        attacker_level = int(data['attacker_level'])
+        attack_stat = int(data['attack_stat'])
+        defender_hp = int(data['defender_hp'])
+        defense_stat = int(data['defense_stat'])
+        move_id = int(data['move_id'])
+        defender_id = int(data['defender_id'])
+
+        with DatabaseManager() as db:
+            cursor = db.get_cursor()
+            # 技情報を取得
+            cursor.execute("SELECT power, type, category FROM moves WHERE id = ?", (move_id,))
+            move_info = cursor.fetchone()
+            if not move_info:
+                return jsonify({'error': 'Move not found'}), 404
+            move_power, move_type, move_category = move_info
+
+            # 防御側ポケモンのタイプを取得
+            cursor.execute("SELECT type1, type2 FROM pokemons WHERE id = ?", (defender_id,))
+            defender_types = cursor.fetchone()
+            if not defender_types:
+                return jsonify({'error': 'Defender not found'}), 404
+            defender_type1, defender_type2 = defender_types
+
+        # ダメージ計算実行
+        min_damage, max_damage = calculator.calculate_damage(
+            attacker_level=attacker_level,
+            move_power=move_power,
+            attack_stat=attack_stat,
+            defense_stat=defense_stat,
+            move_type=move_type,
+            defender_type1=defender_type1,
+            defender_type2=defender_type2
+        )
+
+        # 確定数を計算
+        if min_damage > 0:
+            min_hits_to_ko = math.ceil(defender_hp / max_damage) if max_damage > 0 else float('inf')
+            max_hits_to_ko = math.ceil(defender_hp / min_damage) if min_damage > 0 else float('inf')
+        else:
+            min_hits_to_ko = float('inf')
+            max_hits_to_ko = float('inf')
+
+        return jsonify({
+            'min_damage': min_damage,
+            'max_damage': max_damage,
+            'min_damage_percent': round((min_damage / defender_hp) * 100, 1) if defender_hp > 0 else 0,
+            'max_damage_percent': round((max_damage / defender_hp) * 100, 1) if defender_hp > 0 else 0,
+            'min_hits_to_ko': min_hits_to_ko,
+            'max_hits_to_ko': max_hits_to_ko
+        }), 200
+
+    except Exception as e:
+        print(f"Error in calculate_damage_api: {e}")
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
