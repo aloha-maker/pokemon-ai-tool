@@ -61,38 +61,25 @@ CREATE TABLE IF NOT EXISTS items (
     name_ja TEXT
 );
 
--- 構築済みパーティテーブル
-CREATE TABLE parties (
+-- F-06: パーティ管理テーブル
+CREATE TABLE IF NOT EXISTS parties (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    concept TEXT,
-    created_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime'))
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- パーティ構成員テーブル
-CREATE TABLE party_members (
+-- F-06: パーティ構成員テーブル
+CREATE TABLE IF NOT EXISTS party_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     party_id INTEGER NOT NULL,
-    pokemon_id INTEGER NOT NULL,
-    item TEXT,
-    ability TEXT,
-    teras_type TEXT,
-    ev_hp INTEGER DEFAULT 0,
-    ev_attack INTEGER DEFAULT 0,
-    ev_defense INTEGER DEFAULT 0,
-    ev_sp_attack INTEGER DEFAULT 0,
-    ev_sp_defense INTEGER DEFAULT 0,
-    ev_speed INTEGER DEFAULT 0,
-    move1_id INTEGER,
-    move2_id INTEGER,
-    move3_id INTEGER,
-    move4_id INTEGER,
-    PRIMARY KEY (party_id, pokemon_id),
-    FOREIGN KEY (party_id) REFERENCES parties (id),
-    FOREIGN KEY (pokemon_id) REFERENCES pokemons (id),
-    FOREIGN KEY (move1_id) REFERENCES moves (id),
-    FOREIGN KEY (move2_id) REFERENCES moves (id),
-    FOREIGN KEY (move3_id) REFERENCES moves (id),
-    FOREIGN KEY (move4_id) REFERENCES moves (id)
+    trained_pokemon_id INTEGER NOT NULL,
+    member_index INTEGER NOT NULL, -- パーティ内の順番 (0-5)
+    UNIQUE (party_id, trained_pokemon_id),
+    UNIQUE (party_id, member_index),
+    FOREIGN KEY (party_id) REFERENCES parties (id) ON DELETE CASCADE,
+    FOREIGN KEY (trained_pokemon_id) REFERENCES trained_pokemons (id) ON DELETE CASCADE
 );
 
 -- 対戦履歴テーブル
@@ -104,7 +91,7 @@ CREATE TABLE battle_logs (
     battle_data TEXT, -- JSON format for turn-by-turn log
     video_task_id TEXT, -- 動画解析タスクのID
     created_at TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
-    FOREIGN KEY (my_party_id) REFERENCES parties (id)
+    FOREIGN KEY (my_party_id) REFERENCES parties (id) ON DELETE SET NULL
 );
 
 -- AIによる分析結果テーブル

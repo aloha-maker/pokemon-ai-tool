@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>パーティ管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">ポケモンAIツール</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item"><a class="nav-link" href="/">ホーム</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/trained-pokemons">育成済みポケモン管理</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/parties">パーティ管理</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">パーティ管理</h1>
+
+        <!-- 新規パーティ登録・編集フォーム -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 id="party-form-title">新規パーティ登録</h5>
+            </div>
+            <div class="card-body">
+                <form id="party-form">
+                    <input type="hidden" id="party-id">
+                    <div class="mb-3">
+                        <label for="party-name" class="form-label">パーティ名</label>
+                        <input type="text" class="form-control" id="party-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="party-description" class="form-label">説明（任意）</label>
+                        <textarea class="form-control" id="party-description" rows="2"></textarea>
+                    </div>
+                    <h6>メンバー選択</h6>
+                    <div class="row">
+                        <!-- 育成済みポケモン選択用のドロップダウンを6つ生成 -->
+                        {% for i in range(6) %}
+                        <div class="col-md-4 mb-3">
+                            <label for="member-{{ i }}" class="form-label">メンバー {{ i + 1 }}</label>
+                            <select class="form-select member-select" id="member-{{ i }}">
+                                <option value="">ポケモンを選択...</option>
+                                <!-- 育成済みポケモンがJSによって動的に追加される -->
+                            </select>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary">登録</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-edit-btn" style="display: none;">キャンセル</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 登録済みパーティ一覧 -->
+        <div class="card">
+            <div class="card-header">
+                <h5>登録済みパーティ一覧</h5>
+            </div>
+            <div class="card-body">
+                <div id="party-list" class="row">
+                    <!-- パーティカードがJSによって動的に追加される -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

@@ -317,3 +317,126 @@ class DatabaseManager:
         cursor.execute("DELETE FROM trained_pokemons WHERE id = ?", (pokemon_id,))
         self.conn.commit()
         return cursor.rowcount
+
+    # --- F-06: パーティ管理 (Parties) ---
+
+    def get_all_parties(self) -> list[dict]:
+        """登録済みのすべてのパーティを、メンバー情報付きで取得する。"""
+        cursor = self.get_cursor()
+        
+        # まずは全パーティを取得
+        cursor.execute("SELECT * FROM parties ORDER BY updated_at DESC")
+        parties = [dict(row) for row in cursor.fetchall()]
+        
+        # 各パーティのメンバーを取得
+        for party in parties:
+            party['members'] = self._get_party_members(party['id'])
+            
+        return parties
+
+    def get_party_by_id(self, party_id: int) -> dict | None:
+        """IDで指定したパーティの情報を、メンバー付きで取得する。"""
+        cursor = self.get_cursor()
+        cursor.execute("SELECT * FROM parties WHERE id = ?", (party_id,))
+        party = cursor.fetchone()
+        if not party:
+            return None
+        
+        party_dict = dict(party)
+        party_dict['members'] = self._get_party_members(party_id)
+        return party_dict
+
+    def _get_party_members(self, party_id: int) -> list[dict]:
+        """指定されたパーティIDのメンバー（育成済みポケモン）の詳細リストを取得する。"""
+        cursor = self.get_cursor()
+        query = """
+            SELECT
+                pm.member_index,
+                tp.id as trained_pokemon_id,
+                tp.nickname,
+                p.name_ja as pokemon_name,
+                i.name_ja as item_name
+            FROM party_members pm
+            JOIN trained_pokemons tp ON pm.trained_pokemon_id = tp.id
+            JOIN pokemons p ON tp.pokemon_id = p.id
+            LEFT JOIN items i ON tp.held_item_id = i.id
+            WHERE pm.party_id = ?
+            ORDER BY pm.member_index
+        """
+        cursor.execute(query, (party_id,))
+        return [dict(row) for row in cursor.fetchall()]
+
+    def add_party(self, data: dict) -> int:
+        """新しいパーティをデータベースに登録する。"""
+        cursor = self.get_cursor()
+        
+        try:
+            # パーティ名を登録
+            cursor.execute(
+                "INSERT INTO parties (name, description) VALUES (?, ?)",
+                (data['name'], data.get('description', ''))
+            )
+            party_id = cursor.lastrowid
+            
+            # パーティメンバーを登録
+            members = data.get('members', [])
+            if members:
+                member_values = [
+                    (party_id, member_id, index)
+                    for index, member_id in enumerate(members)
+                    if member_id is not None
+                ]
+                cursor.executemany(
+                    "INSERT INTO party_members (party_id, trained_pokemon_id, member_index) VALUES (?, ?, ?)",
+                    member_values
+                )
+            
+            self.conn.commit()
+            return party_id
+        except Exception as e:
+            self.conn.rollback()
+            raise e
+
+    def update_party(self, party_id: int, data: dict) -> int:
+        """指定したIDのパーティ情報を更新する。"""
+        cursor = self.get_cursor()
+        
+        try:
+            # パーティ名と説明を更新
+            cursor.execute(
+                "UPDATE parties SET name = ?, description = ?, updated_at = ? WHERE id = ?",
+                (data['name'], data.get('description', ''), time.strftime('%Y-%m-%d %H:%M:%S'), party_id)
+            )
+            
+            # 既存のメンバーを一旦削除
+            cursor.execute("DELETE FROM party_members WHERE party_id = ?", (party_id,))
+            
+            # 新しいメンバーを登録
+            members = data.get('members', [])
+            if members:
+                member_values = [
+                    (party_id, member_id, index)
+                    for index, member_id in enumerate(members)
+                    if member_id is not None
+                ]
+                cursor.executemany(
+                    "INSERT INTO party_members (party_id, trained_pokemon_id, member_index) VALUES (?, ?, ?)",
+                    member_values
+                )
+            
+            self.conn.commit()
+            return cursor.rowcount
+        except Exception as e:
+            self.conn.rollback()
+            raise e
+
+    def delete_party(self, party_id: int) -> int:
+        """指定したIDのパーティを削除する。ON DELETE CASCADEによりメンバーも削除される。"""
+        cursor = self.get_cursor()
+        try:
+            cursor.execute("DELETE FROM parties WHERE id = ?", (party_id,))
+            self.conn.commit()
+            return cursor.rowcount
+        except Exception as e:
+            self.conn.rollback()
+            raise e

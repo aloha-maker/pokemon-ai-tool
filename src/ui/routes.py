@@ -95,3 +95,72 @@ def get_master_data(resource):
         return jsonify([dict(item) for item in items]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# --- F-06: パーティ管理 (Parties) ---
+
+@api_bp.route('/parties', methods=['GET'])
+def get_parties():
+    """登録済みのパーティを一覧で取得する。"""
+    try:
+        with DatabaseManager() as db:
+            parties = db.get_all_parties()
+        return jsonify(parties), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/parties/<int:party_id>', methods=['GET'])
+def get_party(party_id):
+    """指定したIDのパーティ詳細を取得する。"""
+    try:
+        with DatabaseManager() as db:
+            party = db.get_party_by_id(party_id)
+        if party:
+            return jsonify(party), 200
+        else:
+            return jsonify({'error': 'Party not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/parties', methods=['POST'])
+def add_party():
+    """新しいパーティを登録する。"""
+    data = request.get_json()
+    if not data or not data.get('name') or 'members' not in data:
+        return jsonify({'error': 'Invalid data: name and members are required.'}), 400
+    
+    try:
+        with DatabaseManager() as db:
+            new_id = db.add_party(data)
+        return jsonify({'message': 'Party added successfully', 'id': new_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/parties/<int:party_id>', methods=['PUT'])
+def update_party(party_id):
+    """指定したIDのパーティ情報を更新する。"""
+    data = request.get_json()
+    if not data or not data.get('name') or 'members' not in data:
+        return jsonify({'error': 'Invalid data: name and members are required.'}), 400
+
+    try:
+        with DatabaseManager() as db:
+            updated_rows = db.update_party(party_id, data)
+        if updated_rows > 0:
+            return jsonify({'message': f'Party {party_id} updated successfully'}), 200
+        else:
+            return jsonify({'error': 'Party not found or no changes made'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/parties/<int:party_id>', methods=['DELETE'])
+def delete_party(party_id):
+    """指定したIDのパーティを削除する。"""
+    try:
+        with DatabaseManager() as db:
+            deleted_rows = db.delete_party(party_id)
+        if deleted_rows > 0:
+            return jsonify({'message': f'Party {party_id} deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'Party not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

@@ -913,4 +913,204 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initFormSelects();
 
+    // --- F-06: Party Management Logic ---
+
+    // 現在のページがパーティ管理ページであるかを確認
+    if (window.location.pathname === '/parties') {
+        const partyForm = document.getElementById('party-form');
+        const partyList = document.getElementById('party-list');
+        const partyIdField = document.getElementById('party-id');
+        const partyNameField = document.getElementById('party-name');
+        const partyDescriptionField = document.getElementById('party-description');
+        const memberSelects = document.querySelectorAll('.member-select');
+        const formTitle = document.getElementById('party-form-title');
+        const submitButton = partyForm.querySelector('button[type="submit"]');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
+        let allTrainedPokemons = []; // 育成済みポケモン一覧をキャッシュ
+
+        // 初期化処理
+        async function initPartyManagementPage() {
+            await loadAndPopulateTrainedPokemons();
+            await loadAndDisplayParties();
+
+            partyForm.addEventListener('submit', handlePartyFormSubmit);
+            cancelEditBtn.addEventListener('click', resetPartyForm);
+        }
+
+        // 育成済みポケモンをロードし、選択肢を埋める
+        async function loadAndPopulateTrainedPokemons() {
+            try {
+                const response = await fetch('/api/trained-pokemons');
+                if (!response.ok) throw new Error('Failed to fetch trained pokemons');
+                allTrainedPokemons = await response.json();
+
+                memberSelects.forEach(select => {
+                    select.innerHTML = '<option value="">ポケモンを選択...</option>'; // クリア
+                    allTrainedPokemons.forEach(p => {
+                        const option = document.createElement('option');
+                        option.value = p.id;
+                        option.textContent = `${p.nickname || p.pokemon_name} (ID: ${p.id})`;
+                        select.appendChild(option);
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading trained pokemons:', error);
+                partyList.innerHTML = '<div class="alert alert-danger">育成済みポケモンの読み込みに失敗しました。</div>';
+            }
+        }
+
+        // パーティ一覧をロードして表示
+        async function loadAndDisplayParties() {
+            try {
+                const response = await fetch('/api/parties');
+                if (!response.ok) throw new Error('Failed to fetch parties');
+                const parties = await response.json();
+
+                partyList.innerHTML = '';
+                if (parties.length === 0) {
+                    partyList.innerHTML = '<p class="text-muted">登録されているパーティはありません。</p>';
+                    return;
+                }
+
+                parties.forEach(party => {
+                    const partyCard = document.createElement('div');
+                    partyCard.className = 'col-md-6 col-lg-4 mb-3';
+                    let membersHtml = '<ul class="list-group list-group-flush">';
+                    party.members.forEach(member => {
+                        membersHtml += `<li class="list-group-item bg-transparent">${escapeHTML(member.nickname || member.pokemon_name)}</li>`;
+                    });
+                     if (party.members.length < 6) {
+                        for(let i = party.members.length; i < 6; i++) {
+                             membersHtml += `<li class="list-group-item bg-transparent text-muted">-</li>`;
+                        }
+                    }
+                    membersHtml += '</ul>';
+
+                    partyCard.innerHTML = `
+                        <div class="card h-100 glass-card">
+                            <div class="card-body">
+                                <h5 class="card-title">${escapeHTML(party.name)}</h5>
+                                <p class="card-text text-muted small">${escapeHTML(party.description || '')}</p>
+                                ${membersHtml}
+                            </div>
+                            <div class="card-footer bg-transparent border-top-0 text-end">
+                                <button class="btn btn-sm btn-outline-light edit-party-btn" data-id="${party.id}"><i class="bi bi-pencil"></i> 編集</button>
+                                <button class="btn btn-sm btn-outline-danger delete-party-btn" data-id="${party.id}"><i class="bi bi-trash"></i> 削除</button>
+                            </div>
+                        </div>
+                    `;
+                    partyList.appendChild(partyCard);
+                });
+
+                // イベントリスナーを設定
+                document.querySelectorAll('.edit-party-btn').forEach(btn => {
+                    btn.addEventListener('click', handlePartyEditClick);
+                });
+                document.querySelectorAll('.delete-party-btn').forEach(btn => {
+                    btn.addEventListener('click', handlePartyDeleteClick);
+                });
+
+            } catch (error) {
+                console.error('Error loading parties:', error);
+                partyList.innerHTML = '<div class="alert alert-danger">パーティ一覧の読み込みに失敗しました。</div>';
+            }
+        }
+
+        // フォーム送信処理
+        async function handlePartyFormSubmit(event) {
+            event.preventDefault();
+            const partyId = partyIdField.value;
+            const members = Array.from(memberSelects).map(s => s.value ? parseInt(s.value, 10) : null);
+
+            const partyData = {
+                name: partyNameField.value,
+                description: partyDescriptionField.value,
+                members: members
+            };
+
+            const url = partyId ? `/api/parties/${partyId}` : '/api/parties';
+            const method = partyId ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(partyData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Save failed');
+                }
+
+                await response.json();
+                resetPartyForm();
+                await loadAndDisplayParties();
+                // TODO: Show success alert
+
+            } catch (error) {
+                console.error('Error saving party:', error);
+                alert(`保存に失敗しました: ${error.message}`);
+            }
+        }
+
+        // 編集ボタンクリック処理
+        async function handlePartyEditClick(event) {
+            const partyId = event.currentTarget.dataset.id;
+            try {
+                const response = await fetch(`/api/parties/${partyId}`);
+                if (!response.ok) throw new Error('Failed to fetch party details');
+                const party = await response.json();
+
+                partyIdField.value = party.id;
+                partyNameField.value = party.name;
+                partyDescriptionField.value = party.description;
+                
+                memberSelects.forEach((select, index) => {
+                    const member = party.members.find(m => m.member_index === index);
+                    select.value = member ? member.trained_pokemon_id : '';
+                });
+
+                formTitle.textContent = 'パーティ編集';
+                submitButton.textContent = '更新';
+                cancelEditBtn.style.display = 'inline-block';
+                window.scrollTo(0, 0); // フォームにスクロール
+
+            } catch (error) {
+                console.error(`Error fetching party ${partyId} for edit:`, error);
+                alert('パーティ情報の読み込みに失敗しました。');
+            }
+        }
+
+        // 削除ボタンクリック処理
+        async function handlePartyDeleteClick(event) {
+            const partyId = event.currentTarget.dataset.id;
+            if (confirm(`ID: ${partyId} のパーティを本当に削除しますか？`)) {
+                try {
+                    const response = await fetch(`/api/parties/${partyId}`, { method: 'DELETE' });
+                    if (!response.ok) throw new Error('Failed to delete party');
+                    
+                    await loadAndDisplayParties();
+                    // TODO: Show success alert
+
+                } catch (error) {
+                    console.error(`Error deleting party ${partyId}:`, error);
+                    alert('削除に失敗しました。');
+                }
+            }
+        }
+
+        // フォームをリセットする
+        function resetPartyForm() {
+            partyForm.reset();
+            partyIdField.value = '';
+            formTitle.textContent = '新規パーティ登録';
+            submitButton.textContent = '登録';
+            cancelEditBtn.style.display = 'none';
+        }
+
+        // 初期化処理を実行
+        initPartyManagementPage();
+    }
 });

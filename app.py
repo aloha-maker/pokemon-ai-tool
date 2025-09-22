@@ -385,9 +385,14 @@ def get_roi_image_path():
     # リアルタイム解析中の最新画像を利用するのが合理的
     return jsonify({"image_path": "/static/captures/live_capture.png"})
 
+    return render_template('trained_pokemon_management.html')
+
+@app.route('/parties')
+def party_management():
+    """パーティ管理ページを表示する。"""
+    return render_template('party_management.html')
+
 if __name__ == '__main__':
-    # 必要なディレクトリの存在を確認・作成
-    os.makedirs(os.path.join('static', 'captures'), exist_ok=True)
-    os.makedirs(VIDEO_DIR, exist_ok=True)
-    
-    socketio.run(app, debug=True)
+    # アプリケーションをデバッグモードで実行
+    # host='0.0.0.0' を指定することで、外部からのアクセスを許可する
+    app.run(debug=True, host='0.0.0.0', port=5001)
