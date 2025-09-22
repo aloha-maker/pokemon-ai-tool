@@ -385,12 +385,8 @@ def get_roi_image_path():
     # リアルタイム解析中の最新画像を利用するのが合理的
     return jsonify({"image_path": "/static/captures/live_capture.png"})
 
+    """育成済みポケモン管理ページを表示する。"""
     return render_template('trained_pokemon_management.html')
-
-@app.route('/parties')
-def party_management():
-    """パーティ管理ページを表示する。"""
-    return render_template('party_management.html')
 
 if __name__ == '__main__':
     # アプリケーションをデバッグモードで実行

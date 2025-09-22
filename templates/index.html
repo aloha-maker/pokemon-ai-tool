@@ -38,8 +38,11 @@
                 <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#dashboard-modal">
                     <i class="bi bi-graph-up"></i> 分析ダッシュボード
                 </button>
-                <button class="btn btn-outline-light neon-border" data-bs-toggle="modal" data-bs-target="#trained-pokemon-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#trained-pokemon-modal">
                     <i class="bi bi-archive"></i> 育成済みポケモン管理
+                </button>
+                <button class="btn btn-outline-light neon-border" data-bs-toggle="modal" data-bs-target="#party-management-modal">
+                    <i class="bi bi-collection"></i> パーティ管理
                 </button>
             </div>
         </header>
@@ -499,5 +502,7 @@
 
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='main.js') }}" defer></script>
+
+    {% include 'party_management.html' %}
 </body>
 </html>

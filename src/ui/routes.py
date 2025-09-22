@@ -1,4 +1,6 @@
 
+import traceback
+
 from flask import Blueprint, jsonify, request
 from src.database.manager import DatabaseManager
 
@@ -133,6 +135,8 @@ def add_party():
             new_id = db.add_party(data)
         return jsonify({'message': 'Party added successfully', 'id': new_id}), 201
     except Exception as e:
+        print(f"Error in add_party: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/parties/<int:party_id>', methods=['PUT'])
@@ -150,6 +154,8 @@ def update_party(party_id):
         else:
             return jsonify({'error': 'Party not found or no changes made'}), 404
     except Exception as e:
+        print(f"Error in update_party: {e}")
+        print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/parties/<int:party_id>', methods=['DELETE'])

@@ -913,51 +913,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initFormSelects();
 
-    // --- F-06: Party Management Logic ---
-
-    // 現在のページがパーティ管理ページであるかを確認
-    if (window.location.pathname === '/parties') {
+    // --- F-06: Party Management Logic (Modal) ---
+    const partyManagementModal = document.getElementById('party-management-modal');
+    if (partyManagementModal) {
         const partyForm = document.getElementById('party-form');
         const partyList = document.getElementById('party-list');
         const partyIdField = document.getElementById('party-id');
         const partyNameField = document.getElementById('party-name');
         const partyDescriptionField = document.getElementById('party-description');
-        const memberSelects = document.querySelectorAll('.member-select');
+        const memberSelects = partyManagementModal.querySelectorAll('.member-select');
         const formTitle = document.getElementById('party-form-title');
         const submitButton = partyForm.querySelector('button[type="submit"]');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
         let allTrainedPokemons = []; // 育成済みポケモン一覧をキャッシュ
+        let isDataLoaded = false; // APIデータのロード状態を管理
 
-        // 初期化処理
-        async function initPartyManagementPage() {
-            await loadAndPopulateTrainedPokemons();
+        // モーダルが表示されるたびにUIを更新
+        partyManagementModal.addEventListener('show.bs.modal', async () => {
+            // APIデータが未取得の場合のみロード
+            if (!isDataLoaded) {
+                await loadAndPopulateTrainedPokemons();
+                isDataLoaded = true;
+            } else {
+                // データが既にあれば、ドロップダウンの選択肢のみ再設定
+                populateMemberSelects();
+            }
+            // パーティ一覧は毎回最新のものを取得
             await loadAndDisplayParties();
+        });
 
+        // 初期化処理（イベントリスナーの設定）
+        function initPartyManagement() {
             partyForm.addEventListener('submit', handlePartyFormSubmit);
             cancelEditBtn.addEventListener('click', resetPartyForm);
         }
 
-        // 育成済みポケモンをロードし、選択肢を埋める
+        // 育成済みポケモンをAPIからロードする
         async function loadAndPopulateTrainedPokemons() {
             try {
                 const response = await fetch('/api/trained-pokemons');
                 if (!response.ok) throw new Error('Failed to fetch trained pokemons');
                 allTrainedPokemons = await response.json();
-
-                memberSelects.forEach(select => {
-                    select.innerHTML = '<option value="">ポケモンを選択...</option>'; // クリア
-                    allTrainedPokemons.forEach(p => {
-                        const option = document.createElement('option');
-                        option.value = p.id;
-                        option.textContent = `${p.nickname || p.pokemon_name} (ID: ${p.id})`;
-                        select.appendChild(option);
-                    });
-                });
+                populateMemberSelects(); // ドロップダウンを埋める
             } catch (error) {
                 console.error('Error loading trained pokemons:', error);
                 partyList.innerHTML = '<div class="alert alert-danger">育成済みポケモンの読み込みに失敗しました。</div>';
             }
+        }
+
+        // キャッシュされたデータでドロップダウンを埋める
+        function populateMemberSelects() {
+            memberSelects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">メンバーを選択...</option>'; // クリア
+                allTrainedPokemons.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.nickname || p.pokemon_name} (ID: ${p.id})`;
+                    select.appendChild(option);
+                });
+                select.value = currentValue; // 元の選択値を維持しようと試みる
+            });
         }
 
         // パーティ一覧をロードして表示
@@ -969,14 +986,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 partyList.innerHTML = '';
                 if (parties.length === 0) {
-                    partyList.innerHTML = '<p class="text-muted">登録されているパーティはありません。</p>';
+                    partyList.innerHTML = '<p class="text-muted text-center">登録されているパーティはありません。</p>';
                     return;
                 }
 
                 parties.forEach(party => {
                     const partyCard = document.createElement('div');
-                    partyCard.className = 'col-md-6 col-lg-4 mb-3';
-                    let membersHtml = '<ul class="list-group list-group-flush">';
+                    partyCard.className = 'col-lg-6 mb-3';
+                    let membersHtml = '<ul class="list-group list-group-flush small">';
                     party.members.forEach(member => {
                         membersHtml += `<li class="list-group-item bg-transparent">${escapeHTML(member.nickname || member.pokemon_name)}</li>`;
                     });
@@ -988,26 +1005,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     membersHtml += '</ul>';
 
                     partyCard.innerHTML = `
-                        <div class="card h-100 glass-card">
-                            <div class="card-body">
-                                <h5 class="card-title">${escapeHTML(party.name)}</h5>
-                                <p class="card-text text-muted small">${escapeHTML(party.description || '')}</p>
+                        <div class="card h-100 glass-card-inside">
+                            <div class="card-body p-2">
+                                <h6 class="card-title">${escapeHTML(party.name)}</h6>
+                                <p class="card-text text-muted small mb-1">${escapeHTML(party.description || '')}</p>
                                 ${membersHtml}
                             </div>
-                            <div class="card-footer bg-transparent border-top-0 text-end">
-                                <button class="btn btn-sm btn-outline-light edit-party-btn" data-id="${party.id}"><i class="bi bi-pencil"></i> 編集</button>
-                                <button class="btn btn-sm btn-outline-danger delete-party-btn" data-id="${party.id}"><i class="bi bi-trash"></i> 削除</button>
+                            <div class="card-footer bg-transparent border-top-0 text-end p-2">
+                                <button class="btn btn-sm btn-outline-light edit-party-btn" data-id="${party.id}"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-outline-danger delete-party-btn" data-id="${party.id}"><i class="bi bi-trash"></i></button>
                             </div>
                         </div>
                     `;
                     partyList.appendChild(partyCard);
                 });
 
-                // イベントリスナーを設定
-                document.querySelectorAll('.edit-party-btn').forEach(btn => {
+                // イベントリスナーを再設定
+                partyList.querySelectorAll('.edit-party-btn').forEach(btn => {
                     btn.addEventListener('click', handlePartyEditClick);
                 });
-                document.querySelectorAll('.delete-party-btn').forEach(btn => {
+                partyList.querySelectorAll('.delete-party-btn').forEach(btn => {
                     btn.addEventListener('click', handlePartyDeleteClick);
                 });
 
@@ -1021,7 +1038,19 @@ document.addEventListener('DOMContentLoaded', () => {
         async function handlePartyFormSubmit(event) {
             event.preventDefault();
             const partyId = partyIdField.value;
-            const members = Array.from(memberSelects).map(s => s.value ? parseInt(s.value, 10) : null);
+            const members = Array.from(memberSelects).reduce((acc, s) => {
+                if (s.value) {
+                    acc.push(parseInt(s.value, 10));
+                }
+                return acc;
+            }, []);
+
+            // 重複チェック
+            const uniqueMembers = new Set(members);
+            if (uniqueMembers.size < members.length) {
+                alert('パーティに同じポケモンを複数選択することはできません。');
+                return;
+            }
 
             const partyData = {
                 name: partyNameField.value,
@@ -1047,7 +1076,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 await response.json();
                 resetPartyForm();
                 await loadAndDisplayParties();
-                // TODO: Show success alert
 
             } catch (error) {
                 console.error('Error saving party:', error);
@@ -1075,7 +1103,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 formTitle.textContent = 'パーティ編集';
                 submitButton.textContent = '更新';
                 cancelEditBtn.style.display = 'inline-block';
-                window.scrollTo(0, 0); // フォームにスクロール
 
             } catch (error) {
                 console.error(`Error fetching party ${partyId} for edit:`, error);
@@ -1092,7 +1119,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!response.ok) throw new Error('Failed to delete party');
                     
                     await loadAndDisplayParties();
-                    // TODO: Show success alert
 
                 } catch (error) {
                     console.error(`Error deleting party ${partyId}:`, error);
@@ -1106,11 +1132,13 @@ document.addEventListener('DOMContentLoaded', () => {
             partyForm.reset();
             partyIdField.value = '';
             formTitle.textContent = '新規パーティ登録';
-            submitButton.textContent = '登録';
+            submitButton.textContent = '保存';
             cancelEditBtn.style.display = 'none';
         }
 
-        // 初期化処理を実行
-        initPartyManagementPage();
+        // イベントリスナーを初期設定
+        initPartyManagement();
+        // イベントリスナーを初期設定
+        initPartyManagement();
     }
 });
