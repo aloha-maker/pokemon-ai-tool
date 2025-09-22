@@ -5,6 +5,7 @@ import math
 from flask import Blueprint, jsonify, request
 from src.database.manager import DatabaseManager
 from src.core import calculator
+from src.ai import simulator
 
 # APIエンドポイント用のBlueprintを作成
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -274,6 +275,36 @@ def calculate_damage_api():
         }), 200
 
     except Exception as e:
-        print(f"Error in calculate_damage_api: {e}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+# --- F-08: 疑似対戦シミュレーション ---
+
+@api_bp.route('/simulate', methods=['POST'])
+def run_simulation():
+    """2つのパーティ間の対戦をシミュレートし、ログを返す。"""
+    data = request.get_json()
+    if not data or 'party1_id' not in data or 'party2_id' not in data:
+        return jsonify({'error': 'Invalid data: party1_id and party2_id are required.'}), 400
+
+    try:
+        party1_id = int(data['party1_id'])
+        party2_id = int(data['party2_id'])
+
+        with DatabaseManager() as db:
+            party1 = db.get_party_by_id(party1_id)
+            party2 = db.get_party_by_id(party2_id)
+
+        if not party1 or not party2:
+            return jsonify({'error': 'One or both parties not found.'}), 404
+
+        # シミュレーターを実行
+        sim = simulator.BattleSimulator(party1, party2)
+        log = sim.run()
+
+        return jsonify({'log': log}), 200
+
+    except Exception as e:
+        print(f"Error in run_simulation: {e}")
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500

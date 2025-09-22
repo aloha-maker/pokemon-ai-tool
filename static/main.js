@@ -1138,8 +1138,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // イベントリスナーを初期設定
         initPartyManagement();
-        // イベントリスナーを初期設定
-        initPartyManagement();
     }
 
     // --- F-07: Calculator Logic (Modal) ---
@@ -1348,6 +1346,76 @@ document.addEventListener('DOMContentLoaded', () => {
                 clearTimeout(timeout);
                 timeout = setTimeout(() => func.apply(context, args), delay);
             };
+        }
+    }
+
+    // --- F-08: Simulator Logic (Modal) ---
+    const simulatorModal = document.getElementById('simulator-modal');
+    if (simulatorModal) {
+        let isSimInitialized = false;
+        const startBtn = document.getElementById('start-simulation-btn');
+        const logArea = document.getElementById('simulation-log-area');
+        const partySelectors = document.querySelectorAll('.sim-party-selector');
+
+        // モーダル表示時に初期化
+        simulatorModal.addEventListener('show.bs.modal', () => {
+            if (!isSimInitialized) {
+                initSimulator();
+                isSimInitialized = true;
+            }
+        });
+
+        async function initSimulator() {
+            try {
+                const response = await fetch('/api/parties');
+                const parties = await response.json();
+                partySelectors.forEach(select => {
+                    populateSelect(select.id, parties.map(p => ({id: p.id, name_ja: p.name})), 'パーティを選択...');
+                });
+            } catch (error) {
+                console.error('Failed to load parties for simulator:', error);
+                logArea.innerHTML = '<p class="text-danger">パーティ一覧の読み込みに失敗しました。</p>';
+            }
+
+            startBtn.addEventListener('click', runSimulation);
+        }
+
+        async function runSimulation() {
+            const party1Id = document.getElementById('sim-party1-id').value;
+            const party2Id = document.getElementById('sim-party2-id').value;
+
+            if (!party1Id || !party2Id) {
+                alert('2つのパーティを選択してください。');
+                return;
+            }
+
+            logArea.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div><p class="mt-2">シミュレーションを実行中...</p></div>';
+            startBtn.disabled = true;
+            const spinner = startBtn.querySelector('.spinner-border');
+            spinner.classList.remove('d-none');
+
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ party1_id: party1Id, party2_id: party2Id })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Simulation failed');
+                }
+
+                const result = await response.json();
+                logArea.innerHTML = result.log.join('\n');
+
+            } catch (error) {
+                console.error('Simulation error:', error);
+                logArea.innerHTML = `<p class="text-danger">シミュレーションエラー: ${error.message}</p>`;
+            } finally {
+                startBtn.disabled = false;
+                spinner.classList.add('d-none');
+            }
         }
     }
 });

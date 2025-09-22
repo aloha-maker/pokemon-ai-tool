@@ -44,8 +44,11 @@
                 <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#party-management-modal">
                     <i class="bi bi-collection"></i> パーティ管理
                 </button>
-                <button class="btn btn-outline-light neon-border" data-bs-toggle="modal" data-bs-target="#calculator-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#calculator-modal">
                     <i class="bi bi-calculator"></i> 計算機
+                </button>
+                <button class="btn btn-outline-light neon-border" data-bs-toggle="modal" data-bs-target="#simulator-modal">
+                    <i class="bi bi-joystick"></i> シミュレーター
                 </button>
             </div>
         </header>
@@ -508,5 +511,6 @@
 
     {% include 'party_management.html' %}
     {% include 'calculator.html' %}
+    {% include 'simulator.html' %}
 </body>
 </html>
