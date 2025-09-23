@@ -9,8 +9,8 @@ def get_scaled_rois(roi_config, video_width, video_height):
     """
     動画の解像度に合わせてROI座標をスケーリングする。
     """
-    ref_width = roi_config["reference_resolution"]["width"]
-    ref_height = roi_config["reference_resolution"]["height"]
+    ref_width = 1920
+    ref_height = 1080
     
     width_scale = video_width / ref_width
     height_scale = video_height / ref_height
