@@ -7,6 +7,10 @@ import pytesseract
 from PIL import Image
 import re
 
+# Tesseractのパスを明示的に指定
+TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+
 def get_scaled_rois(roi_config, video_width, video_height):
     """
     動画の解像度に合わせてROI座標をスケーリングする。
@@ -130,10 +134,49 @@ def manual_verification_gui(image, suggested_text, roi_name, count):
             cv2.destroyAllWindows()
             return "EXIT"
 
+def check_tesseract_languages():
+    """
+    利用可能なTesseract言語をチェック
+    """
+    try:
+        # 利用可能な言語のリストを取得
+        languages = pytesseract.get_languages()
+        print("利用可能なTesseract言語:")
+        for lang in languages:
+            print(f"  - {lang}")
+        
+        # 日本語が利用可能かチェック
+        if 'jpn' in languages:
+            print("✅ 日本語(jpn)が利用可能です")
+            return True
+        else:
+            print("❌ 日本語(jpn)が利用できません")
+            print("日本語パックをインストールしてください")
+            return False
+            
+    except Exception as e:
+        print(f"言語チェックエラー: {e}")
+        return False
+
 def main(video_path, roi_json_path, output_dir, file_prefix, enable_ocr=True, manual_verify=True):
     """
     改良版：OCRによる自動化と手動確認のハイブリッド
     """
+    # Tesseractのチェック
+    if enable_ocr:
+        print("Tesseractの設定を確認中...")
+        print(f"Tesseractパス: {TESSERACT_PATH}")
+        
+        if not os.path.exists(TESSERACT_PATH):
+            print(f"❌ Tesseractが見つかりません: {TESSERACT_PATH}")
+            print("--no-ocrオプションで実行します")
+            enable_ocr = False
+        elif not check_tesseract_languages():
+            print("日本語対応に問題があります。--no-ocrオプションで実行します")
+            enable_ocr = False
+        else:
+            print("✅ Tesseractの設定は正常です")
+
     if not os.path.exists(video_path):
         print(f"エラー: 動画ファイルが見つかりません: {video_path}")
         return
@@ -187,9 +230,14 @@ def main(video_path, roi_json_path, output_dir, file_prefix, enable_ocr=True, ma
                     if enable_ocr:
                         if img_hash in ocr_cache:
                             detected_text = ocr_cache[img_hash]
+                            print(f"キャッシュからOCR結果を使用: {detected_text}")
                         else:
                             detected_text = extract_pokemon_name_with_ocr(cropped_img, is_japanese=True)
-                            ocr_cache[img_hash] = detected_text
+                            if detected_text:
+                                print(f"OCR結果: {detected_text}")
+                                ocr_cache[img_hash] = detected_text
+                            else:
+                                print("OCR: テキストを検出できませんでした")
                     
                     # 手動確認または自動保存
                     final_text = None
@@ -214,7 +262,20 @@ def main(video_path, roi_json_path, output_dir, file_prefix, enable_ocr=True, ma
                         with open(txt_path, 'w', encoding='utf-8') as f:
                             f.write(final_text)
                         
-                        print(f"  -> 保存しました: {img_filename} -> '{final_text}'")
+                        print(f"✅ 保存しました: {img_filename} -> '{final_text}'")
+                        saved_count += 1
+                    elif not enable_ocr:
+                        # OCR無効モードでは常に保存
+                        img_filename = f"{file_prefix}.exp.{saved_count}.png"
+                        txt_filename = f"{file_prefix}.exp.{saved_count}.gt.txt"
+                        img_path = os.path.join(output_dir, img_filename)
+                        txt_path = os.path.join(output_dir, txt_filename)
+                        
+                        cv2.imwrite(img_path, cropped_img)
+                        with open(txt_path, 'w', encoding='utf-8') as f:
+                            f.write('')  # 空のテキストファイル
+                        
+                        print(f"📁 画像のみ保存: {img_filename}")
                         saved_count += 1
                     
                     last_images[roi_name] = cropped_img.copy()
@@ -223,7 +284,8 @@ def main(video_path, roi_json_path, output_dir, file_prefix, enable_ocr=True, ma
 
     cap.release()
     cv2.destroyAllWindows()
-    print(f"\n処理が完了しました。合計 {saved_count} 個の画像を生成しました。")
+    print(f"\n🎉 処理が完了しました！合計 {saved_count} 個の画像を生成しました。")
+    print(f"📁 出力先: {output_dir}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 5:
