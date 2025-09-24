@@ -9,6 +9,7 @@ class SimpleAgent:
     def __init__(self, party):
         self.party = party
         self.current_pokemon_index = 0
+        self.log = []
 
     @property
     def current_pokemon(self):
@@ -32,9 +33,13 @@ class SimpleAgent:
             return self.choose_switch(opponent_pokemon)
 
         for move in available_moves:
+            # 相手のタイプ情報を取得。存在しない場合はデフォルト値（例：'normal'）を使うなど、エラーを防ぐ
+            opponent_type1 = opponent_pokemon.get('type1', 'normal')
+            opponent_type2 = opponent_pokemon.get('type2', None)
+            
             effectiveness = calculator.type_chart.get_effectiveness(
                 move['type'].lower(),
-                [t.lower() for t in [opponent_pokemon.get('type1'), opponent_pokemon.get('type2')] if t]
+                [t.lower() for t in [opponent_type1, opponent_type2] if t]
             )
 
             # 効果抜群の技を優先
@@ -49,6 +54,10 @@ class SimpleAgent:
                     highest_power = power
                     best_move = move
         
+        # 有効な技が見つからなかった場合、ランダムに技を選ぶ
+        if not best_move and available_moves:
+            best_move = random.choice(available_moves)
+
         # 使える技がなければ交代
         if not best_move:
              return self.choose_switch(opponent_pokemon)
@@ -56,13 +65,23 @@ class SimpleAgent:
         return {'type': 'move', 'move': best_move}
 
     def choose_switch(self, opponent_pokemon):
-        """
-        交代先のポケモンを選択するロジック。
-        現在は単純に、まだ倒されていない次のポケモンに交代する。
-        """
-        for i, pokemon in enumerate(self.party):
-            if i != self.current_pokemon_index and pokemon.get('current_hp', 0) > 0:
-                return {'type': 'switch', 'to_index': i}
+        """交代先のポケモンを選択する。"""
+        # HPが残っているポケモンを探す
+        available_switches = [i for i, p in enumerate(self.party) if p['current_hp'] > 0 and i != self.current_pokemon_index]
         
-        # 交代できるポケモンがいない（敗北）
-        return None
+        if not available_switches:
+            return None # 交代不可
+
+        # TODO: より賢い交代ロジックを実装
+        # ここでは単純にリストの最初のポケモンを選択
+        best_switch_index = available_switches[0]
+        
+        return {'type': 'switch', 'to_index': best_switch_index}
+
+    def switch_pokemon(self, new_index):
+        """ポケモンを交代させる。"""
+        if 0 <= new_index < len(self.party) and self.party[new_index]['current_hp'] > 0:
+            self.current_pokemon_index = new_index
+            self.log.append(f"エージェントは {self.current_pokemon['pokemon_name']} に交代した。")
+            return True
+        return False

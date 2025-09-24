@@ -1349,53 +1349,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- F-08: Simulator Logic (Modal) ---
+    // --- F-08: Simulator Logic (Step-by-step) ---
     const simulatorModal = document.getElementById('simulator-modal');
     if (simulatorModal) {
-        let isSimInitialized = false;
+        // --- DOM Elements ---
+        const setupScreen = document.getElementById('simulation-setup-screen');
+        const selectionScreen = document.getElementById('simulation-selection-screen');
+        const battleScreen = document.getElementById('simulation-battle-screen');
+        
+        const party1Select = document.getElementById('sim-party1-id');
+        const party2Select = document.getElementById('sim-party2-id');
         const startBtn = document.getElementById('start-simulation-btn');
+        
+        const party1NameEl = document.getElementById('party1-name-display');
+        const party2NameEl = document.getElementById('party2-name-display');
+        const party1ListEl = document.getElementById('party1-selection-list');
+        const party2ListEl = document.getElementById('party2-selection-list');
+        const confirmSelectionBtn = document.getElementById('confirm-selection-btn');
+
+        const nextTurnBtn = document.getElementById('next-turn-btn');
         const logArea = document.getElementById('simulation-log-area');
-        const partySelectors = document.querySelectorAll('.sim-party-selector');
 
-        // モーダル表示時に初期化
-        simulatorModal.addEventListener('show.bs.modal', () => {
-            if (!isSimInitialized) {
-                initSimulator();
-                isSimInitialized = true;
-            }
-        });
+        // --- State ---
+        let simulationId = null;
 
-        async function initSimulator() {
+        // --- Functions ---
+
+        // パーティ選択プルダウンを初期化
+        async function initPartySelectors() {
             try {
                 const response = await fetch('/api/parties');
+                if (!response.ok) throw new Error('パーティ一覧の取得に失敗しました。');
                 const parties = await response.json();
-                partySelectors.forEach(select => {
-                    populateSelect(select.id, parties.map(p => ({id: p.id, name_ja: p.name})), 'パーティを選択...');
-                });
+                const options = parties.map(p => ({ id: p.id, name_ja: p.name }));
+                populateSelect(party1Select.id, options, 'パーティを選択...');
+                populateSelect(party2Select.id, options, 'パーティを選択...');
             } catch (error) {
-                console.error('Failed to load parties for simulator:', error);
-                logArea.innerHTML = '<p class="text-danger">パーティ一覧の読み込みに失敗しました。</p>';
+                console.error(error);
+                logArea.innerHTML = `<p class="text-danger">${error.message}</p>`;
             }
-
-            startBtn.addEventListener('click', runSimulation);
         }
 
-        async function runSimulation() {
-            const party1Id = document.getElementById('sim-party1-id').value;
-            const party2Id = document.getElementById('sim-party2-id').value;
+        // 対戦準備ボタンの処理
+        async function handleStartSimulation() {
+            const party1Id = party1Select.value;
+            const party2Id = party2Select.value;
 
             if (!party1Id || !party2Id) {
                 alert('2つのパーティを選択してください。');
                 return;
             }
 
-            logArea.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div><p class="mt-2">シミュレーションを実行中...</p></div>';
-            startBtn.disabled = true;
-            const spinner = startBtn.querySelector('.spinner-border');
-            spinner.classList.remove('d-none');
+            setButtonLoading(startBtn, true);
 
             try {
-                const response = await fetch('/api/simulate', {
+                const response = await fetch('/api/simulations', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ party1_id: party1Id, party2_id: party2Id })
@@ -1403,19 +1411,169 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (!response.ok) {
                     const err = await response.json();
-                    throw new Error(err.error || 'Simulation failed');
+                    throw new Error(err.error || 'シミュレーションの作成に失敗しました。');
                 }
 
-                const result = await response.json();
-                logArea.innerHTML = result.log.join('\n');
+                const data = await response.json();
+                simulationId = data.simulation_id;
+                updateUI(data.state);
 
             } catch (error) {
-                console.error('Simulation error:', error);
-                logArea.innerHTML = `<p class="text-danger">シミュレーションエラー: ${error.message}</p>`;
+                console.error(error);
+                logArea.innerHTML = `<p class="text-danger">${error.message}</p>`;
             } finally {
-                startBtn.disabled = false;
-                spinner.classList.add('d-none');
+                setButtonLoading(startBtn, false);
             }
         }
+
+        // 選出完了ボタンの処理
+        async function handleConfirmSelection() {
+            const selection1 = Array.from(party1ListEl.querySelectorAll('input:checked')).map(cb => cb.value);
+            const selection2 = Array.from(party2ListEl.querySelectorAll('input:checked')).map(cb => cb.value);
+
+            if (selection1.length !== 3 || selection2.length !== 3) {
+                alert('各パーティから3体のポケモンを選出してください。');
+                return;
+            }
+
+            setButtonLoading(confirmSelectionBtn, true);
+
+            try {
+                const response = await fetch(`/api/simulations/${simulationId}/select`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ selection1, selection2 })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || '選出の確定に失敗しました。');
+                }
+
+                const state = await response.json();
+                updateUI(state);
+
+            } catch (error) {
+                console.error(error);
+                logArea.innerHTML = `<p class="text-danger">${error.message}</p>`;
+            } finally {
+                setButtonLoading(confirmSelectionBtn, false);
+            }
+        }
+
+        // ターン進行ボタンの処理
+        async function handleNextTurn() {
+            setButtonLoading(nextTurnBtn, true);
+            try {
+                const response = await fetch(`/api/simulations/${simulationId}/next_turn`, {
+                    method: 'POST'
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'ターン進行に失敗しました。');
+                }
+                const state = await response.json();
+                updateUI(state);
+            } catch (error) {
+                console.error(error);
+                logArea.innerHTML = `<p class="text-danger">${error.message}</p>`;
+            } finally {
+                setButtonLoading(nextTurnBtn, false);
+            }
+        }
+
+        // UIを最新の状態に更新
+        function updateUI(state) {
+            // ログエリアを更新
+            logArea.innerHTML = state.log.join('\n');
+            logArea.scrollTop = logArea.scrollHeight;
+
+            // 画面表示を切り替え
+            setupScreen.classList.toggle('d-none', state.state !== 'INITIALIZED');
+            selectionScreen.classList.toggle('d-none', state.state !== 'SELECTING');
+            battleScreen.classList.toggle('d-none', state.state !== 'READY_FOR_TURN' && state.state !== 'BATTLE_OVER');
+
+            if (state.state === 'SELECTING') {
+                // 選出画面の描画
+                party1NameEl.textContent = `パーティ1 (ID: ${state.party1.id})`;
+                party2NameEl.textContent = `パーティ2 (ID: ${state.party2.id})`;
+                party1ListEl.innerHTML = renderSelectionList(state.party1.pokemons, 'party1');
+                party2ListEl.innerHTML = renderSelectionList(state.party2.pokemons, 'party2');
+            } else if (state.state === 'READY_FOR_TURN' || state.state === 'BATTLE_OVER') {
+                // 対戦画面の描画
+                updateBattleField(state);
+            }
+            
+            // バトル終了時の処理
+            if (state.state === 'BATTLE_OVER') {
+                nextTurnBtn.disabled = true;
+                nextTurnBtn.textContent = `対戦終了 - 勝者: ${state.winner}`;
+            }
+        }
+        
+        // 選出リストのHTMLを生成
+        function renderSelectionList(pokemons, partyName) {
+            return pokemons.map((p, index) => `
+                <label class="list-group-item">
+                    <input class="form-check-input me-1" type="checkbox" value="${index}" name="${partyName}-selection">
+                    ${escapeHTML(p.nickname || p.pokemon_name)}
+                </label>
+            `).join('');
+        }
+
+        // 対戦フィールドを更新
+        function updateBattleField(state) {
+            const p1 = state.party1.pokemons[state.party1.active_pokemon_index];
+            const p2 = state.party2.pokemons[state.party2.active_pokemon_index];
+
+            updatePokemonInfo('player', p1);
+            updatePokemonInfo('opponent', p2);
+        }
+
+        // 個別のポケモン情報を更新
+        function updatePokemonInfo(playerType, pokemon) {
+            const nameEl = document.getElementById(`${playerType}-pokemon-name`);
+            const hpBarEl = document.getElementById(`${playerType}-pokemon-hp-bar`);
+            const hpTextEl = document.getElementById(`${playerType}-pokemon-hp-text`);
+
+            nameEl.textContent = pokemon.nickname || pokemon.pokemon_name;
+            const hpPercent = (pokemon.current_hp / pokemon.max_hp) * 100;
+            hpBarEl.style.width = `${hpPercent}%`;
+            hpTextEl.textContent = `${pokemon.current_hp} / ${pokemon.max_hp}`;
+
+            // HPに応じてバーの色を変更
+            hpBarEl.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+            if (hpPercent > 50) {
+                hpBarEl.classList.add('bg-success');
+            } else if (hpPercent > 20) {
+                hpBarEl.classList.add('bg-warning');
+            } else {
+                hpBarEl.classList.add('bg-danger');
+            }
+        }
+
+        // ボタンのローディング状態を制御
+        function setButtonLoading(button, isLoading) {
+            const spinner = button.querySelector('.spinner-border');
+            button.disabled = isLoading;
+            if (spinner) {
+                spinner.classList.toggle('d-none', !isLoading);
+            }
+        }
+        
+        // モーダル表示時に初期化
+        simulatorModal.addEventListener('show.bs.modal', () => {
+            // 状態をリセット
+            simulationId = null;
+            updateUI({ state: 'INITIALIZED', log: ['対戦準備ボタンを押して開始してください。'] });
+            nextTurnBtn.disabled = false;
+            nextTurnBtn.innerHTML = '<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span> ターンを進める';
+            initPartySelectors();
+        });
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', handleStartSimulation);
+        confirmSelectionBtn.addEventListener('click', handleConfirmSelection);
+        nextTurnBtn.addEventListener('click', handleNextTurn);
     }
 });

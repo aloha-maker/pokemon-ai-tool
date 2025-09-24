@@ -4,6 +4,8 @@ import math
 
 from src.core import type_chart
 
+import random
+
 def calculate_status(base_stats, level, evs, ivs, nature):
     """
     ポケモンのステータス実数値を計算する。
@@ -78,3 +80,19 @@ def calculate_damage(attacker_level, move_power, attack_stat, defense_stat, move
     max_damage = math.floor(base_damage * modifiers * 1.0)
 
     return (min_damage, max_damage)
+
+def calculate_damage_simple(attacker_stats, defender_stats, move_power):
+    """簡易的なダメージ計算"""
+    # レベル50と仮定
+    level = 50
+    # 物理か特殊かは一旦無視
+    attack = attacker_stats.get('attack', 100)
+    defense = defender_stats.get('defense', 100)
+    
+    # ダメージ計算式 (簡易版)
+    damage = (((level * 2 / 5 + 2) * move_power * attack / defense) / 50 + 2)
+    
+    # 乱数 (0.85 ~ 1.0)
+    random_factor = random.uniform(0.85, 1.0)
+    
+    return int(damage * random_factor)

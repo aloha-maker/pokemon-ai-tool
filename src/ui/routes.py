@@ -1,6 +1,7 @@
 
 import traceback
 import math
+import uuid
 
 from flask import Blueprint, jsonify, request
 from src.database.manager import DatabaseManager
@@ -9,6 +10,10 @@ from src.ai import simulator
 
 # APIエンドポイント用のBlueprintを作成
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+# --- シミュレーションセッション管理 ---
+# 本番環境ではRedisなどを使用すべきだが、ここでは簡易的にグローバル変数で管理
+simulations = {}
 
 # --- F-05: 育成済みポケモン管理 (Trained Pokemons) ---
 
@@ -278,11 +283,11 @@ def calculate_damage_api():
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-# --- F-08: 疑似対戦シミュレーション ---
+# --- F-08: 疑似対戦シミュレーション (Step-by-step) ---
 
-@api_bp.route('/simulate', methods=['POST'])
-def run_simulation():
-    """2つのパーティ間の対戦をシミュレートし、ログを返す。"""
+@api_bp.route('/simulations', methods=['POST'])
+def create_simulation():
+    """新しい対戦シミュレーションセッションを作成する。"""
     data = request.get_json()
     if not data or 'party1_id' not in data or 'party2_id' not in data:
         return jsonify({'error': 'Invalid data: party1_id and party2_id are required.'}), 400
@@ -298,13 +303,64 @@ def run_simulation():
         if not party1 or not party2:
             return jsonify({'error': 'One or both parties not found.'}), 404
 
-        # シミュレーターを実行
-        sim = simulator.BattleSimulator(party1, party2)
-        log = sim.run()
+        sim_id = str(uuid.uuid4())
+        sim = simulator.BattleSimulator(party1, party2, party1_id, party2_id)
+        simulations[sim_id] = sim
+        
+        # 選出フェーズを開始
+        sim.start_selection()
 
-        return jsonify({'log': log}), 200
+        return jsonify({'simulation_id': sim_id, 'state': sim.get_state()}), 201
 
     except Exception as e:
-        print(f"Error in run_simulation: {e}")
+        print(f"Error in create_simulation: {e}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/simulations/<sim_id>', methods=['GET'])
+def get_simulation_state(sim_id):
+    """指定したシミュレーションの状態を取得する。"""
+    sim = simulations.get(sim_id)
+    if not sim:
+        return jsonify({'error': 'Simulation not found'}), 404
+    return jsonify(sim.get_state()), 200
+
+@api_bp.route('/simulations/<sim_id>/select', methods=['POST'])
+def set_simulation_selection(sim_id):
+    """シミュレーションの選出を決定する。"""
+    sim = simulations.get(sim_id)
+    if not sim:
+        return jsonify({'error': 'Simulation not found'}), 404
+
+    data = request.get_json()
+    if not data or 'selection1' not in data or 'selection2' not in data:
+        return jsonify({'error': 'Invalid data: selection1 and selection2 are required.'}), 400
+
+    try:
+        # フロントエンドからのインデックスは 0-5, 0-5
+        selection1 = [int(i) for i in data['selection1']]
+        selection2 = [int(i) for i in data['selection2']]
+        
+        sim.set_selection(selection1, selection2)
+        return jsonify(sim.get_state()), 200
+
+    except Exception as e:
+        print(f"Error in set_simulation_selection: {e}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/simulations/<sim_id>/next_turn', methods=['POST'])
+def advance_simulation_turn(sim_id):
+    """シミュレーションを1ターン進める。"""
+    sim = simulations.get(sim_id)
+    if not sim:
+        return jsonify({'error': 'Simulation not found'}), 404
+
+    try:
+        sim.next_turn()
+        return jsonify(sim.get_state()), 200
+
+    except Exception as e:
+        print(f"Error in advance_simulation_turn: {e}")
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
