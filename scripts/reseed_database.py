@@ -62,24 +62,7 @@ def seed_data(conn):
         seed_from_csv(NATURES_CSV_PATH, "natures", ["id", "name", "name_ja", "increased_stat", "decreased_stat"])
         seed_from_csv(ITEMS_CSV_PATH, "items", ["id", "name", "name_ja"])
 
-        # moves テーブルは name_ja カラムがないため特別扱い
-        print(f"'{MOVES_CSV_PATH}' から moves データを投入中...")
-        with open(MOVES_CSV_PATH, 'r', encoding='utf-8') as f:
-            reader = csv.reader(f)
-            next(reader) # ヘッダーをスキップ
-            # CSV: id, name, name_ja, type, category, power, accuracy
-            # DB:  id, name,        type, category, power, accuracy
-            # name_ja (index 2) をスキップする
-            rows_to_insert = []
-            for row in reader:
-                # row[2] (name_ja) を除いた新しい行を作成
-                new_row = (row[0], row[1], row[3], row[4], row[5], row[6])
-                rows_to_insert.append(new_row)
-            
-            columns = ["id", "name", "type", "category", "power", "accuracy"]
-            placeholders = ', '.join('?' * len(columns))
-            cursor.executemany(f"INSERT INTO moves ({', '.join(columns)}) VALUES ({placeholders})", rows_to_insert)
-        print("moves データの投入が完了しました。")
+        seed_from_csv(MOVES_CSV_PATH, "moves", ["id", "name", "name_ja", "type", "category", "power", "accuracy"])
 
         conn.commit()
         print("データベースへのコミットが完了しました。")

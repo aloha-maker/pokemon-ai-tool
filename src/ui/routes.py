@@ -96,9 +96,9 @@ def get_master_data(resource):
     try:
         with DatabaseManager() as db:
             cursor = db.get_cursor()
-            # name_ja がないテーブル (moves) のために name を使う
+            # name_ja がないテーブル (moves) のために name を使う -> name_jaが存在するため修正
             if resource in ['moves']:
-                 cursor.execute(f"SELECT id, name as name_ja FROM {resource} ORDER BY id")
+                 cursor.execute(f"SELECT id, name, name_ja FROM {resource} ORDER BY id")
             else:
                  cursor.execute(f"SELECT id, name_ja FROM {resource} ORDER BY name_ja")
             items = cursor.fetchall()

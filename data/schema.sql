@@ -25,6 +25,7 @@ CREATE TABLE pokemons (
 CREATE TABLE moves (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
+    name_ja TEXT,
     type TEXT NOT NULL,
     category TEXT NOT NULL,
     power INTEGER,
