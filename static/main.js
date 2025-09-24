@@ -769,14 +769,36 @@ document.addEventListener('DOMContentLoaded', () => {
     function showPokemonForm(pokemon = null) {
         pokemonForm.reset();
         document.getElementById('pokemon-id').value = '';
+
+        // フォームの全フィールドを一旦リセット
+        const fields = ['pokemon-master-id', 'nickname', 'level', 'tera-type-id', 'held-item-id', 'ability-id', 'nature-id', 'move1-id', 'move2-id', 'move3-id', 'move4-id', 'ev-hp', 'ev-atk', 'ev-def', 'ev-spa', 'ev-spd', 'ev-spe'];
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+
         if (pokemon) {
             // 編集の場合、フォームにデータを設定
-            document.getElementById('pokemon-id').value = pokemon.id;
-            document.getElementById('pokemon-master-id').value = pokemon.pokemon_id;
-            document.getElementById('nickname').value = pokemon.nickname;
-            document.getElementById('level').value = pokemon.level;
-            // ... 他のフィールドも同様に設定 ...
-            // TODO: セレクトボックスの選択肢をマスターデータから読み込む処理が必要
+            document.getElementById('pokemon-id').value = pokemon.id || '';
+            document.getElementById('pokemon-master-id').value = pokemon.pokemon_id || '';
+            document.getElementById('nickname').value = pokemon.nickname || '';
+            document.getElementById('level').value = pokemon.level || 50;
+            document.getElementById('tera-type-id').value = pokemon.tera_type_id || '';
+            document.getElementById('held-item-id').value = pokemon.held_item_id || '';
+            document.getElementById('ability-id').value = pokemon.ability_id || '';
+            document.getElementById('nature-id').value = pokemon.nature_id || '';
+            
+            document.getElementById('ev-hp').value = pokemon.ev_hp || 0;
+            document.getElementById('ev-atk').value = pokemon.ev_atk || 0;
+            document.getElementById('ev-def').value = pokemon.ev_def || 0;
+            document.getElementById('ev-spa').value = pokemon.ev_spa || 0;
+            document.getElementById('ev-spd').value = pokemon.ev_spd || 0;
+            document.getElementById('ev-spe').value = pokemon.ev_spe || 0;
+
+            // 技情報を設定
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`move${i}-id`).value = pokemon[`move${i}_id`] || '';
+            }
         }
         updateEvTotal();
         pokemonFormModal.show();

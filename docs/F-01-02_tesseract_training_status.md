@@ -68,3 +68,36 @@ Tesseractのモデル学習用のスクリプト群である `tesstrain` をGitH
 - **課題:**
     - 高いマシン負荷と長い学習時間。
     - 精度向上のためのパラメータ調整。
+  
+  tesstrainのREADME.mdに基づき、
+  make training MODEL_NAME=jpn_pokemon START_MODEL=jpn
+  コマンドを実行します。このコマンドはMSYS2ターミナルでC:\
+  pokemon-ai-ai-tool\tesstrainディレクトリ内で実行する必要があります。学習には高いマシン負荷と時
+  間がかかるため、完了後にお知らせください。
+
+
+
+  ✦ jpn.traineddataが見つからないエラーは、tesstrainがTesseractのインストールディレクトリにある既
+  存の日本語モデルファイルを見つけられないためです。
+  tesstrainのMakefileにTESSDATA変数を設定し、jpn.traineddataのパスを教える必要があります。
+  MSYS2ターミナルで
+  make training MODEL_NAME=jpn_pokemon START_MODEL=jpn TESSDATA="/c/Program Files/Tesseract-OCR/tessdata"
+  を実行してください。
+
+  cd \c\pokemon-ai-tool\tesstrain
+  make training MODEL_NAME=jpn_pokemon START_MODEL=jpn TESSDATA="/c/PROGRA~1/Tesseract-OCR/tessdata"
+
+
+
+PATH="/c/Program Files/Tesseract-OCR:$PATH" 
+
+make training MODEL_NAME=jpn_pokemon START_MODEL=jpn TESSDATA="/c/pokemon-ai-tool/tessdata_custom"
+
+make training MODEL_NAME=jpn_pokemon START_MODEL=jpn TESSDATA="/c/pokemon-ai-tool/tessdata_custom"
+」
+
+/usr/bin/make training MODEL_NAME=jpn_pokemon START_MODEL=jpn TESSDATA="/c/pokemon-ai-tool/tessdata_custom"
+
+    /usr/bin/make training MODEL_NAME=jpn_pokemon START_MODEL=jpn TESSDATA="/c/pokemon-ai-tool/tessdata_custom" GROUND_TRUTH_DIR="/c/pokemon-ai-tool/dataset"
+
+/usr/bin/make training MODEL_NAME=jpn_pokemon START_MODEL=jpn TESSDATA="/c/pokemon-ai-tool/tessdata_custom" GROUND_TRUTH_DIR="/c/pokemon-ai-tool/dataset"

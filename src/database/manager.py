@@ -230,7 +230,7 @@ class DatabaseManager:
     def get_all_trained_pokemons(self) -> list[dict]:
         """登録済みのすべての育成済みポケモンを、関連情報と共に取得する。"""
         cursor = self.get_cursor()
-        # JOINを使って、IDだけでなく名前などの詳細情報も取得する
+        # 技関連のJOINは一覧では不要なため削除し、クエリを安定させる
         query = """
             SELECT
                 tp.id,
@@ -242,11 +242,7 @@ class DatabaseManager:
                 t.name_ja as tera_type_name,
                 a.name_ja as ability_name,
                 n.name_ja as nature_name,
-                i.name_ja as item_name,
-                m1.name as move1_name,
-                m2.name as move2_name,
-                m3.name as move3_name,
-                m4.name as move4_name
+                i.name_ja as item_name
             FROM
                 trained_pokemons tp
             LEFT JOIN pokemons p ON tp.pokemon_id = p.id
@@ -254,39 +250,76 @@ class DatabaseManager:
             LEFT JOIN abilities a ON tp.ability_id = a.id
             LEFT JOIN natures n ON tp.nature_id = n.id
             LEFT JOIN items i ON tp.held_item_id = i.id
-            LEFT JOIN moves m1 ON tp.move1_id = m1.id
-            LEFT JOIN moves m2 ON tp.move2_id = m2.id
-            LEFT JOIN moves m3 ON tp.move3_id = m3.id
-            LEFT JOIN moves m4 ON tp.move4_id = m4.id
             ORDER BY tp.updated_at DESC
         """
         cursor.execute(query)
         return [dict(row) for row in cursor.fetchall()]
 
     def get_trained_pokemon_by_id(self, pokemon_id: int) -> dict | None:
-        """IDで指定した育成済みポケモンの詳細データを取得する。"""
+        """IDで指定した育成済みポケモンの詳細データを取得する。技情報も詳細を含めて取得する。"""
         cursor = self.get_cursor()
+        
+        # trained_pokemons から基本情報を取得
         cursor.execute("SELECT * FROM trained_pokemons WHERE id = ?", (pokemon_id,))
         row = cursor.fetchone()
-        return dict(row) if row else None
+        if not row:
+            return None
+        pokemon_data = dict(row)
+
+        # pokemons テーブルから追加情報を取得
+        cursor.execute(
+            "SELECT name_ja, type1, type2 FROM pokemons WHERE id = ?", 
+            (pokemon_data['pokemon_id'],)
+        )
+        pokemon_master_data = cursor.fetchone()
+        if pokemon_master_data:
+            # フロントエンドが期待するキー 'pokemon_name' と、シミュレーションに必要なタイプ情報を追加
+            pokemon_data['pokemon_name'] = pokemon_master_data['name_ja']
+            pokemon_data['type1'] = pokemon_master_data['type1']
+            pokemon_data['type2'] = pokemon_master_data['type2']
+
+        # 技情報を取得
+        move_ids = [
+            pokemon_data.get('move1_id'),
+            pokemon_data.get('move2_id'),
+            pokemon_data.get('move3_id'),
+            pokemon_data.get('move4_id')
+        ]
+        
+        moves_details = []
+        for move_id in move_ids:
+            if move_id:
+                # 技のシミュレーションに必要な情報をすべて取得
+                cursor.execute("SELECT id, name, type, category, power, accuracy FROM moves WHERE id = ?", (move_id,))
+                move_row = cursor.fetchone()
+                if move_row:
+                    moves_details.append(dict(move_row))
+        
+        pokemon_data['moves'] = moves_details
+        
+        return pokemon_data
 
     def add_trained_pokemon(self, data: dict) -> int:
         """新しい育成済みポケモンをデータベースに登録する。"""
         cursor = self.get_cursor()
         
-        # 動的にINSERT文を構築
-        columns = [col for col in data.keys() if col != 'id']
-        placeholders = ', '.join('?' for _ in columns)
-        values = [data.get(col) for col in columns]
-        
-        query = f"""
-            INSERT INTO trained_pokemons ({', '.join(columns)})
-            VALUES ({placeholders})
-        """
-        
-        cursor.execute(query, values)
-        self.conn.commit()
-        return cursor.lastrowid
+        try:
+            # dataに値がない場合は登録対象から除外する
+            insert_data = {k: v for k, v in data.items() if v is not None and v != '' and k != 'id'}
+            columns = list(insert_data.keys())
+            placeholders = ', '.join('?' for _ in columns)
+            values = list(insert_data.values())
+            
+            query = f"""
+                INSERT INTO trained_pokemons ({', '.join(columns)})
+                VALUES ({placeholders})
+            """
+            cursor.execute(query, values)
+            self.conn.commit()
+            return cursor.lastrowid
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
     def update_trained_pokemon(self, pokemon_id: int, data: dict) -> int:
         """指定したIDの育成済みポケモン情報を更新する。"""
@@ -296,20 +329,27 @@ class DatabaseManager:
         data.pop('id', None)
         data['updated_at'] = time.strftime('%Y-%m-%d %H:%M:%S')
 
-        # 動的にUPDATE文を構築
-        set_clauses = [f"{col} = ?" for col in data.keys()]
-        values = list(data.values())
-        values.append(pokemon_id)
+        try:
+            # dataに値がない場合は更新対象から除外する
+            update_data = {k: v for k, v in data.items() if v is not None and v != ''}
+            if not update_data:
+                return 0 # 更新対象がない
 
-        query = f"""
-            UPDATE trained_pokemons
-            SET {', '.join(set_clauses)}
-            WHERE id = ?
-        """
-        
-        cursor.execute(query, values)
-        self.conn.commit()
-        return cursor.rowcount
+            set_clauses = [f"{col} = ?" for col in update_data.keys()]
+            values = list(update_data.values())
+            values.append(pokemon_id)
+
+            query = f"""
+                UPDATE trained_pokemons
+                SET {', '.join(set_clauses)}
+                WHERE id = ?
+            """
+            cursor.execute(query, values)
+            self.conn.commit()
+            return cursor.rowcount
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
     def delete_trained_pokemon(self, pokemon_id: int) -> int:
         """指定したIDの育成済みポケモンを削除する。"""
@@ -349,22 +389,24 @@ class DatabaseManager:
     def _get_party_members(self, party_id: int) -> list[dict]:
         """指定されたパーティIDのメンバー（育成済みポケモン）の詳細リストを取得する。"""
         cursor = self.get_cursor()
-        query = """
-            SELECT
-                pm.member_index,
-                tp.id as trained_pokemon_id,
-                tp.nickname,
-                p.name_ja as pokemon_name,
-                i.name_ja as item_name
-            FROM party_members pm
-            JOIN trained_pokemons tp ON pm.trained_pokemon_id = tp.id
-            JOIN pokemons p ON tp.pokemon_id = p.id
-            LEFT JOIN items i ON tp.held_item_id = i.id
-            WHERE pm.party_id = ?
-            ORDER BY pm.member_index
-        """
-        cursor.execute(query, (party_id,))
-        return [dict(row) for row in cursor.fetchall()]
+        # まずはパーティに属する trained_pokemon_id と index を取得
+        cursor.execute(
+            "SELECT trained_pokemon_id, member_index FROM party_members WHERE party_id = ? ORDER BY member_index",
+            (party_id,)
+        )
+        members_info = cursor.fetchall()
+        
+        # 各メンバーの詳細情報を取得
+        members_details = []
+        for info in members_info:
+            # get_trained_pokemon_by_id を使って完全なデータを取得
+            pokemon_details = self.get_trained_pokemon_by_id(info['trained_pokemon_id'])
+            if pokemon_details:
+                # シミュレータが必要とするかもしれないので、member_index も追加
+                pokemon_details['member_index'] = info['member_index']
+                members_details.append(pokemon_details)
+                
+        return members_details
 
     def add_party(self, data: dict) -> int:
         """新しいパーティをデータベースに登録する。"""
