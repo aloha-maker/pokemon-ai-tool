@@ -897,6 +897,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const dataPromises = responses.map(res => res.json());
             const [pokemons, types, items, abilities, natures, moves] = await Promise.all(dataPromises);
 
+            // オートコンプリート用のdatalistを生成
+            if (document.getElementById('pokemon-datalist') === null) {
+                const pokemonDatalist = document.createElement('datalist');
+                pokemonDatalist.id = 'pokemon-datalist';
+                const pokemonNames = new Set();
+                pokemons.forEach(pokemon => {
+                    const name = pokemon.name_ja || pokemon.name;
+                    if (name) {
+                        pokemonNames.add(name);
+                    }
+                });
+
+                pokemonNames.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    pokemonDatalist.appendChild(option);
+                });
+                document.body.appendChild(pokemonDatalist);
+            }
+
             populateSelect('pokemon-master-id', pokemons, 'ポケモンを選択');
             populateSelect('tera-type-id', types, 'テラスタイプを選択');
             populateSelect('held-item-id', items, '持ち物を選択');

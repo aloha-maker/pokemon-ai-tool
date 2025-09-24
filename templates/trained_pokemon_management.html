@@ -46,8 +46,10 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="pokemon-master-id" class="form-label">ポケモン</label>
-                            <select class="form-select" id="pokemon-master-id" required></select>
+                            <label for="pokemon-name" class="form-label">ポケモン</label>
+                            <input class="form-control" id="pokemon-name" list="pokemon-datalist" placeholder="ポケモン名を入力..." required>
+                            <datalist id="pokemon-datalist"></datalist>
+                            <input type="hidden" id="pokemon-master-id">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="nickname" class="form-label">ニックネーム</label>
@@ -114,10 +116,231 @@
 
 {% block scripts %}
 <script>
-// このページ専用のJavaScriptをここに記述
 document.addEventListener('DOMContentLoaded', function () {
-    // TODO: 育成済みポケモン管理ページのJSロジックを実装
-    console.log("育成済みポケモン管理ページが読み込まれました。");
+    const pokemonFormModal = new bootstrap.Modal(document.getElementById('pokemon-form-modal'));
+    const pokemonForm = document.getElementById('pokemon-form');
+    const pokemonList = document.getElementById('trained-pokemon-list');
+    const showAddPokemonModalBtn = document.getElementById('show-add-pokemon-modal');
+
+    // --- Master Data Caching ---
+    let masterData = {};
+
+    async function fetchMasterData(resource) {
+        if (masterData[resource]) {
+            return masterData[resource];
+        }
+        try {
+            const response = await fetch(`/api/master/${resource}`);
+            if (!response.ok) throw new Error(`Failed to fetch ${resource}`);
+            const data = await response.json();
+            masterData[resource] = data;
+            return data;
+        } catch (error) {
+            console.error(`Error fetching ${resource}:`, error);
+            return [];
+        }
+    }
+
+    // --- Autocomplete & Datalist Population ---
+    async function populateDatalists() {
+        const pokemons = await fetchMasterData('pokemons');
+        const pokemonDatalist = document.getElementById('pokemon-datalist');
+        pokemons.forEach(pokemon => {
+            const option = document.createElement('option');
+            option.value = pokemon.name_ja;
+            option.dataset.id = pokemon.id;
+            pokemonDatalist.appendChild(option);
+        });
+
+        const pokemonNameInput = document.getElementById('pokemon-name');
+        const pokemonMasterIdInput = document.getElementById('pokemon-master-id');
+        pokemonNameInput.addEventListener('input', () => {
+            const selectedPokemon = pokemons.find(p => p.name_ja === pokemonNameInput.value);
+            pokemonMasterIdInput.value = selectedPokemon ? selectedPokemon.id : '';
+        });
+    }
+
+    // --- Dropdown Population ---
+    async function populateSelect(elementId, resource, nameKey = 'name_ja') {
+        const select = document.getElementById(elementId);
+        select.innerHTML = '<option value="">選択してください</option>'; // Reset
+        const data = await fetchMasterData(resource);
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item[nameKey];
+            select.appendChild(option);
+        });
+    }
+
+    async function populateAllSelects() {
+        populateDatalists(); // Pokemon autocomplete
+        populateSelect('tera-type-id', 'types');
+        populateSelect('held-item-id', 'items');
+        populateSelect('ability-id', 'abilities');
+        populateSelect('nature-id', 'natures');
+        document.querySelectorAll('.move-select').forEach(select => {
+            populateSelect(select.id, 'moves');
+        });
+    }
+
+    // --- CRUD Operations ---
+    async function loadTrainedPokemons() {
+        try {
+            const response = await fetch('/api/trained-pokemons');
+            if (!response.ok) throw new Error('Failed to load pokemons');
+            const pokemons = await response.json();
+
+            pokemonList.innerHTML = ''; // Clear existing list
+            pokemons.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${p.id}</td>
+                    <td>${p.pokemon_name}</td>
+                    <td>${p.nickname || ''}</td>
+                    <td>${p.level}</td>
+                    <td>${p.tera_type_name || ''}</td>
+                    <td>${p.item_name || ''}</td>
+                    <td>${p.ability_name || ''}</td>
+                    <td>${p.nature_name || ''}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info edit-btn" data-id="${p.id}">編集</button>
+                        <button class="btn btn-sm btn-danger delete-btn" data-id="${p.id}">削除</button>
+                    </td>
+                `;
+                pokemonList.appendChild(tr);
+            });
+        } catch (error) {
+            console.error('Error loading trained pokemons:', error);
+            alert('ポケモンの読み込みに失敗しました。');
+        }
+    }
+
+    function resetForm() {
+        pokemonForm.reset();
+        document.getElementById('pokemon-id').value = '';
+        document.getElementById('pokemon-master-id').value = '';
+        document.getElementById('pokemonFormModalLabel').textContent = 'ポケモン情報';
+    }
+
+    showAddPokemonModalBtn.addEventListener('click', () => {
+        resetForm();
+        document.getElementById('pokemonFormModalLabel').textContent = '新規登録';
+        pokemonFormModal.show();
+    });
+
+    pokemonList.addEventListener('click', async (e) => {
+        const target = e.target;
+        const pokemonId = target.dataset.id;
+
+        if (target.classList.contains('edit-btn')) {
+            resetForm();
+            document.getElementById('pokemonFormModalLabel').textContent = 'ポケモン編集';
+            try {
+                const response = await fetch(`/api/trained-pokemons/${pokemonId}`);
+                if (!response.ok) throw new Error('Failed to fetch pokemon details');
+                const data = await response.json();
+
+                document.getElementById('pokemon-id').value = data.id;
+                document.getElementById('pokemon-master-id').value = data.pokemon_master_id;
+                const pokemon = masterData.pokemons.find(p => p.id === data.pokemon_master_id);
+                document.getElementById('pokemon-name').value = pokemon ? pokemon.name_ja : '';
+                document.getElementById('nickname').value = data.nickname;
+                document.getElementById('level').value = data.level;
+                document.getElementById('tera-type-id').value = data.tera_type_id;
+                document.getElementById('held-item-id').value = data.held_item_id;
+                document.getElementById('ability-id').value = data.ability_id;
+                document.getElementById('nature-id').value = data.nature_id;
+                for (let i = 0; i < 4; i++) {
+                    document.getElementById(`move${i+1}-id`).value = data.moves[i] ? data.moves[i].id : '';
+                }
+                ['hp', 'atk', 'def', 'spa', 'spd', 'spe'].forEach(stat => {
+                    document.getElementById(`ev-${stat}`).value = data.evs[stat] || 0;
+                });
+
+                pokemonFormModal.show();
+            } catch (error) {
+                console.error(`Error fetching pokemon ${pokemonId}:`, error);
+                alert('ポケモン情報の取得に失敗しました。');
+            }
+        } else if (target.classList.contains('delete-btn')) {
+            if (!confirm(`ID: ${pokemonId} のポケモンを削除しますか？`)) return;
+
+            try {
+                const response = await fetch(`/api/trained-pokemons/${pokemonId}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Failed to delete pokemon');
+                
+                alert('ポケモンを削除しました。');
+                loadTrainedPokemons(); // Refresh list
+            } catch (error) {
+                console.error(`Error deleting pokemon ${pokemonId}:`, error);
+                alert('ポケモンの削除に失敗しました。');
+            }
+        }
+    });
+
+    pokemonForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const id = document.getElementById('pokemon-id').value;
+        const masterId = document.getElementById('pokemon-master-id').value;
+        
+        if (!masterId) {
+            alert('ポケモンを選択してください。');
+            return;
+        }
+
+        const data = {
+            pokemon_master_id: parseInt(masterId),
+            nickname: document.getElementById('nickname').value,
+            level: parseInt(document.getElementById('level').value),
+            tera_type_id: parseInt(document.getElementById('tera-type-id').value) || null,
+            held_item_id: parseInt(document.getElementById('held-item-id').value) || null,
+            ability_id: parseInt(document.getElementById('ability-id').value) || null,
+            nature_id: parseInt(document.getElementById('nature-id').value) || null,
+            moves: [
+                parseInt(document.getElementById('move1-id').value) || null,
+                parseInt(document.getElementById('move2-id').value) || null,
+                parseInt(document.getElementById('move3-id').value) || null,
+                parseInt(document.getElementById('move4-id').value) || null,
+            ].filter(id => id !== null),
+            evs: {
+                hp: parseInt(document.getElementById('ev-hp').value) || 0,
+                atk: parseInt(document.getElementById('ev-atk').value) || 0,
+                def: parseInt(document.getElementById('ev-def').value) || 0,
+                spa: parseInt(document.getElementById('ev-spa').value) || 0,
+                spd: parseInt(document.getElementById('ev-spd').value) || 0,
+                spe: parseInt(document.getElementById('ev-spe').value) || 0,
+            }
+        };
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/trained-pokemons/${id}` : '/api/trained-pokemons';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Save failed');
+            }
+
+            alert(`ポケモンを${id ? '更新' : '登録'}しました。`);
+            pokemonFormModal.hide();
+            loadTrainedPokemons(); // Refresh list
+        } catch (error) {
+            console.error('Error saving pokemon:', error);
+            alert(`ポケモンの保存に失敗しました。\n${error.message}`);
+        }
+    });
+
+    // --- Initial Load ---
+    populateAllSelects();
+    loadTrainedPokemons();
 });
 </script>
 {% endblock %}
