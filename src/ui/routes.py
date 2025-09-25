@@ -117,6 +117,16 @@ def get_master_data(resource):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@api_bp.route('/pokemon/<int:pokemon_id>/abilities', methods=['GET'])
+def get_pokemon_abilities(pokemon_id):
+    """指定したポケモンの特性リストを取得する。"""
+    try:
+        with DatabaseManager() as db:
+            abilities = db.get_abilities_by_pokemon_id(pokemon_id)
+        return jsonify(abilities), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # --- F-06: パーティ管理 (Parties) ---
 
 @api_bp.route('/parties', methods=['GET'])

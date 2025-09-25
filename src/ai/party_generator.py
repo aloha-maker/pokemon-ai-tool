@@ -47,8 +47,16 @@ class PartyGenerator:
                     weaknesses[attack_type] += 1
         return weaknesses
 
-    def _choose_ability(self, p_data: dict) -> dict:
-        # TODO: ポケモンが実際に持つ特性に絞り込むロジック（DBスキーマ変更が必要）
+    def _choose_ability(self, db, p_data: dict) -> dict:
+        """ポケモンに紐づく正しい特性の中からランダムに1つ選択する"""
+        possible_abilities = db.get_abilities_by_pokemon_id(p_data['id'])
+        if possible_abilities:
+            # 隠れ特性でないものを優先する
+            non_hidden = [a for a in possible_abilities if not a['is_hidden']]
+            if non_hidden:
+                return random.choice(non_hidden)
+            return random.choice(possible_abilities) # 隠れ特性しかない場合
+        # 見つからなければ全特性からランダム（フォールバック）
         return random.choice(self.all_abilities)
 
     def _choose_item(self, p_data: dict, role: str) -> dict:
@@ -226,7 +234,7 @@ class PartyGenerator:
                 role = p_data['role']
                 nature = self._choose_nature(p_data, role)
                 item = self._choose_item(p_data, role)
-                ability = self._choose_ability(p_data)
+                ability = self._choose_ability(db, p_data)
                 evs = self._generate_evs(role, nature)
                 moves = self._choose_moves(db, p_data)
                 

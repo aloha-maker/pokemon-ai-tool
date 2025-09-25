@@ -151,6 +151,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ポケモンIDに基づいて特性の選択肢を更新する関数
+    async function updateAbilitiesForPokemon(pokemonId) {
+        const abilitySelect = document.getElementById('ability-id');
+        if (pokemonId) {
+            try {
+                const response = await fetch(`/api/pokemon/${pokemonId}/abilities`);
+                if (!response.ok) throw new Error('Failed to fetch abilities');
+                const abilities = await response.json();
+                populateSelect('ability-id', abilities, '特性を選択');
+            } catch (error) {
+                console.error('Error fetching abilities:', error);
+                populateSelect('ability-id', [], '特性の取得に失敗');
+            }
+        } else {
+            populateSelect('ability-id', [], '先にポケモンを選択');
+        }
+    }
+
     // --- 選出予測パーティ読み込み ---
     const myPartySelect = document.getElementById('my-party-select');
     const loadMyPartyBtn = document.getElementById('load-my-party-btn');
@@ -874,7 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/trained-pokemons/${id}`);
             if (!response.ok) throw new Error('Failed to fetch pokemon details');
             const pokemon = await response.json();
-            showPokemonForm(pokemon);
+            await showPokemonForm(pokemon);
         } catch (error) {
             console.error(`Error fetching pokemon ${id}:`, error);
             alert('ポケモンの情報の取得に失敗しました。');
@@ -898,7 +916,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ポケモン登録・編集フォームを表示する関数
-    function showPokemonForm(pokemon = null) {
+    async function showPokemonForm(pokemon = null) {
         pokemonForm.reset();
         document.getElementById('pokemon-id').value = '';
 
@@ -917,7 +935,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('level').value = pokemon.level || 50;
             document.getElementById('tera-type-id').value = pokemon.tera_type_id || '';
             document.getElementById('held-item-id').value = pokemon.held_item_id || '';
+            
+            // ★★★ 修正箇所 ★★★
+            // 先に特性リストを読み込んでから、値を設定する
+            await updateAbilitiesForPokemon(pokemon.pokemon_id);
             document.getElementById('ability-id').value = pokemon.ability_id || '';
+            // ★★★ ここまで ★★★
+
             document.getElementById('nature-id').value = pokemon.nature_id || '';
             
             document.getElementById('ev-hp').value = pokemon.ev_hp || 0;
@@ -931,6 +955,9 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 1; i <= 4; i++) {
                 document.getElementById(`move${i}-id`).value = pokemon[`move${i}_id`] || '';
             }
+        } else {
+            // 新規登録の場合は、特性プルダウンを初期状態にする
+            await updateAbilitiesForPokemon(null);
         }
         updateEvTotal();
         pokemonFormModal.show();
@@ -1012,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'pokemon-master-id': 'pokemons',
             'tera-type-id': 'types',
             'held-item-id': 'items',
-            'ability-id': 'abilities',
+            // 'ability-id': 'abilities', // 動的に読み込むため削除
             'nature-id': 'natures'
         };
         const moveSelects = document.querySelectorAll('.move-select');
@@ -1027,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const dataPromises = responses.map(res => res.json());
-            const [pokemons, types, items, abilities, natures, moves] = await Promise.all(dataPromises);
+            const [pokemons, types, items, natures, moves] = await Promise.all(dataPromises);
 
             // オートコンプリート用のdatalistを生成
             if (document.getElementById('pokemon-datalist') === null) {
@@ -1052,12 +1079,20 @@ document.addEventListener('DOMContentLoaded', () => {
             populateSelect('pokemon-master-id', pokemons, 'ポケモンを選択');
             populateSelect('tera-type-id', types, 'テラスタイプを選択');
             populateSelect('held-item-id', items, '持ち物を選択');
-            populateSelect('ability-id', abilities, '特性を選択');
+            // populateSelect('ability-id', abilities, '特性を選択'); // 動的に読み込むため削除
             populateSelect('nature-id', natures, '性格を選択');
 
             moveSelects.forEach(select => {
                 populateSelect(select.id, moves, '技を選択');
             });
+
+            // ポケモン選択時に特性を動的に読み込むイベントリスナー
+            const pokemonMasterSelect = document.getElementById('pokemon-master-id');
+            if (pokemonMasterSelect) {
+                pokemonMasterSelect.addEventListener('change', (event) => {
+                    updateAbilitiesForPokemon(event.target.value);
+                });
+            }
 
             console.log("フォームの選択肢を初期化しました。");
 
