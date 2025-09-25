@@ -46,6 +46,10 @@ def add_trained_pokemon():
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Invalid data'}), 400
+
+    # フロントエンドからのキー 'pokemon_master_id' を 'pokemon_id' に変換
+    if 'pokemon_master_id' in data:
+        data['pokemon_id'] = data.pop('pokemon_master_id')
     
     try:
         with DatabaseManager() as db:
@@ -60,6 +64,10 @@ def update_trained_pokemon(pokemon_id):
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Invalid data'}), 400
+
+    # フロントエンドからのキー 'pokemon_master_id' を 'pokemon_id' に変換
+    if 'pokemon_master_id' in data:
+        data['pokemon_id'] = data.pop('pokemon_master_id')
 
     try:
         with DatabaseManager() as db:
@@ -97,7 +105,10 @@ def get_master_data(resource):
         with DatabaseManager() as db:
             cursor = db.get_cursor()
             # name_ja がないテーブル (moves) のために name を使う -> name_jaが存在するため修正
-            if resource in ['moves']:
+            if resource == 'pokemons':
+                # ポケモン名で重複を除外する（フォルム違いなどをまとめる）
+                cursor.execute("SELECT MIN(id) as id, name_ja FROM pokemons GROUP BY name_ja ORDER BY name_ja")
+            elif resource in ['moves']:
                  cursor.execute(f"SELECT id, name, name_ja FROM {resource} ORDER BY id")
             else:
                  cursor.execute(f"SELECT id, name_ja FROM {resource} ORDER BY name_ja")
