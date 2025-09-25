@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('WebSocket connected!');
     });
 
-    socket.on('analysis_started', () => {
+    socket.on('analysis_started', (data) => {
         console.log('Analysis started by server.');
         toggleAnalysisButton.dataset.state = 'running';
         toggleAnalysisButton.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 解析を停止';
@@ -240,6 +240,11 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleAnalysisButton.classList.add('btn-danger');
         windowSelect.disabled = true;
         windowRefreshButton.disabled = true;
+
+        // 映像ストリームをプレビューに設定
+        if (data.video_feed_url) {
+            captureImage.src = data.video_feed_url;
+        }
     });
 
     socket.on('analysis_stopped', (data) => {
@@ -253,6 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleAnalysisButton.classList.add('btn-primary');
         windowSelect.disabled = false;
         windowRefreshButton.disabled = false;
+
+        // プレビューをプレースホルダーに戻す
+        captureImage.src = "https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview";
     });
 
     // バックエンドからのOCR結果を受け取る (デバッグ用)
@@ -262,12 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ocrDebugCode.textContent = JSON.stringify(data.state, null, 2);
         }
 
-        // 2. キャプチャ画像を更新
-        if (data.image_url) {
-            captureImage.src = data.image_url + '?t=' + new Date().getTime(); // キャッシュを無効化
-        }
-
-        // 3. AIの提案を要求
+        // 2. AIの提案を要求
         socket.emit('get_suggestion', {});
     });
 

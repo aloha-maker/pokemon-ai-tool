@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from flask_socketio import SocketIO, emit
 from flask_executor import Executor
 import uuid
@@ -8,6 +8,7 @@ import time
 import threading
 import cv2
 import pygetwindow
+from urllib.parse import quote
 from src.core.capture import ScreenCapturer
 from src.ai.party_generator import PartyGenerator
 from src.ai.win_rate_predictor import WinRatePredictor
@@ -38,49 +39,84 @@ shared_game_state = {
     "last_updated": None
 }
 
+# --- Real-time Video Streaming ---
+def video_stream_generator(window_title: str):
+    """画面キャプチャを行い、M-JPEGストリームのフレームを生成するジェネレータ"""
+    print(f"ビデオストリームを開始します。対象: {window_title}")
+    capturer = ScreenCapturer(window_title)
+    if not capturer._find_window():
+        print(f"警告: ウィンドウ '{window_title}' が見つかりません。ストリームを開始できません。")
+        return
+
+    while not background_thread_stop_event.is_set():
+        frame = capturer.capture_frame()
+        if frame is None:
+            # ウィンドウが閉じるなどした場合
+            print("ビデオストリームのフレーム取得に失敗しました。")
+            time.sleep(1) # リトライ待機
+            continue
+
+        # パフォーマンスのためにリサイズ（例: 1280x720）。元の解像度が必要な場合は削除。
+        frame = cv2.resize(frame, (1280, 720))
+        is_success, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        if not is_success:
+            continue
+        
+        frame_bytes = buffer.tobytes()
+        
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        
+        # フレームレートを制御 (約30 FPS)
+        socketio.sleep(1/30)
+    
+    print("ビデオストリームを停止しました。")
+
+@app.route('/video_feed')
+def video_feed():
+    """M-JPEGストリームを配信するエンドポイント"""
+    window_title = request.args.get('window_title', '')
+    if not window_title:
+        return Response("Error: window_title is required.", status=400)
+    
+    return Response(video_stream_generator(window_title),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# --- Background OCR & AI Thread ---
 def ocr_and_suggestion_thread(window_title: str):
     """
-    バックグラウンドで画面キャプチャ、OCR、AIによる提案を定期的に実行するスレッド
+    バックグラウンドでOCRとAIによる提案を定期的に実行するスレッド（画像送信はしない）
     """
-    print(f"バックグラウンドOCRスレッドを開始します。対象: {window_title}")
+    print(f"バックグラウンドOCR/AIスレッドを開始します。対象: {window_title}")
     capturer = ScreenCapturer(window_title)
     parser = GameStateParser()
     
     if not capturer._find_window():
-        print(f"警告: ウィンドウ '{window_title}' が見つかりません。")
-        socketio.emit('analysis_stopped', {'error': f"ウィンドウ '{window_title}' が見つかりません。"})
+        print(f"警告: ウィンドウ '{window_title}' が見つかりません。OCRスレッドを開始できません。")
+        # フロントエンドには video_feed の開始失敗で伝わっているはず
         return
 
     while not background_thread_stop_event.is_set():
         frame = capturer.capture_frame()
         
         if frame is not None:
-            # フレームを1920x1080にリサイズ
+            # OCRのためにリサイズ
             frame = cv2.resize(frame, (1920, 1080))
-
-            # キャプチャした画像をファイルに保存
-            captures_dir = os.path.join('static', 'captures')
-            # 常に同じファイル名で上書きすることで、ストレージを圧迫しない
-            live_capture_path = os.path.join(captures_dir, "live_capture.png")
-            cv2.imwrite(live_capture_path, frame)
-            # ブラウザがキャッシュしないように、URLにタイムスタンプを付与するための準備
-            image_url = f'/{live_capture_path.replace("\\", "/")}'
-
             current_state = parser.parse_frame(frame)
+            
             with game_state_lock:
                 shared_game_state["state"] = current_state
                 shared_game_state["last_updated"] = time.time()
             
-            socketio.emit('ocr_update', {'state': current_state, 'image_url': image_url})
+            # OCR結果のみを送信（画像データは送らない）
+            socketio.emit('ocr_update', {'state': current_state})
         else:
-            # ウィンドウが閉じた、最小化されたなどの理由でキャプチャできなくなった場合
-            print("フレームのキャプチャに失敗しました。スレッドを停止します。")
-            socketio.emit('analysis_stopped', {'error': '対象ウィンドウからのキャプチャに失敗しました。'})
-            break
+            print("OCRスレッドでのフレームキャプチャに失敗しました。")
 
-        socketio.sleep(2)
+        # OCRの実行頻度を制御（例: 1秒ごと）
+        socketio.sleep(1)
     
-    print("バックグラウンドOCRスレッドを停止しました。")
+    print("バックグラウンドOCR/AIスレッドを停止しました。")
 
 @socketio.on('connect')
 def connect():
@@ -89,7 +125,7 @@ def connect():
 
 @socketio.on('start_analysis')
 def start_analysis(data):
-    """クライアントからの要求で解析スレッドを開始する"""
+    """クライアントからの要求で解析スレッドとビデオストリームを開始する"""
     global background_thread
     window_title = data.get('window_title')
 
@@ -101,19 +137,24 @@ def start_analysis(data):
         print("既に解析スレッドが実行中です。")
         return
 
-    print(f"解析スレッドの開始を要求されました。対象: {window_title}")
+    print(f"解析の開始を要求されました。対象: {window_title}")
     background_thread_stop_event.clear()
+    
+    # OCR/AI処理スレッドを開始
     background_thread = socketio.start_background_task(
         target=ocr_and_suggestion_thread, 
         window_title=window_title
     )
-    emit('analysis_started')
+    
+    # フロントエンドにビデオストリームのURLを通知
+    video_feed_url = f'/video_feed?window_title={quote(window_title)}'
+    emit('analysis_started', {'video_feed_url': video_feed_url})
 
 @socketio.on('stop_analysis')
 def stop_analysis(data=None):
-    """クライアントからの要求で解析スレッドを停止する"""
+    """クライアントからの要求で解析スレッドとビデオストリームを停止する"""
     global background_thread
-    print("解析スレッドの停止を要求されました。")
+    print("解析の停止を要求されました。")
     background_thread_stop_event.set()
     emit('analysis_stopped')
 
