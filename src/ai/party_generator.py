@@ -9,6 +9,11 @@ class PartyGenerator:
     """
     def __init__(self):
         self.db_manager = DatabaseManager()
+        with self.db_manager as db:
+            self.all_abilities = db.get_master_data_by_resource('abilities')
+            self.all_items = db.get_master_data_by_resource('items')
+            self.all_natures = db.get_master_data_by_resource('natures')
+            self.all_types = db.get_master_data_by_resource('types')
 
     def _get_pokemon_data(self, db, pokemon_names: list) -> list:
         """指定されたポケモン名のリストの完全なデータをDBから取得する"""
@@ -21,7 +26,7 @@ class PartyGenerator:
         if speed > 100 and (attack > 100 or sp_attack > 100):
             return "高速アタッカー"
         if (defense > 110 and hp > 80) or (sp_defense > 110 and hp > 80):
-            return "耐久型"
+            return "物理受け" if defense > sp_defense else "特殊受け"
         if attack > 120 or sp_attack > 120:
             return "高火力アタッカー"
         if speed < 50 and (attack > 90 or sp_attack > 90):
@@ -41,6 +46,101 @@ class PartyGenerator:
                 if multiplier >= 2.0:
                     weaknesses[attack_type] += 1
         return weaknesses
+
+    def _choose_ability(self, p_data: dict) -> dict:
+        # TODO: ポケモンが実際に持つ特性に絞り込むロジック（DBスキーマ変更が必要）
+        return random.choice(self.all_abilities)
+
+    def _choose_item(self, p_data: dict, role: str) -> dict:
+        role_items = {
+            "高速アタッカー": ["こだわりスカーフ", "いのちのたま", "きあいのタスキ"],
+            "高火力アタッカー": ["こだわりハチマキ", "こだわりメガネ", "いのちのたま"],
+            "物理受け": ["ゴツゴツメット", "たべのこし", "オボンのみ"],
+            "特殊受け": ["とつげきチョッキ", "たべのこし", "オボンのみ"],
+            "トリックルームアタッカー": ["いのちのたま", "くろいてっきゅう"],
+            "バランス型": ["たべのこし", "オボンのみ", "とつげきチョッキ"]
+        }
+        item_name = random.choice(role_items.get(role, ["たべのこし"]))
+        return next((item for item in self.all_items if item['name_ja'] == item_name), self.all_items[0])
+
+    def _choose_nature(self, p_data: dict, role: str) -> dict:
+        physical_attacker_natures = ["いじっぱり", "ようき"] # Attack+, Sp. Atk- | Speed+, Sp. Atk-
+        special_attacker_natures = ["ひかえめ", "おくびょう"] # Sp. Atk+, Attack- | Speed+, Attack-
+        
+        nature_name = "がんばりや" # Default
+        if "アタッカー" in role:
+            if p_data['attack'] > p_data['sp_attack']:
+                nature_name = random.choice(physical_attacker_natures)
+            else:
+                nature_name = random.choice(special_attacker_natures)
+        elif "受け" in role:
+            if "物理" in role:
+                nature_name = "ずぶとい" # Defense+, Attack-
+            else:
+                nature_name = "おだやか" # Sp. Def+, Attack-
+
+        return next((n for n in self.all_natures if n['name_ja'] == nature_name), self.all_natures[0])
+
+    def _generate_evs(self, role: str, nature: dict) -> dict:
+        evs = {'ev_hp': 0, 'ev_atk': 0, 'ev_def': 0, 'ev_spa': 0, 'ev_spd': 0, 'ev_spe': 0}
+        if "アタッカー" in role:
+            if nature['increased_stat'] == 'attack':
+                evs['ev_atk'] = 252
+                evs['ev_spe'] = 252
+            elif nature['increased_stat'] == 'sp_attack':
+                evs['ev_spa'] = 252
+                evs['ev_spe'] = 252
+            else: # Speed boosting nature
+                evs['ev_spe'] = 252
+                if nature['decreased_stat'] == 'sp_attack':
+                     evs['ev_atk'] = 252
+                else:
+                     evs['ev_spa'] = 252
+        elif "受け" in role:
+            evs['ev_hp'] = 252
+            if "物理" in role:
+                evs['ev_def'] = 252
+            else:
+                evs['ev_spd'] = 252
+        
+        # 残りはHPに4
+        if sum(evs.values()) == 504:
+            evs['ev_hp'] = 4
+
+        return evs
+
+    def _choose_moves(self, db, p_data: dict) -> list[dict]:
+        moves = []
+        is_physical = p_data['attack'] > p_data['sp_attack']
+        category = "物理" if is_physical else "特殊"
+
+        # STAB moves
+        for move_type in [p_data['type1'], p_data['type2']]:
+            if move_type and len(moves) < 2:
+                stab_moves = db.get_moves_by_type(move_type, category)
+                if stab_moves:
+                    moves.append(random.choice(stab_moves))
+        
+        # Coverage moves
+        coverage_types = ["ノーマル", "じめん", "ほのお", "こおり", "でんき"]
+        while len(moves) < 4:
+            move_type = random.choice(coverage_types)
+            # 同じタイプの技は避ける
+            if any(m['type'] == move_type for m in moves):
+                continue
+            
+            coverage_moves = db.get_moves_by_type(move_type, category)
+            if coverage_moves:
+                moves.append(random.choice(coverage_moves))
+            else:
+                # 見つからなければループを抜ける
+                break
+        
+        # 技が4つに満たない場合、全技からランダムに補充（ダミー）
+        while len(moves) < 4:
+            moves.append({'id': 1, 'name_ja': 'わるあがき'})
+
+        return moves
 
     def generate(self, available_pokemon_names: list, concept: str):
         """
@@ -69,7 +169,7 @@ class PartyGenerator:
             if "対面" in concept or "アタッカー" in concept:
                 candidates = [p for p in all_pokemon_data if "アタッカー" in p['role']]
             elif "受け" in concept or "サイクル" in concept or "耐久" in concept:
-                candidates = [p for p in all_pokemon_data if p['role'] == "耐久型"]
+                candidates = [p for p in all_pokemon_data if "受け" in p['role']]
             else: # バランス
                 candidates = all_pokemon_data
             
@@ -120,24 +220,44 @@ class PartyGenerator:
                     party.extend(random.sample(remaining, 6 - len(party)))
                     break
 
-        # 5. 詳細と運用ガイドを生成
-        party_details = []
-        for p_data in party:
-            party_details.append({
-                "name": p_data['name_ja'],
-                "item": "たべのこし", # ダミー
-                "ability": "", # ダミー
-                "terastal_type": "ノーマル", # ダミー
-                "moves": ["技1", "技2", "技3", "技4"], # ダミー
-                "role": p_data['role']
-            })
+            # 5. 詳細と運用ガイドを生成
+            party_details = []
+            for p_data in party:
+                role = p_data['role']
+                nature = self._choose_nature(p_data, role)
+                item = self._choose_item(p_data, role)
+                ability = self._choose_ability(p_data)
+                evs = self._generate_evs(role, nature)
+                moves = self._choose_moves(db, p_data)
+                
+                # テラスタイプは元のタイプの一つをランダムに選択
+                tera_type_name = random.choice([p_data['type1'], p_data.get('type2') or p_data['type1']])
+                tera_type = next((t for t in self.all_types if t['name'] == tera_type_name), self.all_types[0])
 
-        manual = self._generate_manual(concept, party_details)
+                party_details.append({
+                    "pokemon_id": p_data['id'],
+                    "name": p_data['name_ja'],
+                    "item_id": item['id'],
+                    "item_name": item['name_ja'],
+                    "ability_id": ability['id'],
+                    "ability_name": ability['name_ja'],
+                    "nature_id": nature['id'],
+                    "nature_name": nature['name_ja'],
+                    "tera_type_id": tera_type['id'],
+                    "tera_type_name": tera_type['name_ja'],
+                    "evs": evs,
+                    "moves": [
+                        {"id": m.get('id'), "name": m.get('name_ja')} for m in moves
+                    ],
+                    "role": role
+                })
 
-        return {
-            "party": party_details,
-            "manual": manual
-        }
+            manual = self._generate_manual(concept, party_details)
+
+            return {
+                "party": party_details,
+                "manual": manual
+            }
 
     def _generate_manual(self, concept: str, party_details: list) -> str:
         """パーティ構成とコンセプトに基づいて運用ガイドを生成する"""
@@ -145,7 +265,7 @@ class PartyGenerator:
         manual += "この構築は、指定されたコンセプトとタイプバランスを重視して選出されています。\n\n"
         
         attackers = [p for p in party_details if "アタッカー" in p['role']]
-        tanks = [p for p in party_details if "耐久" in p['role']]
+        tanks = [p for p in party_details if "受け" in p['role']]
 
         if attackers:
             manual += f"**基本選出**: {attackers[0]['name']} + {attackers[1]['name'] if len(attackers) > 1 else random.choice(party_details)['name']} + {random.choice(party_details)['name']}\n"
@@ -163,5 +283,6 @@ class PartyGenerator:
             manual += "状況に応じて、攻撃的な選出とサイクル重視の選出を使い分けましょう。相手のパーティを見て、どのポケモンが刺さっているかを見極めることが重要です。"
         
         return manual
+
 
     

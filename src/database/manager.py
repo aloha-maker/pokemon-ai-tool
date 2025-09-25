@@ -497,3 +497,26 @@ class DatabaseManager:
         cursor.execute(query, (party_id,))
         rows = cursor.fetchall()
         return [row['name_ja'] for row in rows]
+
+    def get_master_data_by_resource(self, resource: str) -> list[dict]:
+        """指定されたリソース（テーブル名）からマスターデータをすべて取得する。"""
+        if resource not in ['items', 'natures', 'abilities', 'moves', 'types']:
+            raise ValueError(f"Invalid resource: {resource}")
+        
+        cursor = self.get_cursor()
+        # name_jaがないテーブルもあるため、存在チェックはしない
+        cursor.execute(f"SELECT * FROM {resource} ORDER BY name")
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_moves_by_type(self, move_type: str, category: str, limit: int = 10) -> list[dict]:
+        """指定されたタイプとカテゴリの技を取得する（威力順）。"""
+        cursor = self.get_cursor()
+        query = """
+            SELECT *
+            FROM moves
+            WHERE type = ? AND category = ? AND power > 0
+            ORDER BY power DESC
+            LIMIT ?
+        """
+        cursor.execute(query, (move_type, category, limit))
+        return [dict(row) for row in cursor.fetchall()]

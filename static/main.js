@@ -25,11 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const generatePartyButton = document.getElementById('generate-party-button');
+    let lastGeneratedParty = null; // 生成されたパーティ情報を保持する
+
     if (generatePartyButton) {
         generatePartyButton.addEventListener('click', async () => {
             const availablePokemonEl = document.getElementById('available-pokemon');
             const conceptEl = document.getElementById('tactical-concept');
             const resultArea = document.getElementById('party-generation-result-area');
+            const registerArea = document.getElementById('register-party-area');
+            const registerAlert = document.getElementById('register-party-alert');
 
             const available_pokemon = availablePokemonEl.value.split('\n').filter(p => p.trim() !== '');
             const concept = conceptEl.value;
@@ -46,6 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const spinner = generatePartyButton.querySelector('.spinner-border');
             spinner.classList.remove('d-none');
             generatePartyButton.disabled = true;
+            registerArea.classList.add('d-none'); // 登録エリアを隠す
+            registerAlert.style.display = 'none';
 
             try {
                 const response = await fetch('/generate-party', {
@@ -59,7 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (response.ok) {
+                    lastGeneratedParty = data.party; // 結果を保存
                     displayGeneratedParty(data, resultArea);
+                    registerArea.classList.remove('d-none'); // 登録エリアを表示
                 } else {
                     resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${data.error || '不明なエラー'}</div>`;
                 }
@@ -76,11 +84,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayGeneratedParty(data, container) {
         let partyHtml = '<h5>提案パーティ</h5><div class="row g-2 mb-3">';
         data.party.forEach(p => {
+            const movesHtml = p.moves.map(m => `<li>${escapeHTML(m.name)}</li>`).join('');
             partyHtml += `
                 <div class="col-6">
                     <div class="glass-card p-2 small">
-                        <div class="fw-bold">${p.name}</div>
-                        <div class="text-muted">役割: ${p.role}</div>
+                        <div class="fw-bold">${escapeHTML(p.name)}</div>
+                        <div class="text-muted">役割: ${escapeHTML(p.role)}</div>
+                        <div><strong>持ち物:</strong> ${escapeHTML(p.item_name)}</div>
+                        <div><strong>特性:</strong> ${escapeHTML(p.ability_name)}</div>
+                        <div><strong>性格:</strong> ${escapeHTML(p.nature_name)}</div>
+                        <div><strong>テラス:</strong> ${escapeHTML(p.tera_type_name)}</div>
+                        <ul class="list-unstyled small mt-1 mb-0"><strong>技:</strong>${movesHtml}</ul>
                     </div>
                 </div>
             `;
@@ -92,6 +106,49 @@ document.addEventListener('DOMContentLoaded', () => {
         manualHtml += `<div class="glass-card p-3 small">${data.manual.replace(/\n/g, '<br>')}</div>`;
 
         container.innerHTML = partyHtml + manualHtml;
+    }
+
+    const registerGeneratedPartyBtn = document.getElementById('register-generated-party-btn');
+    if (registerGeneratedPartyBtn) {
+        registerGeneratedPartyBtn.addEventListener('click', async () => {
+            if (!lastGeneratedParty) {
+                alert('登録するパーティデータがありません。先にパーティを生成してください。');
+                return;
+            }
+
+            const partyName = prompt('登録するパーティ名を入力してください:', 'AI生成パーティ');
+            if (!partyName || partyName.trim() === '') {
+                return; // ユーザーがキャンセルまたは空の名前を入力
+            }
+
+            const registerAlert = document.getElementById('register-party-alert');
+            const spinner = registerGeneratedPartyBtn.querySelector('.spinner-border'); // Assuming button has a spinner
+            
+            registerGeneratedPartyBtn.disabled = true;
+            if(spinner) spinner.classList.remove('d-none');
+
+            try {
+                const response = await fetch('/api/register-generated-party', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ party: lastGeneratedParty, party_name: partyName })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('register-party-alert', result.message, 'success');
+                } else {
+                    showAlert('register-party-alert', `エラー: ${result.error}`, 'danger');
+                }
+
+            } catch (error) {
+                showAlert('register-party-alert', '登録中に不明なエラーが発生しました。', 'danger');
+            } finally {
+                registerGeneratedPartyBtn.disabled = false;
+                if(spinner) spinner.classList.add('d-none');
+            }
+        });
     }
 
     // --- 選出予測パーティ読み込み ---

@@ -326,6 +326,52 @@ def get_windows():
     except Exception as e:
         return jsonify({"error": f"Failed to get window titles: {str(e)}"}), 500
 
+@app.route('/api/register-generated-party', methods=['POST'])
+def register_generated_party():
+    """生成されたパーティを育成済みポケモンとパーティとしてDBに登録する"""
+    data = request.json
+    party_data = data.get('party')
+    party_name = data.get('party_name')
+
+    if not party_data or not party_name or len(party_data) != 6:
+        return jsonify({"error": "無効なパーティデータです。"}), 400
+
+    try:
+        with DatabaseManager() as db:
+            new_pokemon_ids = []
+            for p in party_data:
+                # add_trained_pokemon が受け取る形式にデータを整形
+                trained_pokemon_data = {
+                    "pokemon_id": p['pokemon_id'],
+                    "nickname": p['name'], # ニックネームはとりあえずポケモン名
+                    "level": 50,
+                    "tera_type_id": p['tera_type_id'],
+                    "ability_id": p['ability_id'],
+                    "nature_id": p['nature_id'],
+                    "held_item_id": p['item_id'],
+                    "move1_id": p['moves'][0]['id'] if len(p['moves']) > 0 else None,
+                    "move2_id": p['moves'][1]['id'] if len(p['moves']) > 1 else None,
+                    "move3_id": p['moves'][2]['id'] if len(p['moves']) > 2 else None,
+                    "move4_id": p['moves'][3]['id'] if len(p['moves']) > 3 else None,
+                    **p['evs'] # ev_hp, ev_atk, ... を展開して渡す
+                }
+                new_id = db.add_trained_pokemon(trained_pokemon_data)
+                new_pokemon_ids.append(new_id)
+            
+            # 新しいパーティを登録
+            party_to_add = {
+                "name": party_name,
+                "description": "AIにより自動生成されたパーティです。",
+                "members": new_pokemon_ids
+            }
+            db.add_party(party_to_add)
+
+        return jsonify({"message": f"パーティ「{party_name}」を登録しました。"}), 201
+
+    except Exception as e:
+        # import traceback; traceback.print_exc()
+        return jsonify({"error": f"パーティの登録中にエラーが発生しました: {str(e)}"}), 500
+
 # --- Video Analysis API Endpoints ---
 
 @app.route('/api/videos/upload', methods=['POST'])
