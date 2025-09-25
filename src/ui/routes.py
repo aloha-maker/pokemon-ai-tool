@@ -109,9 +109,9 @@ def get_master_data(resource):
                 # ポケモン名で重複を除外する（フォルム違いなどをまとめる）
                 cursor.execute("SELECT MIN(id) as id, name_ja FROM pokemons GROUP BY name_ja ORDER BY name_ja")
             elif resource in ['moves']:
-                 cursor.execute(f"SELECT id, name, name_ja FROM {resource} ORDER BY id")
+                 cursor.execute(f"SELECT id, name, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY id")
             else:
-                 cursor.execute(f"SELECT id, name_ja FROM {resource} ORDER BY name_ja")
+                 cursor.execute(f"SELECT id, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY name_ja")
             items = cursor.fetchall()
         return jsonify([dict(item) for item in items]), 200
     except Exception as e:
