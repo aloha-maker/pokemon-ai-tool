@@ -94,18 +94,90 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = partyHtml + manualHtml;
     }
 
+    // --- 選出予測パーティ読み込み ---
+    const myPartySelect = document.getElementById('my-party-select');
+    const loadMyPartyBtn = document.getElementById('load-my-party-btn');
+
+    async function initMyPartySelector() {
+        if (!myPartySelect) return;
+        try {
+            const response = await fetch('/api/parties');
+            if (!response.ok) throw new Error('パーティ一覧の取得に失敗しました。');
+            const parties = await response.json();
+            
+            myPartySelect.innerHTML = '<option selected value="">登録済みパーティから選ぶ...</option>'; // クリア
+            parties.forEach(party => {
+                const option = document.createElement('option');
+                option.value = party.id;
+                option.textContent = party.name;
+                myPartySelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function loadPartyToForm() {
+        const partyId = myPartySelect.value;
+        if (!partyId) {
+            alert('パーティを選択してください。');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/parties/${partyId}`);
+            if (!response.ok) throw new Error('パーティ情報の取得に失敗しました。');
+            const party = await response.json();
+            
+            const myPartyInputs = document.querySelectorAll('#my-party-form input');
+            
+            // フォームをクリア
+            myPartyInputs.forEach(input => input.value = '');
+
+            // 取得したメンバーをフォームに設定
+            party.members.forEach((member, index) => {
+                if (index < myPartyInputs.length) {
+                    myPartyInputs[index].value = member.pokemon_name;
+                }
+            });
+
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    }
+
+    if (loadMyPartyBtn) {
+        loadMyPartyBtn.addEventListener('click', loadPartyToForm);
+    }
+    // --- ここまで追加 ---
+
     const predictButton = document.getElementById('predict-button');
     if (predictButton) {
         predictButton.addEventListener('click', async () => {
-            const myPartyInputs = document.querySelectorAll('#my-party-form input');
             const opponentPartyInputs = document.querySelectorAll('#opponent-party-form input');
             const resultArea = document.getElementById('prediction-result-area');
 
-            const my_party = Array.from(myPartyInputs).map(input => input.value).filter(p => p.trim() !== '');
             const opponent_party = Array.from(opponentPartyInputs).map(input => input.value).filter(p => p.trim() !== '');
 
-            if (my_party.length !== 6 || opponent_party.length !== 6) {
-                alert('自分と相手のパーティをそれぞれ6体ずつ入力してください。');
+            let requestBody = { opponent_party };
+
+            const selectedPartyId = myPartySelect.value;
+
+            if (selectedPartyId) {
+                requestBody.my_party_id = selectedPartyId;
+            } else {
+                const myPartyInputs = document.querySelectorAll('#my-party-form input');
+                const my_party = Array.from(myPartyInputs).map(input => input.value).filter(p => p.trim() !== '');
+                if (my_party.length !== 6) {
+                    alert('自分のパーティを6体入力するか、登録済みパーティを読み込んでください。');
+                    return;
+                }
+                requestBody.my_party = my_party;
+            }
+
+            if (opponent_party.length !== 6) {
+                alert('相手のパーティをそれぞれ6体ずつ入力してください。');
                 return;
             }
 
@@ -1621,4 +1693,7 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmSelectionBtn.addEventListener('click', handleConfirmSelection);
         nextTurnBtn.addEventListener('click', handleNextTurn);
     }
+
+    // 初期化処理
+    initMyPartySelector();
 });

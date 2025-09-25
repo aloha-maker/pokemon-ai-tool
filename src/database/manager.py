@@ -482,3 +482,18 @@ class DatabaseManager:
         except Exception as e:
             self.conn.rollback()
             raise e
+
+    def get_party_pokemon_names(self, party_id: int) -> list[str]:
+        """指定されたパーティIDのポケモンの名前（日本語）のリストを取得する。"""
+        cursor = self.get_cursor()
+        query = """
+            SELECT p.name_ja
+            FROM party_members pm
+            JOIN trained_pokemons tp ON pm.trained_pokemon_id = tp.id
+            JOIN pokemons p ON tp.pokemon_id = p.id
+            WHERE pm.party_id = ?
+            ORDER BY pm.member_index
+        """
+        cursor.execute(query, (party_id,))
+        rows = cursor.fetchall()
+        return [row['name_ja'] for row in rows]

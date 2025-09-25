@@ -194,8 +194,17 @@ def index():
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.json
-    my_party = data.get('my_party', [])
+    my_party_id = data.get('my_party_id')
     opponent_party = data.get('opponent_party', [])
+
+    if my_party_id:
+        try:
+            with DatabaseManager() as db:
+                my_party = db.get_party_pokemon_names(my_party_id)
+        except Exception as e:
+            return jsonify({"error": f"データベースからのパーティ読み込みに失敗しました: {e}"}), 500
+    else:
+        my_party = data.get('my_party', [])
 
     if len(my_party) != 6 or len(opponent_party) != 6:
         return jsonify({"error": "パーティはそれぞれ6体入力してください。"}), 400

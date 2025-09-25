@@ -64,6 +64,12 @@
                         <!-- 自パーティ入力 -->
                         <div class="col-6">
                             <h5><i class="bi bi-person-fill"></i> 自パーティ</h5>
+                            <div class="input-group mb-2">
+                                <select class="form-select form-select-sm" id="my-party-select">
+                                    <option selected value="">登録済みパーティから選ぶ...</option>
+                                </select>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
+                            </div>
                             <form id="my-party-form">
                                 <!-- 6体分の入力フィールド -->
                                 <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン1" value="ドラパルト" list="pokemon-datalist">
