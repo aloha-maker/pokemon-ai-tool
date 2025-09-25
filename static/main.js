@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ my_party, opponent_party }),
+                    body: JSON.stringify(requestBody),
                 });
 
                 const data = await response.json();
