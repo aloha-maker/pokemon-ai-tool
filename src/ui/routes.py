@@ -117,6 +117,80 @@ def get_master_data(resource):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# --- 持ち物編集用API ---
+
+@api_bp.route('/items', methods=['POST'])
+def add_item():
+    """新しい持ち物を追加する。"""
+    data = request.get_json()
+    if not data or not data.get('name_ja'):
+        return jsonify({'error': 'Invalid data: name_ja is required.'}), 400
+    
+    try:
+        with DatabaseManager() as db:
+            cursor = db.get_cursor()
+            # 既存の持ち物名と重複しないかチェック
+            cursor.execute("SELECT id FROM items WHERE name_ja = ?", (data['name_ja'],))
+            if cursor.fetchone():
+                return jsonify({'error': 'Item with this name already exists.'}), 409
+            
+            # name は name_ja と同じ値で登録
+            cursor.execute(
+                "INSERT INTO items (name, name_ja) VALUES (?, ?)",
+                (data['name_ja'], data['name_ja'])
+            )
+            db.conn.commit()
+            new_id = cursor.lastrowid
+        return jsonify({'message': 'Item added successfully', 'id': new_id, 'name_ja': data['name_ja']}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/items/<int:item_id>', methods=['PUT'])
+def update_item(item_id):
+    """持ち物名を更新する。"""
+    data = request.get_json()
+    if not data or not data.get('name_ja'):
+        return jsonify({'error': 'Invalid data: name_ja is required.'}), 400
+
+    try:
+        with DatabaseManager() as db:
+            cursor = db.get_cursor()
+            # 既存の持ち物名と重複しないかチェック (自分自身を除く)
+            cursor.execute("SELECT id FROM items WHERE name_ja = ? AND id != ?", (data['name_ja'], item_id))
+            if cursor.fetchone():
+                return jsonify({'error': 'Item with this name already exists.'}), 409
+
+            # name は name_ja と同じ値で更新
+            cursor.execute(
+                "UPDATE items SET name = ?, name_ja = ? WHERE id = ?",
+                (data['name_ja'], data['name_ja'], item_id)
+            )
+            db.conn.commit()
+            if cursor.rowcount == 0:
+                return jsonify({'error': 'Item not found'}), 404
+        return jsonify({'message': 'Item updated successfully', 'id': item_id, 'name_ja': data['name_ja']}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/items/<int:item_id>', methods=['DELETE'])
+def delete_item(item_id):
+    """持ち物を削除する。"""
+    try:
+        with DatabaseManager() as db:
+            cursor = db.get_cursor()
+            cursor.execute("DELETE FROM items WHERE id = ?", (item_id,))
+            db.conn.commit()
+            if cursor.rowcount == 0:
+                return jsonify({'error': 'Item not found'}), 404
+        return jsonify({'message': 'Item deleted successfully'}), 200
+    except Exception as e:
+        # 外部キー制約違反の場合
+        if 'FOREIGN KEY constraint failed' in str(e):
+            return jsonify({'error': 'This item is currently in use by a trained Pokémon and cannot be deleted.'}), 409
+        return jsonify({'error': str(e)}), 500
+
+
+
 @api_bp.route('/pokemon/<int:pokemon_id>/abilities', methods=['GET'])
 def get_pokemon_abilities(pokemon_id):
     """指定したポケモンの特性リストを取得する。"""

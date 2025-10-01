@@ -1788,4 +1788,150 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 初期化処理
     initMyPartySelector();
+
+    // --- 持ち物編集ロジック ---
+    const itemEditorModal = document.getElementById('item-editor-modal');
+    if (itemEditorModal) {
+        const itemList = document.getElementById('item-list');
+        const itemForm = document.getElementById('item-form');
+        const itemIdField = document.getElementById('item-id');
+        const itemNameField = document.getElementById('item-name');
+        const itemFormTitle = document.getElementById('item-form-title');
+        const cancelItemEditBtn = document.getElementById('cancel-item-edit-btn');
+        const alertEl = document.getElementById('item-editor-alert');
+
+        // 持ち物一覧を読み込んで表示する関数
+        async function loadItems() {
+            try {
+                const response = await fetch('/api/master/items');
+                if (!response.ok) throw new Error('持ち物リストの取得に失敗しました。');
+                const items = await response.json();
+
+                itemList.innerHTML = '';
+                if (items.length === 0) {
+                    itemList.innerHTML = '<div class="list-group-item text-muted">登録されている持ち物はありません。</div>';
+                    return;
+                }
+
+                items.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    itemEl.innerHTML = `
+                        <span>${escapeHTML(item.name_ja)}</span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-light edit-item-btn" data-id="${item.id}" data-name="${escapeHTML(item.name_ja)}"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger delete-item-btn" data-id="${item.id}"><i class="bi bi-trash"></i></button>
+                        </div>
+                    `;
+                    itemList.appendChild(itemEl);
+                });
+
+                // イベントリスナーを再設定
+                attachItemActionListeners();
+
+            } catch (error) {
+                showAlert(alertEl.id, error.message, 'danger');
+            }
+        }
+
+        // 編集・削除ボタンにイベントリスナーを設定
+        function attachItemActionListeners() {
+            itemList.querySelectorAll('.edit-item-btn').forEach(btn => {
+                btn.addEventListener('click', handleItemEditClick);
+            });
+            itemList.querySelectorAll('.delete-item-btn').forEach(btn => {
+                btn.addEventListener('click', handleItemDeleteClick);
+            });
+        }
+
+        // 編集ボタンの処理
+        function handleItemEditClick(event) {
+            const id = event.currentTarget.dataset.id;
+            const name = event.currentTarget.dataset.name;
+            
+            itemIdField.value = id;
+            itemNameField.value = name;
+            itemFormTitle.textContent = '持ち物編集';
+            cancelItemEditBtn.style.display = 'inline-block';
+            itemNameField.focus();
+        }
+
+        // 削除ボタンの処理
+        async function handleItemDeleteClick(event) {
+            const id = event.currentTarget.dataset.id;
+            if (confirm(`この持ち物を本当に削除しますか？`)) {
+                try {
+                    const response = await fetch(`/api/items/${id}`, { method: 'DELETE' });
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(result.error || '削除に失敗しました。');
+                    }
+
+                    showAlert(alertEl.id, '持ち物を削除しました。', 'success');
+                    await loadItems(); // 一覧を再読み込み
+                    await initFormSelects(); // 他のフォームの選択肢を更新
+
+                } catch (error) {
+                    showAlert(alertEl.id, `削除失敗: ${error.message}`, 'danger');
+                }
+            }
+        }
+
+        // フォーム送信の処理 (追加・更新)
+        async function handleItemFormSubmit(event) {
+            event.preventDefault();
+            const id = itemIdField.value;
+            const name = itemNameField.value.trim();
+
+            if (!name) {
+                showAlert(alertEl.id, '持ち物名を入力してください。', 'warning');
+                return;
+            }
+
+            const url = id ? `/api/items/${id}` : '/api/items';
+            const method = id ? 'PUT' : 'POST';
+            const body = JSON.stringify({ name_ja: name });
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: body
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || '保存に失敗しました。');
+                }
+
+                showAlert(alertEl.id, `持ち物を${id ? '更新' : '追加'}しました。`, 'success');
+                resetItemForm();
+                await loadItems(); // 一覧を再読み込み
+                await initFormSelects(); // 他のフォームの選択肢を更新
+
+            } catch (error) {
+                showAlert(alertEl.id, `保存失敗: ${error.message}`, 'danger');
+            }
+        }
+
+        // フォームをリセットする関数
+        function resetItemForm() {
+            itemForm.reset();
+            itemIdField.value = '';
+            itemFormTitle.textContent = '新規持ち物登録';
+            cancelItemEditBtn.style.display = 'none';
+            alertEl.style.display = 'none';
+        }
+
+        // モーダル表示時にデータをロード
+        itemEditorModal.addEventListener('show.bs.modal', () => {
+            resetItemForm();
+            loadItems();
+        });
+
+        // イベントリスナーを設定
+        itemForm.addEventListener('submit', handleItemFormSubmit);
+        cancelItemEditBtn.addEventListener('click', resetItemForm);
+    }
 });
