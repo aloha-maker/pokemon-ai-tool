@@ -25,8 +25,8 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
-    <div class="container-fluid vh-100 p-4 d-flex flex-column">
-        <header class="d-flex justify-content-between align-items-center mb-4">
+    <div class="container-fluid vh-100 p-3 d-flex flex-column">
+        <header class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="neon-text-purple mb-0">ポケモン対戦補助AIツール</h1>
             <div>
                 <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#video-manager-modal">
@@ -64,14 +64,7 @@
             <!-- 左カラム: キャプチャと選出予測 -->
             <section class="col-lg-8 d-flex flex-column">
                 <!-- リアルタイム解析 -->
-                <div id="game-preview" class="glass-card p-3 d-flex flex-column mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h2 class="neon-text-blue mb-0">リアルタイム解析</h2>
-                        <button id="toggle-analysis-button" class="btn btn-sm btn-primary neon-border" data-state="stopped">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            <i class="bi bi-play-circle-fill"></i> 解析を開始
-                        </button>
-                    </div>
+                <div id="game-preview" class="glass-card p-3 d-flex flex-column mb-3">
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col">
                             <label for="window-select" class="form-label visually-hidden">キャプチャ対象ウィンドウ</label>
@@ -84,6 +77,12 @@
                                 <i class="bi bi-arrow-clockwise"></i>
                             </button>
                         </div>
+                        <div class="col-auto">
+                            <button id="toggle-analysis-button" class="btn btn-sm btn-primary neon-border" data-state="stopped">
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                <i class="bi bi-play-circle-fill"></i> 解析を開始
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- ゲーム画面プレビュー -->
@@ -94,46 +93,49 @@
 
                 <!-- 選出予測 -->
                 <div class="glass-card flex-grow-1 p-3 d-flex flex-column">
-                    <h2 class="neon-text-blue mb-3"><i class="bi bi-diagram-3"></i> 選出予測</h2>
+                    
                     <!-- パーティ入力フォーム -->
                     <div class="row">
                         <!-- 自パーティ入力 -->
                         <div class="col-6">
-                            <h5><i class="bi bi-person-fill"></i> 自パーティ</h5>
-                            <div class="input-group mb-2">
-                                <select class="form-select form-select-sm" id="my-party-select">
-                                    <option selected value="">登録済みパーティから選ぶ...</option>
-                                </select>
-                                <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="mb-0"><i class="bi bi-person-fill"></i> 自パーティ</h5>
+                                <div class="input-group input-group-sm w-auto">
+                                    <select class="form-select form-select-sm" id="my-party-select">
+                                        <option selected value="">登録済みパーティから選ぶ...</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
+                                </div>
                             </div>
                             <form id="my-party-form">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン1" value="ドラパルト" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン2" value="サーフゴー" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン3" value="キョジオーン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン4" value="ヘイラッシャ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン5" value="カイリュー" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン6" value="ハッサム" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン1" value="ドラパルト" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン2" value="サーフゴー" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン3" value="キョジオーン" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン4" value="ヘイラッシャ" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン5" value="カイリュー" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン6" value="ハッサム" list="pokemon-datalist">
                             </form>
                         </div>
                         <!-- 相手パーティ入力 -->
                         <div class="col-6">
-                            <h5><i class="bi bi-person-bounding-box"></i> 相手パーティ</h5>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="mb-0"><i class="bi bi-person-bounding-box"></i> 相手パーティ</h5>
+                                <button id="predict-button" class="btn btn-sm btn-primary neon-border">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    予測を開始
+                                </button>
+                            </div>
                             <form id="opponent-party-form">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン1" value="マスカーニャ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン2" value="ラウドボーン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン3" value="ウェーニバル" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン4" value="ドドゲザン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン5" value="キノガッサ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン6" value="ミミッキュ" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン1" value="マスカーニャ" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン2" value="ラウドボーン" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン3" value="ウェーニバル" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン4" value="ドドゲザン" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン5" value="キノガッサ" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン6" value="ミミッキュ" list="pokemon-datalist">
                             </form>
                         </div>
                     </div>
-                    <div class="d-grid my-3">
-                        <button id="predict-button" class="btn btn-primary neon-border">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            予測を開始
-                        </button>
-                    </div>
+
                 </div>
             </section>
 
