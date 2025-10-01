@@ -62,7 +62,7 @@
 
         <main class="row flex-grow-1 gx-4">
             <!-- 左カラム: キャプチャと選出予測 -->
-            <section class="col-lg-8 d-flex flex-column">
+            <section class="col-lg-6 d-flex flex-column">
                 <!-- リアルタイム解析 -->
                 <div id="game-preview" class="glass-card p-3 d-flex flex-column mb-3">
                     <div class="row g-2 align-items-center mb-3">
@@ -86,22 +86,20 @@
                     </div>
                     
                     <!-- ゲーム画面プレビュー -->
-                    <div class="text-center flex-grow-1 d-flex align-items-center justify-content-center">
-                        <div class="bg-black ratio ratio-16x9" style="width: 60%;">
-                            <img id="capture-image" src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview" class="img-fluid" alt="ゲーム画面プレビュー">
-                        </div>
+                    <div class="text-center bg-black ratio ratio-16x9">
+                        <img id="capture-image" src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview" class="img-fluid" alt="ゲーム画面プレビュー">
                     </div>
                 </div>
 
                 <!-- 選出予測 -->
-                <div class="glass-card flex-grow-1 p-3 d-flex flex-column">
+                <div class="glass-card p-3 d-flex flex-column">
                     
                     <!-- パーティ入力フォーム -->
                     <div class="row">
                         <!-- 自パーティ入力 -->
                         <div class="col-6">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="mb-0"><i class="bi bi-person-fill"></i> 自パーティ</h5>
+                                <h5 class="mb-0"><i class="bi bi-person-fill"></i> 自パーティ</h6>
                                 <div class="input-group input-group-sm w-auto">
                                     <select class="form-select form-select-sm" id="my-party-select">
                                         <option selected value="">登録済みパーティから選ぶ...</option>
@@ -121,7 +119,7 @@
                         <!-- 相手パーティ入力 -->
                         <div class="col-6">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="mb-0"><i class="bi bi-person-bounding-box"></i> 相手パーティ</h5>
+                                <h5 class="mb-0"><i class="bi bi-person-bounding-box"></i> 相手パーティ</h6>
                                 <button id="predict-button" class="btn btn-sm btn-primary neon-border">
                                     <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                     予測を開始
@@ -142,7 +140,7 @@
             </section>
 
             <!-- 右カラム: AIアドバイス -->
-            <section class="col-lg-4 d-flex flex-column">
+            <section class="col-lg-6 d-flex flex-column">
                 <div class="glass-card flex-grow-1 p-1 d-flex flex-column">
                     <ul class="nav nav-tabs nav-fill" id="ai-advice-tabs" role="tablist">
                         <li class="nav-item" role="presentation">
