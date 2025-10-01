@@ -61,66 +61,10 @@
         </header>
 
         <main class="row flex-grow-1 gx-4">
-            <!-- 左カラム: パーティ情報と選出予測 -->
-            <section class="col-md-5 d-flex flex-column">
-                <div class="glass-card flex-grow-1 p-3 d-flex flex-column">
-                    <h2 class="neon-text-blue mb-3"><i class="bi bi-diagram-3"></i> 選出予測</h2>
-
-                    <!-- パーティ入力フォーム -->
-                    <div class="row">
-                        <!-- 自パーティ入力 -->
-                        <div class="col-6">
-                            <h5><i class="bi bi-person-fill"></i> 自パーティ</h5>
-                            <div class="input-group mb-2">
-                                <select class="form-select form-select-sm" id="my-party-select">
-                                    <option selected value="">登録済みパーティから選ぶ...</option>
-                                </select>
-                                <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
-                            </div>
-                            <form id="my-party-form">
-                                <!-- 6体分の入力フィールド -->
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン1" value="ドラパルト" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン2" value="サーフゴー" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン3" value="キョジオーン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン4" value="ヘイラッシャ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン5" value="カイリュー" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン6" value="ハッサム" list="pokemon-datalist">
-                            </form>
-                        </div>
-                        <!-- 相手パーティ入力 -->
-                        <div class="col-6">
-                            <h5><i class="bi bi-person-bounding-box"></i> 相手パーティ</h5>
-                            <form id="opponent-party-form">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン1" value="マスカーニャ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン2" value="ラウドボーン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン3" value="ウェーニバル" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン4" value="ドドゲザン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン5" value="キノガッサ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン6" value="ミミッキュ" list="pokemon-datalist">
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="d-grid my-3">
-                        <button id="predict-button" class="btn btn-primary neon-border">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            予測を開始
-                        </button>
-                    </div>
-
-                    <!-- 予測結果表示エリア -->
-                    <div id="prediction-result-area" class="mt-3 flex-grow-1" style="min-height: 200px;">
-                         <!-- JavaScriptによって結果がここに描画される -->
-                         <div class="text-center text-muted pt-5">
-                            <p>パーティを入力して「予測を開始」を押してください</p>
-                         </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 右カラム: リアルタイム対戦補助 -->
-            <section class="col-md-7 d-flex flex-column">
-                <div id="game-preview" class="glass-card flex-grow-1 p-3 d-flex flex-column">
+            <!-- 左カラム: キャプチャと選出予測 -->
+            <section class="col-lg-8 d-flex flex-column">
+                <!-- リアルタイム解析 -->
+                <div id="game-preview" class="glass-card p-3 d-flex flex-column mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h2 class="neon-text-blue mb-0">リアルタイム解析</h2>
                         <button id="toggle-analysis-button" class="btn btn-sm btn-primary neon-border" data-state="stopped">
@@ -143,41 +87,95 @@
                     </div>
                     
                     <!-- ゲーム画面プレビュー -->
-                    <div class="text-center flex-grow-1 d-flex align-items-center justify-content-center bg-black">
+                    <div class="text-center flex-grow-1 d-flex align-items-center justify-content-center bg-black ratio ratio-16x9">
                         <img id="capture-image" src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview" class="img-fluid" alt="ゲーム画面プレビュー">
-                    </div>
-
-                    <!-- AIの行動提案 -->
-                    <div id="suggestion-overlay" class="mt-3" style="display: none;">
-                        <div class="glass-card p-3 neon-border">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h4 class="neon-text-blue mb-0"><i class="bi bi-lightbulb-fill"></i> AIの推奨アクション</h4>
-                                <button id="suggestion-refresh-button" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-arrow-repeat"></i> 更新
-                                </button>
-                            </div>
-                            <div class="text-center my-3">
-                                <p id="suggestion-action" class="lead mb-1">技選択</p>
-                                <h2 id="suggestion-value" class="display-6 fw-bold">10まんボルト</h2>
-                            </div>
-                            <p class="text-muted small">
-                                <span class="fw-bold">理由:</span>
-                                <span id="suggestion-reason">相手の「ギャラドス」に対して効果抜群(x4)です。</span>
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- OCRデバッグ情報 -->
-                    <div id="ocr-debug-area" class="mt-2">
-                        <small><a class="text-decoration-none" data-bs-toggle="collapse" href="#ocr-debug-content" role="button" aria-expanded="false" aria-controls="ocr-debug-content">
-                            <i class="bi bi-bug"></i> OCRデバッグ情報を表示/非表示
-                        </a></small>
-                        <div class="collapse" id="ocr-debug-content">
-                            <pre class="bg-dark text-light p-2 rounded small"><code>{}</code></pre>
-                        </div>
                     </div>
                 </div>
 
+                <!-- 選出予測 -->
+                <div class="glass-card flex-grow-1 p-3 d-flex flex-column">
+                    <h2 class="neon-text-blue mb-3"><i class="bi bi-diagram-3"></i> 選出予測</h2>
+                    <!-- パーティ入力フォーム -->
+                    <div class="row">
+                        <!-- 自パーティ入力 -->
+                        <div class="col-6">
+                            <h5><i class="bi bi-person-fill"></i> 自パーティ</h5>
+                            <div class="input-group mb-2">
+                                <select class="form-select form-select-sm" id="my-party-select">
+                                    <option selected value="">登録済みパーティから選ぶ...</option>
+                                </select>
+                                <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
+                            </div>
+                            <form id="my-party-form">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン1" value="ドラパルト" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン2" value="サーフゴー" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン3" value="キョジオーン" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン4" value="ヘイラッシャ" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン5" value="カイリュー" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン6" value="ハッサム" list="pokemon-datalist">
+                            </form>
+                        </div>
+                        <!-- 相手パーティ入力 -->
+                        <div class="col-6">
+                            <h5><i class="bi bi-person-bounding-box"></i> 相手パーティ</h5>
+                            <form id="opponent-party-form">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン1" value="マスカーニャ" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン2" value="ラウドボーン" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン3" value="ウェーニバル" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン4" value="ドドゲザン" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン5" value="キノガッサ" list="pokemon-datalist">
+                                <input type="text" class="form-control form-control-sm mb-2" placeholder="ポケモン6" value="ミミッキュ" list="pokemon-datalist">
+                            </form>
+                        </div>
+                    </div>
+                    <div class="d-grid my-3">
+                        <button id="predict-button" class="btn btn-primary neon-border">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            予測を開始
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右カラム: AIアドバイス -->
+            <section class="col-lg-4 d-flex flex-column">
+                <div class="glass-card flex-grow-1 p-1 d-flex flex-column">
+                    <ul class="nav nav-tabs nav-fill" id="ai-advice-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="selection-advice-tab" data-bs-toggle="tab" data-bs-target="#selection-advice-pane" type="button" role="tab" aria-controls="selection-advice-pane" aria-selected="true">選出アドバイス</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="battle-advice-tab" data-bs-toggle="tab" data-bs-target="#battle-advice-pane" type="button" role="tab" aria-controls="battle-advice-pane" aria-selected="false">バトル中アドバイス</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content flex-grow-1 p-3" id="ai-advice-tabs-content">
+                        <div class="tab-pane fade show active h-100" id="selection-advice-pane" role="tabpanel" aria-labelledby="selection-advice-tab">
+                            <!-- 予測結果表示エリア -->
+                            <div id="prediction-result-area" class="h-100">
+                                <div class="text-center text-muted pt-5 h-100">
+                                    <p>パーティを入力して「予測を開始」を押してください</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade h-100" id="battle-advice-pane" role="tabpanel" aria-labelledby="battle-advice-tab">
+                            <!-- AIの行動提案 -->
+                            <div id="suggestion-overlay" class="h-100">
+                                <div class="text-center text-muted pt-5 h-100">
+                                    <p>「解析を開始」すると、ここにAIの推奨アクションが表示されます。</p>
+                                </div>
+                            </div>
+                             <!-- OCRデバッグ情報 -->
+                            <div id="ocr-debug-area" class="mt-2">
+                                <small><a class="text-decoration-none" data-bs-toggle="collapse" href="#ocr-debug-content" role="button" aria-expanded="false" aria-controls="ocr-debug-content">
+                                    <i class="bi bi-bug"></i> OCRデバッグ情報を表示/非表示
+                                </a></small>
+                                <div class="collapse" id="ocr-debug-content">
+                                    <pre class="bg-dark text-light p-2 rounded small"><code>{}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
     </div>

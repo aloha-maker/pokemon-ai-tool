@@ -273,6 +273,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok) {
                     displayPredictionResult(data, resultArea);
+                    // 新しいUI：選出アドバイスのタブをアクティブにする
+                    const selectionTab = new bootstrap.Tab(document.getElementById('selection-advice-tab'));
+                    selectionTab.show();
                 } else {
                     resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${data.error || '不明なエラー'}</div>`;
                 }
@@ -287,21 +290,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayPredictionResult(data, container) {
-        let html = '<h5>AI推奨選出</h5>';
+        let html = '<h5 class="neon-text-purple"><i class="bi bi-stars"></i> AI推奨選出</h5>';
         html += '<div class="row g-3 text-center">';
         data.recommended_team.forEach(name => {
             html += `
                 <div class="col-4">
-                    <div class="glass-card p-3">
-                        <div class="fw-bold fs-5">${name}</div>
+                    <div class="glass-card-inside p-3">
+                        <div class="fw-bold fs-5">${escapeHTML(name)}</div>
                     </div>
                 </div>
             `;
         });
         html += '</div>';
 
-        html += '<h5 class="mt-4">選出理由</h5>';
-        html += `<p class="text-muted">${data.reason}</p>`;
+        html += '<h5 class="mt-4 neon-text-purple"><i class="bi bi-lightbulb"></i> 選出理由</h5>';
+        html += `<div class="glass-card-inside p-3"><p class="text-muted mb-0">${escapeHTML(data.reason)}</p></div>`;
 
         container.innerHTML = html;
     }
@@ -424,18 +427,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // バックエンドからのAIの提案を受け取る
     socket.on('suggestion_update', (data) => {
         console.log('Suggestion received:', data);
+        const suggestionContainer = document.getElementById('suggestion-overlay');
+
         if (data && data.action) {
-            suggestionAction.textContent = data.action;
-            suggestionValue.textContent = data.target || ''; // targetがない場合もある
-            suggestionReason.textContent = data.reason;
-            
-            suggestionOverlay.style.display = 'block';
-            suggestionOverlay.classList.remove('fade-in');
-            void suggestionOverlay.offsetWidth; // Reflow to restart animation
-            suggestionOverlay.classList.add('fade-in');
+            let html = `
+                <div class="advice-card p-3 rounded-lg mb-4 glass-card-inside">
+                    <h5 class="font-semibold text-md mb-3 neon-text-purple"><i class="bi bi-star-fill"></i> 推奨アクション</h5>
+                    <div class="text-center">
+                        <p class="lead mb-1">${escapeHTML(data.action)}</p>
+                        <h2 class="display-6 fw-bold">${escapeHTML(data.target || '')}</h2>
+                    </div>
+                </div>
+                <div class="advice-card p-3 rounded-lg glass-card-inside">
+                    <h5 class="font-semibold text-md mb-2 neon-text-purple"><i class="bi bi-lightbulb-fill"></i> アドバイスの根拠</h5>
+                    <p class="text-muted small mb-0">${escapeHTML(data.reason)}</p>
+                </div>
+            `;
+            suggestionContainer.innerHTML = html;
+
+            // バトル中アドバイスタブをアクティブにする
+            const battleTab = new bootstrap.Tab(document.getElementById('battle-advice-tab'));
+            battleTab.show();
+
         } else {
-            // AIがまだ判断できない場合
-            suggestionOverlay.style.display = 'none';
+            // AIがまだ判断できない場合、プレースホルダーを表示
+            suggestionContainer.innerHTML = `
+                <div class="text-center text-muted pt-5 h-100">
+                    <p>現在、推奨できるアクションはありません。</p>
+                </div>
+            `;
         }
     });
 
