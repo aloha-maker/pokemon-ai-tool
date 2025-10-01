@@ -225,7 +225,41 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loadMyPartyBtn) {
         loadMyPartyBtn.addEventListener('click', loadPartyToForm);
     }
-    // --- ここまで追加 ---
+
+    // --- Party Pokemon Selection Logic ---
+    const myPartyDisplay = document.getElementById('my-party-display');
+    if (myPartyDisplay) {
+        const pokemonImages = myPartyDisplay.querySelectorAll('img');
+        pokemonImages.forEach(img => {
+            img.addEventListener('click', () => {
+                const slot = img.closest('.pokemon-slot');
+                const icon = slot.querySelector('.starter-icon');
+
+                const isSelected = img.classList.contains('pokemon-selected');
+                const isStarter = !icon.classList.contains('d-none');
+
+                if (!isSelected && !isStarter) { // State: Unselected -> Selected
+                    img.classList.add('pokemon-selected');
+                } else if (isSelected && !isStarter) { // State: Selected -> Starter
+                    // Demote any other starter to just selected
+                    myPartyDisplay.querySelectorAll('.pokemon-slot').forEach(otherSlot => {
+                        const otherImg = otherSlot.querySelector('img');
+                        if (otherImg !== img) {
+                            const otherIcon = otherSlot.querySelector('.starter-icon');
+                            if (otherIcon && !otherIcon.classList.contains('d-none')) {
+                                otherIcon.classList.add('d-none');
+                            }
+                        }
+                    });
+                    // Promote this one to starter
+                    icon.classList.remove('d-none');
+                } else { // State: Starter -> Unselected
+                    img.classList.remove('pokemon-selected');
+                    icon.classList.add('d-none');
+                }
+            });
+        });
+    }
 
     const predictButton = document.getElementById('predict-button');
     if (predictButton) {
@@ -1097,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             populateSelect('pokemon-master-id', pokemons, 'ポケモンを選択');
             populateSelect('tera-type-id', types, 'テラスタイプを選択');
             populateSelect('held-item-id', items, '持ち物を選択');
-            // populateSelect('ability-id', abilities, '特性を選択'); // 動的に読み込むため削除
+            // populateSelect('ability-id', abilities, '動的に読み込むため削除');
             populateSelect('nature-id', natures, '性格を選択');
 
             moveSelects.forEach(select => {
@@ -1953,3 +1987,36 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelItemEditBtn.addEventListener('click', resetItemForm);
     }
 });
+
+    // --- Party Pokemon Selection Logic ---
+    const myPartyDisplay = document.getElementById('my-party-display');
+    if (myPartyDisplay) {
+        const pokemonImages = myPartyDisplay.querySelectorAll('img');
+        pokemonImages.forEach(img => {
+            // Single-click to toggle selection
+            img.addEventListener('click', () => {
+                img.classList.toggle('pokemon-selected');
+            });
+
+            // Double-click to set as starter
+            img.addEventListener('dblclick', () => {
+                const slot = img.closest('.pokemon-slot');
+                const icon = slot.querySelector('.starter-icon');
+                
+                if (icon) {
+                    const isCurrentlyStarter = !icon.classList.contains('d-none');
+
+                    // Deselect all other starters in the same party
+                    const allIcons = myPartyDisplay.querySelectorAll('.starter-icon');
+                    allIcons.forEach(i => {
+                        i.classList.add('d-none');
+                    });
+
+                    // If the clicked one was not the starter, make it the starter
+                    if (!isCurrentlyStarter) {
+                        icon.classList.remove('d-none');
+                    }
+                }
+            });
+        });
+    }

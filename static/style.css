@@ -75,3 +75,20 @@ body {
     border: none;
     text-align: center;
 }
+
+.pokemon-selected {
+    border: 3px solid #9bf8ff; /* neon-text-blue color */
+    box-shadow: 0 0 15px #00e1ff;
+    border-radius: .375rem; /* to match the rounded class */
+}
+
+.starter-icon {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    z-index: 2;
+    color: #ffc107;
+    font-size: 1.2rem;
+    text-shadow: 0 0 5px black;
+    pointer-events: none; /* アイコン自体がクリックイベントを妨げないようにする */
+}
