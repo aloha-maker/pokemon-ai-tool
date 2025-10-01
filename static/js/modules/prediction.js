@@ -1,0 +1,183 @@
+// prediction.js - 選出予測機能
+
+import { escapeHTML, setButtonLoading } from './utils.js';
+
+export class PredictionManager {
+    constructor() {
+        this.predictButton = document.getElementById('predict-button');
+        this.myPartySelect = document.getElementById('my-party-select');
+        this.loadMyPartyBtn = document.getElementById('load-my-party-btn');
+        this.myPartyDisplay = document.getElementById('my-party-display');
+        
+        if (this.predictButton) {
+            this.init();
+        }
+    }
+
+    init() {
+        this.initMyPartySelector();
+        this.predictButton.addEventListener('click', () => this.handlePredict());
+        
+        if (this.loadMyPartyBtn) {
+            this.loadMyPartyBtn.addEventListener('click', () => this.loadPartyToForm());
+        }
+        
+        if (this.myPartyDisplay) {
+            this.initPartyDisplay();
+        }
+    }
+
+    async initMyPartySelector() {
+        if (!this.myPartySelect) return;
+        
+        try {
+            const response = await fetch('/api/parties');
+            if (!response.ok) throw new Error('パーティ一覧の取得に失敗しました。');
+            const parties = await response.json();
+            
+            this.myPartySelect.innerHTML = '<option selected value="">登録済みパーティから選ぶ...</option>';
+            parties.forEach(party => {
+                const option = document.createElement('option');
+                option.value = party.id;
+                option.textContent = party.name;
+                this.myPartySelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async loadPartyToForm() {
+        const partyId = this.myPartySelect.value;
+        if (!partyId) {
+            alert('パーティを選択してください。');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/parties/${partyId}`);
+            if (!response.ok) throw new Error('パーティ情報の取得に失敗しました。');
+            const party = await response.json();
+            
+            const myPartyInputs = document.querySelectorAll('#my-party-form input');
+            myPartyInputs.forEach(input => input.value = '');
+
+            party.members.forEach((member, index) => {
+                if (index < myPartyInputs.length) {
+                    myPartyInputs[index].value = member.pokemon_name;
+                }
+            });
+
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        }
+    }
+
+    initPartyDisplay() {
+        const pokemonImages = this.myPartyDisplay.querySelectorAll('img');
+        pokemonImages.forEach(img => {
+            // シングルクリックで選択切り替え
+            img.addEventListener('click', () => {
+                img.classList.toggle('pokemon-selected');
+            });
+
+            // ダブルクリックで先発に設定
+            img.addEventListener('dblclick', () => {
+                const slot = img.closest('.pokemon-slot');
+                const icon = slot.querySelector('.starter-icon');
+                
+                if (icon) {
+                    const isCurrentlyStarter = !icon.classList.contains('d-none');
+
+                    // 他の先発を解除
+                    const allIcons = this.myPartyDisplay.querySelectorAll('.starter-icon');
+                    allIcons.forEach(i => i.classList.add('d-none'));
+
+                    // クリックしたものが先発でなければ先発にする
+                    if (!isCurrentlyStarter) {
+                        icon.classList.remove('d-none');
+                    }
+                }
+            });
+        });
+    }
+
+    async handlePredict() {
+        const opponentPartyInputs = document.querySelectorAll('#opponent-party-form input');
+        const resultArea = document.getElementById('prediction-result-area');
+
+        const opponent_party = Array.from(opponentPartyInputs)
+            .map(input => input.value)
+            .filter(p => p.trim() !== '');
+
+        let requestBody = { opponent_party };
+        const selectedPartyId = this.myPartySelect.value;
+
+        if (selectedPartyId) {
+            requestBody.my_party_id = selectedPartyId;
+        } else {
+            const myPartyInputs = document.querySelectorAll('#my-party-form input');
+            const my_party = Array.from(myPartyInputs)
+                .map(input => input.value)
+                .filter(p => p.trim() !== '');
+            
+            if (my_party.length !== 6) {
+                alert('自分のパーティを6体入力するか、登録済みパーティを読み込んでください。');
+                return;
+            }
+            requestBody.my_party = my_party;
+        }
+
+        if (opponent_party.length !== 6) {
+            alert('相手のパーティをそれぞれ6体ずつ入力してください。');
+            return;
+        }
+
+        setButtonLoading(this.predictButton, true);
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                this.displayPredictionResult(data, resultArea);
+                // 選出アドバイスのタブをアクティブにする
+                const selectionTab = new bootstrap.Tab(document.getElementById('selection-advice-tab'));
+                selectionTab.show();
+            } else {
+                resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${data.error || '不明なエラー'}</div>`;
+            }
+        } catch (error) {
+            console.error('選出予測APIの呼び出し中にエラーが発生しました:', error);
+            resultArea.innerHTML = `<div class="alert alert-danger">APIの呼び出しに失敗しました。</div>`;
+        } finally {
+            setButtonLoading(this.predictButton, false);
+        }
+    }
+
+    displayPredictionResult(data, container) {
+        let html = '<h5 class="neon-text-purple"><i class="bi bi-stars"></i> AI推奨選出</h5>';
+        html += '<div class="row g-3 text-center">';
+        data.recommended_team.forEach(name => {
+            html += `
+                <div class="col-4">
+                    <div class="glass-card-inside p-3">
+                        <div class="fw-bold fs-5">${escapeHTML(name)}</div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        html += '<h5 class="mt-4 neon-text-purple"><i class="bi bi-lightbulb"></i> 選出理由</h5>';
+        html += `<div class="glass-card-inside p-3"><p class="text-muted mb-0">${escapeHTML(data.reason)}</p></div>`;
+
+        container.innerHTML = html;
+    }
+}
