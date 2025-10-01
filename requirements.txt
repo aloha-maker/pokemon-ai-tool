@@ -9,3 +9,4 @@ pytesseract
 Pillow
 Flask
 Flask-SocketIO
+SQLAlchemy
