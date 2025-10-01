@@ -673,12 +673,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- ROI Editor Logic ---
+    const roiEditorModal = document.getElementById('roi-editor-modal');
     const roiCanvas = document.getElementById('roi-canvas');
     const roiCtx = roiCanvas.getContext('2d');
     const roiSelector = document.getElementById('roi-selector');
     const saveRoiBtn = document.getElementById('save-roi-btn');
     const roiCoordsEl = document.getElementById('roi-coords');
-
     const roiImageUpload = document.getElementById('roi-image-upload');
 
     let roiConfig = {};
@@ -688,11 +688,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function initRoiEditor() {
         try {
-            const [imgPathResponse, configResponse] = await Promise.all([
-                fetch('/api/roi/image_path'),
+            const [configResponse] = await Promise.all([
                 fetch('/api/roi/config')
             ]);
-            const imgPathData = await imgPathResponse.json();
             roiConfig = await configResponse.json();
 
             roiImage.onload = () => {
@@ -702,12 +700,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 drawRoiRects();
                 updateCoordsDisplay();
             };
-            // Use the captureImage src if available, otherwise use the one from the API
+            
+            // Use the captureImage src if available, otherwise use a placeholder
             const currentSrc = document.getElementById('capture-image').src;
             if (currentSrc && !currentSrc.includes('placehold.co')) {
                  roiImage.src = currentSrc;
             } else {
-                 roiImage.src = imgPathData.image_path + '?t=' + new Date().getTime();
+                 // If no active stream, try to load the default path, but handle failure
+                try {
+                    const imgPathResponse = await fetch('/api/roi/image_path');
+                    const imgPathData = await imgPathResponse.json();
+                    roiImage.src = imgPathData.image_path + '?t=' + new Date().getTime();
+                } catch (e) {
+                    console.warn("Could not load default ROI image. Using placeholder.");
+                    roiImage.src = 'https://placehold.co/1920x1080/0c0a24/e5bfff?text=No+Preview+Available';
+                }
             }
 
         } catch (error) {
@@ -716,8 +723,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function drawRoiRects() {
+        if (!roiImage.src || roiImage.naturalWidth === 0) return; // Don't draw if image is not loaded
         roiCtx.clearRect(0, 0, roiCanvas.width, roiCanvas.height);
-        // Scale the image to fit the 1920x1080 canvas
         roiCtx.drawImage(roiImage, 0, 0, roiCanvas.width, roiCanvas.height);
         roiCtx.lineWidth = 2;
         for (const key in roiConfig) {
@@ -776,7 +783,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveRoiConfig() {
-        // Always set the reference resolution to 1920x1080
         roiConfig.reference_resolution = {
             width: 1920,
             height: 1080
@@ -799,32 +805,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Initialize ROI Editor
-    const captureImageEl = document.getElementById('capture-image');
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
-                // Add a small delay to ensure the image is rendered
-                setTimeout(initRoiEditor, 300);
+    if (roiEditorModal) {
+        roiEditorModal.addEventListener('show.bs.modal', initRoiEditor);
+        roiCanvas.addEventListener('mousedown', startDrawing);
+        roiCanvas.addEventListener('mousemove', draw);
+        roiCanvas.addEventListener('mouseup', stopDrawing);
+        roiCanvas.addEventListener('mouseleave', stopDrawing);
+        roiSelector.addEventListener('change', () => {
+            drawRoiRects();
+            updateCoordsDisplay();
+        });
+        saveRoiBtn.addEventListener('click', saveRoiConfig);
+        roiImageUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                roiImage.src = URL.createObjectURL(file);
             }
         });
-    });
-    observer.observe(captureImageEl, { attributes: true });
-
-    roiCanvas.addEventListener('mousedown', startDrawing);
-    roiCanvas.addEventListener('mousemove', draw);
-    roiCanvas.addEventListener('mouseup', stopDrawing);
-    roiCanvas.addEventListener('mouseleave', stopDrawing);
-            roiSelector.addEventListener('change', updateCoordsDisplay);
-            saveRoiBtn.addEventListener('click', saveRoiConfig);
-    
-            roiImageUpload.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    roiImage.src = URL.createObjectURL(file);
-                }
-            });
-    initRoiEditor();
+    }
 
     // --- F-05: Trained Pokémon Management Logic ---
     const trainedPokemonModal = document.getElementById('trained-pokemon-modal');
