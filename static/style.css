@@ -66,7 +66,7 @@ body {
 
 .pokemon-input {
     position: absolute;
-    bottom: 0;
+    bottom: 10px; /* HPバーの高さ分、上に移動 */
     left: 0;
     right: 0;
     z-index: 1;
@@ -96,7 +96,7 @@ body {
 /* HP Bar Styles */
 .hp-bar-container {
     position: absolute;
-    bottom: 2.2rem; /* .pokemon-input の高さに合わせて調整 */
+    bottom: 0;
     left: 5%;
     right: 5%;
     z-index: 2;
@@ -105,14 +105,16 @@ body {
 
 .hp-text {
     position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 0;
+    left: 0;
+    width: 100%;
     z-index: 3;
     color: white;
     font-size: 0.7rem;
     text-shadow: 1px 1px 2px black;
     pointer-events: none;
+    text-align: center;
+    line-height: 10px; /* HPバーの高さと合わせる */
 }
 
 .grayscale {
