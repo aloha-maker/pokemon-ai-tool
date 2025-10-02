@@ -74,36 +74,92 @@ export class PredictionManager {
     }
 
     initPartyDisplay() {
-        const pokemonImages = this.myPartyDisplay.querySelectorAll('img');
-        pokemonImages.forEach(img => {
-            // 初期状態をセット
-            img.dataset.clickState = '0'; 
+        const pokemonSlots = this.myPartyDisplay.querySelectorAll('.pokemon-slot');
 
+        pokemonSlots.forEach(slot => {
+            const img = slot.querySelector('img');
+            const hpBarContainer = slot.querySelector('.hp-bar-container');
+            const hpBar = slot.querySelector('.hp-bar');
+            const hpText = slot.querySelector('.hp-text');
+            const icon = slot.querySelector('.starter-icon');
+
+            // --- 1. 選出/先発のクリック処理 ---
+            img.dataset.clickState = '0';
             img.addEventListener('click', () => {
                 const currentState = parseInt(img.dataset.clickState, 10);
-                const slot = img.closest('.pokemon-slot');
-                const icon = slot.querySelector('.starter-icon');
-
                 let nextState;
 
-                if (currentState === 0) {
-                    // 未選択 -> 選択
+                if (currentState === 0) { // 未選択 -> 選択
                     nextState = 1;
                     img.classList.add('pokemon-selected');
                     icon.classList.add('d-none');
-                } else if (currentState === 1) {
-                    // 選択 -> 選択+先発
+                } else if (currentState === 1) { // 選択 -> 選択+先発
                     nextState = 2;
                     img.classList.add('pokemon-selected');
                     icon.classList.remove('d-none');
-                } else {
-                    // 選択+先発 -> 未選択
+                } else { // 選択+先発 -> 未選択
                     nextState = 0;
                     img.classList.remove('pokemon-selected');
                     icon.classList.add('d-none');
                 }
-                
                 img.dataset.clickState = nextState.toString();
+            });
+
+            // --- 2. HPバーのドラッグ処理 ---
+            let isDragging = false;
+
+            const updateHpDisplay = (hpPercentage) => {
+                // HPバーの幅とARIA属性を更新
+                hpBar.style.width = `${hpPercentage}%`;
+                hpBar.setAttribute('aria-valuenow', hpPercentage);
+
+                // HPテキストを更新 (実数値は未実装のため割合のみ)
+                hpText.textContent = `${hpPercentage}%`;
+
+                // HPバーの色を更新
+                hpBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+                if (hpPercentage > 50) {
+                    hpBar.classList.add('bg-success');
+                } else if (hpPercentage > 20) {
+                    hpBar.classList.add('bg-warning');
+                } else {
+                    hpBar.classList.add('bg-danger');
+                }
+
+                // HPが0になったら画像をグレースケール化
+                if (hpPercentage === 0) {
+                    img.classList.add('grayscale');
+                } else {
+                    img.classList.remove('grayscale');
+                }
+            };
+
+            const onDrag = (e) => {
+                const rect = hpBarContainer.getBoundingClientRect();
+                let newWidth = e.clientX - rect.left;
+                let percentage = Math.round((newWidth / rect.width) * 100);
+                percentage = Math.max(0, Math.min(100, percentage)); // 0-100の範囲に収める
+                updateHpDisplay(percentage);
+            };
+
+            hpBarContainer.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                onDrag(e); // クリックしただけでも即時反映
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    onDrag(e);
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            hpBarContainer.addEventListener('mouseleave', () => {
+                // コンテナからマウスが離れた場合、ドラッグ中であれば解除する
+                // isDragging = false; // この行はdocumentのmouseupで処理するため不要
             });
         });
     }
