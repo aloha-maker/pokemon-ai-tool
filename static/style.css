@@ -120,3 +120,27 @@ body {
 .grayscale {
     filter: grayscale(100%);
 }
+
+/* Item Styles */
+.item-container {
+    position: absolute;
+    bottom: 35px; /* HPバーと名前入力欄の上 */
+    right: 5px;
+    z-index: 3;
+}
+
+.item-icon {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.item-select {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: auto;
+    max-width: 150px; /* 長い持ち物名のための調整 */
+}

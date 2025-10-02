@@ -8,13 +8,15 @@ export class PredictionManager {
         this.myPartySelect = document.getElementById('my-party-select');
         this.loadMyPartyBtn = document.getElementById('load-my-party-btn');
         this.myPartyDisplay = document.getElementById('my-party-display');
+        this.items = []; // 持ち物リストを保持
         
         if (this.predictButton) {
             this.init();
         }
     }
 
-    init() {
+    async init() {
+        await this.loadMasterData();
         this.initMyPartySelector();
         this.predictButton.addEventListener('click', () => this.handlePredict());
         
@@ -24,6 +26,17 @@ export class PredictionManager {
         
         if (this.myPartyDisplay) {
             this.initPartyDisplay();
+        }
+    }
+
+    async loadMasterData() {
+        try {
+            const response = await fetch('/api/master/items');
+            if (!response.ok) throw new Error('持ち物マスターの取得に失敗しました。');
+            this.items = await response.json();
+        } catch (error) {
+            console.error(error);
+            // エラーが発生しても他の機能は続行させる
         }
     }
 
@@ -64,6 +77,7 @@ export class PredictionManager {
             party.members.forEach((member, index) => {
                 if (index < myPartyInputs.length) {
                     myPartyInputs[index].value = member.pokemon_name;
+                    // TODO: HPや持ち物もここで設定する
                 }
             });
 
@@ -81,7 +95,9 @@ export class PredictionManager {
             const hpBarContainer = slot.querySelector('.hp-bar-container');
             const hpBar = slot.querySelector('.hp-bar');
             const hpText = slot.querySelector('.hp-text');
-            const icon = slot.querySelector('.starter-icon');
+            const starterIcon = slot.querySelector('.starter-icon');
+            const itemIcon = slot.querySelector('.item-icon');
+            const itemSelect = slot.querySelector('.item-select');
 
             // --- 1. 選出/先発のクリック処理 ---
             img.dataset.clickState = '0';
@@ -92,31 +108,25 @@ export class PredictionManager {
                 if (currentState === 0) { // 未選択 -> 選択
                     nextState = 1;
                     img.classList.add('pokemon-selected');
-                    icon.classList.add('d-none');
+                    starterIcon.classList.add('d-none');
                 } else if (currentState === 1) { // 選択 -> 選択+先発
                     nextState = 2;
                     img.classList.add('pokemon-selected');
-                    icon.classList.remove('d-none');
+                    starterIcon.classList.remove('d-none');
                 } else { // 選択+先発 -> 未選択
                     nextState = 0;
                     img.classList.remove('pokemon-selected');
-                    icon.classList.add('d-none');
+                    starterIcon.classList.add('d-none');
                 }
                 img.dataset.clickState = nextState.toString();
             });
 
             // --- 2. HPバーのドラッグ処理 ---
             let isDragging = false;
-
             const updateHpDisplay = (hpPercentage) => {
-                // HPバーの幅とARIA属性を更新
                 hpBar.style.width = `${hpPercentage}%`;
                 hpBar.setAttribute('aria-valuenow', hpPercentage);
-
-                // HPテキストを更新 (実数値は未実装のため割合のみ)
                 hpText.textContent = `${hpPercentage}%`;
-
-                // HPバーの色を更新
                 hpBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
                 if (hpPercentage > 50) {
                     hpBar.classList.add('bg-success');
@@ -125,41 +135,61 @@ export class PredictionManager {
                 } else {
                     hpBar.classList.add('bg-danger');
                 }
-
-                // HPが0になったら画像をグレースケール化
-                if (hpPercentage === 0) {
-                    img.classList.add('grayscale');
-                } else {
-                    img.classList.remove('grayscale');
-                }
+                img.classList.toggle('grayscale', hpPercentage === 0);
             };
 
             const onDrag = (e) => {
                 const rect = hpBarContainer.getBoundingClientRect();
                 let newWidth = e.clientX - rect.left;
                 let percentage = Math.round((newWidth / rect.width) * 100);
-                percentage = Math.max(0, Math.min(100, percentage)); // 0-100の範囲に収める
+                percentage = Math.max(0, Math.min(100, percentage));
                 updateHpDisplay(percentage);
             };
 
-            hpBarContainer.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                onDrag(e); // クリックしただけでも即時反映
+            hpBarContainer.addEventListener('mousedown', (e) => { isDragging = true; onDrag(e); });
+            document.addEventListener('mousemove', (e) => { if (isDragging) { onDrag(e); } });
+            document.addEventListener('mouseup', () => { isDragging = false; });
+
+            // --- 3. 持ち物選択処理 ---
+            // プルダウンを生成
+            this.items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.name_ja;
+                itemSelect.appendChild(option);
             });
 
-            document.addEventListener('mousemove', (e) => {
-                if (isDragging) {
-                    onDrag(e);
-                }
+            // アイコンクリックでプルダウン表示
+            itemIcon.addEventListener('click', () => {
+                itemIcon.classList.add('d-none');
+                itemSelect.classList.remove('d-none');
+                itemSelect.focus();
             });
 
-            document.addEventListener('mouseup', () => {
-                isDragging = false;
+            const hideSelect = () => {
+                itemSelect.classList.add('d-none');
+                itemIcon.classList.remove('d-none');
+            };
+
+            // プルダウン変更で値を保存し、表示を戻す
+            itemSelect.addEventListener('change', () => {
+                const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+                slot.dataset.selectedItemId = itemSelect.value;
+                slot.dataset.selectedItemName = selectedOption.textContent;
+                
+                // TODO: アイコン画像を動的に変更する
+                // if (itemSelect.value) {
+                //     itemIcon.src = `/static/images/items/${selectedOption.textContent}.png`;
+                // } else {
+                //     itemIcon.src = 'https://placehold.co/24x24/777/eee?text=?';
+                // }
+
+                hideSelect();
             });
 
-            hpBarContainer.addEventListener('mouseleave', () => {
-                // コンテナからマウスが離れた場合、ドラッグ中であれば解除する
-                // isDragging = false; // この行はdocumentのmouseupで処理するため不要
+            // フォーカスが外れたら表示を戻す
+            itemSelect.addEventListener('blur', () => {
+                hideSelect();
             });
         });
     }
