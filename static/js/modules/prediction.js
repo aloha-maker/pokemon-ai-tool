@@ -58,8 +58,7 @@ export class PredictionManager {
             const response = await fetch(`/api/parties/${partyId}`);
             if (!response.ok) throw new Error('パーティ情報の取得に失敗しました。');
             const party = await response.json();
-            
-            const myPartyInputs = document.querySelectorAll('#my-party-form input');
+            const myPartyInputs = document.querySelectorAll('#my-party-display .pokemon-input');
             myPartyInputs.forEach(input => input.value = '');
 
             party.members.forEach((member, index) => {

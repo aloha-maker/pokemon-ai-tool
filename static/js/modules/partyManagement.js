@@ -179,7 +179,7 @@ export class PartyManagement {
             
             this.memberSelects.forEach((select, index) => {
                 const member = party.members.find(m => m.member_index === index);
-                select.value = member ? member.trained_pokemon_id : '';
+                select.value = member ? member.id : '';
             });
 
             this.formTitle.textContent = 'パーティ編集';
