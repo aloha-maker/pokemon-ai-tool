@@ -76,28 +76,34 @@ export class PredictionManager {
     initPartyDisplay() {
         const pokemonImages = this.myPartyDisplay.querySelectorAll('img');
         pokemonImages.forEach(img => {
-            // シングルクリックで選択切り替え
-            img.addEventListener('click', () => {
-                img.classList.toggle('pokemon-selected');
-            });
+            // 初期状態をセット
+            img.dataset.clickState = '0'; 
 
-            // ダブルクリックで先発に設定
-            img.addEventListener('dblclick', () => {
+            img.addEventListener('click', () => {
+                const currentState = parseInt(img.dataset.clickState, 10);
                 const slot = img.closest('.pokemon-slot');
                 const icon = slot.querySelector('.starter-icon');
-                
-                if (icon) {
-                    const isCurrentlyStarter = !icon.classList.contains('d-none');
 
-                    // 他の先発を解除
-                    const allIcons = this.myPartyDisplay.querySelectorAll('.starter-icon');
-                    allIcons.forEach(i => i.classList.add('d-none'));
+                let nextState;
 
-                    // クリックしたものが先発でなければ先発にする
-                    if (!isCurrentlyStarter) {
-                        icon.classList.remove('d-none');
-                    }
+                if (currentState === 0) {
+                    // 未選択 -> 選択
+                    nextState = 1;
+                    img.classList.add('pokemon-selected');
+                    icon.classList.add('d-none');
+                } else if (currentState === 1) {
+                    // 選択 -> 選択+先発
+                    nextState = 2;
+                    img.classList.add('pokemon-selected');
+                    icon.classList.remove('d-none');
+                } else {
+                    // 選択+先発 -> 未選択
+                    nextState = 0;
+                    img.classList.remove('pokemon-selected');
+                    icon.classList.add('d-none');
                 }
+                
+                img.dataset.clickState = nextState.toString();
             });
         });
     }
