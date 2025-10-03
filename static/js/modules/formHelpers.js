@@ -94,11 +94,10 @@ export async function initFormSelects() {
 
                 // Add event listener to update icon
                 select.addEventListener('change', (event) => {
-                    const selectedOption = event.target.options[event.target.selectedIndex];
+                    const selectEl = event.target;
+                    const selectedOption = selectEl.options[selectEl.selectedIndex];
                     const itemName = selectedOption.dataset.itemName;
-                    const selectId = event.target.id;
-                    const iconId = selectId.replace('my-item-', 'my-item-icon-');
-                    const iconElement = document.getElementById(iconId);
+                    const iconElement = selectEl.parentElement.querySelector('.item-icon');
 
                     if (iconElement) {
                         if (itemName) {
@@ -122,11 +121,10 @@ export async function initFormSelects() {
 
                 // Add event listener to update icon
                 select.addEventListener('change', (event) => {
-                    const selectedOption = event.target.options[event.target.selectedIndex];
+                    const selectEl = event.target;
+                    const selectedOption = selectEl.options[selectEl.selectedIndex];
                     const typeName = selectedOption.dataset.typeName;
-                    const selectId = event.target.id;
-                    const iconId = selectId.replace('my-tera-type-', 'my-tera-icon-');
-                    const iconElement = document.getElementById(iconId);
+                    const iconElement = selectEl.parentElement.querySelector('.tera-type-icon');
 
                     if (iconElement) {
                         if (typeName) {

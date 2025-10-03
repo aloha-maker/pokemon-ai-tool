@@ -52,7 +52,7 @@ export class PokemonDetailEditor {
         this.saveBtn = document.getElementById('save-pokemon-details-btn');
         this.currentSlot = null;
 
-        this.partyState = Array(6).fill(null).map(() => ({
+        this.partyState = Array(12).fill(null).map(() => ({
             ability_id: null,
             moves: [
                 { id: null, pp: null },
