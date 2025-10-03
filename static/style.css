@@ -130,5 +130,5 @@ body {
     color: white;
     font-size: 1rem;
     text-shadow: 0 0 3px black;
-    pointer-events: none;
+    cursor: pointer; /* Make it clickable */
 }

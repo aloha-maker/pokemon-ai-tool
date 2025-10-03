@@ -10,13 +10,17 @@ export class PokemonDetailEditor {
 
     init() {
         this.pokemonSlots.forEach((slot, index) => {
-            const img = slot.querySelector('img');
-            if (img) {
-                img.style.cursor = 'pointer';
-                img.addEventListener('click', () => {
+            const gearIcon = slot.querySelector('.pokemon-settings-icon');
+            if (gearIcon) {
+                gearIcon.addEventListener('click', () => {
                     this.currentSlot = index;
                     this.openModalFor(slot);
                 });
+            }
+
+            const img = slot.querySelector('img');
+            if (img) {
+                img.style.cursor = 'default';
             }
         });
     }
