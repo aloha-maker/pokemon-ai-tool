@@ -1,6 +1,6 @@
 // formHelpers.js - フォーム関連のヘルパー関数
 
-export function populateSelect(elementId, data, defaultOptionText) {
+export function populateSelect(elementId, data, defaultOptionText, options = {}) {
     const select = document.getElementById(elementId);
     if (!select) return;
 
@@ -14,6 +14,9 @@ export function populateSelect(elementId, data, defaultOptionText) {
         const option = document.createElement('option');
         option.value = item.id;
         option.textContent = item.name_ja || item.name;
+        if (options.dataAttribute) {
+            option.dataset[options.dataAttribute.name] = item[options.dataAttribute.value];
+        }
         select.appendChild(option);
     });
 }
@@ -76,7 +79,7 @@ export async function initFormSelects() {
 
         populateSelect('pokemon-master-id', pokemons, 'ポケモンを選択');
         populateSelect('tera-type-id', types, 'テラスタイプを選択');
-        populateSelect('held-item-id', items, '持ち物を選択');
+        populateSelect('held-item-id', items, '持ち物を選択', { dataAttribute: { name: 'itemName', value: 'name' } });
         populateSelect('nature-id', natures, '性格を選択');
 
         moveSelects.forEach(select => {
@@ -87,7 +90,27 @@ export async function initFormSelects() {
         const itemSelects = document.querySelectorAll('.item-select');
         if (itemSelects.length > 0 && items) {
             itemSelects.forEach(select => {
-                populateSelect(select.id, items, '持ち物');
+                populateSelect(select.id, items, '持ち物', { dataAttribute: { name: 'itemName', value: 'name' } });
+
+                // Add event listener to update icon
+                select.addEventListener('change', (event) => {
+                    const selectedOption = event.target.options[event.target.selectedIndex];
+                    const itemName = selectedOption.dataset.itemName;
+                    const selectId = event.target.id;
+                    const iconId = selectId.replace('my-item-', 'my-item-icon-');
+                    const iconElement = document.getElementById(iconId);
+
+                    if (iconElement) {
+                        if (itemName) {
+                            iconElement.src = `/static/images/items/${itemName}.png`;
+                            iconElement.alt = selectedOption.textContent;
+                        } else {
+                            // Reset to placeholder if no item is selected
+                            iconElement.src = 'https://placehold.co/24x24/333/ccc?text=?';
+                            iconElement.alt = '持ち物アイコン';
+                        }
+                    }
+                });
             });
         }
 
