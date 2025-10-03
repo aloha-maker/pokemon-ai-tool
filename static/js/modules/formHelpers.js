@@ -114,6 +114,33 @@ export async function initFormSelects() {
             });
         }
 
+        // Populate tera type dropdowns on the main page
+        const teraTypeSelects = document.querySelectorAll('.tera-type-select');
+        if (teraTypeSelects.length > 0 && types) {
+            teraTypeSelects.forEach(select => {
+                populateSelect(select.id, types, 'テラスタイプ', { dataAttribute: { name: 'typeName', value: 'name' } });
+
+                // Add event listener to update icon
+                select.addEventListener('change', (event) => {
+                    const selectedOption = event.target.options[event.target.selectedIndex];
+                    const typeName = selectedOption.dataset.typeName;
+                    const selectId = event.target.id;
+                    const iconId = selectId.replace('my-tera-type-', 'my-tera-icon-');
+                    const iconElement = document.getElementById(iconId);
+
+                    if (iconElement) {
+                        if (typeName) {
+                            iconElement.src = `/static/images/types/${typeName}.png`;
+                            iconElement.alt = selectedOption.textContent;
+                        } else {
+                            iconElement.src = 'https://placehold.co/24x24/333/ccc?text=?';
+                            iconElement.alt = 'テラスタイプアイコン';
+                        }
+                    }
+                });
+            });
+        }
+
         // ポケモン選択時に特性を動的に読み込むイベントリスナー
         const pokemonMasterSelect = document.getElementById('pokemon-master-id');
         if (pokemonMasterSelect) {

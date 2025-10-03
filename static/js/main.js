@@ -37,4 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
             icon.classList.toggle('grayscale');
         });
     });
+
+    // テラスタイプアイコンのクリックイベント
+    document.querySelectorAll('.tera-type-icon').forEach(icon => {
+        icon.style.cursor = 'pointer'; // クリック可能であることを示すカーソル
+        icon.addEventListener('click', () => {
+            icon.classList.toggle('grayscale');
+        });
+    });
 });
