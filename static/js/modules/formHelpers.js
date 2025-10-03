@@ -83,6 +83,14 @@ export async function initFormSelects() {
             populateSelect(select.id, moves, '技を選択');
         });
 
+        // Populate item dropdowns on the main page
+        const itemSelects = document.querySelectorAll('.item-select');
+        if (itemSelects.length > 0 && items) {
+            itemSelects.forEach(select => {
+                populateSelect(select.id, items, '持ち物');
+            });
+        }
+
         // ポケモン選択時に特性を動的に読み込むイベントリスナー
         const pokemonMasterSelect = document.getElementById('pokemon-master-id');
         if (pokemonMasterSelect) {
