@@ -520,16 +520,6 @@ class DatabaseManager:
         """
         return [dict(row) for row in cursor.fetchall()]
 
-    def get_abilities_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
-        """指定されたpokemon_idに紐づく特性のリストを取得する。"""
-        cursor = self.get_cursor()
-        query = """
-            SELECT a.id, a.name, a.name_ja, pa.is_hidden
-            FROM abilities a
-            JOIN pokemon_abilities pa ON a.id = pa.ability_id
-            WHERE pa.pokemon_id = ?
-        """
-        cursor.execute(query, (pokemon_id,))
-        return [dict(row) for row in cursor.fetchall()]
+
 
 

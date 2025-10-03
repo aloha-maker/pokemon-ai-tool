@@ -28,14 +28,13 @@ async function getAllMoves() {
     }
 }
 
-async function getAbilitiesForPokemon(pokemonId) {
-    if (!pokemonId) return [];
+async function getAllAbilities() {
     try {
-        const response = await fetch(`/api/pokemon/${pokemonId}/abilities`);
+        const response = await fetch(`/api/master/abilities`);
         if (!response.ok) return [];
         return await response.json();
     } catch (error) {
-        console.error(`Error fetching abilities for pokemon ${pokemonId}:`, error);
+        console.error(`Error fetching abilities:`, error);
         return [];
     }
 }
@@ -132,7 +131,7 @@ export class PokemonDetailEditor {
         console.log(`Pokemon: ${pokemonName}, ID: ${pokemonId}`);
 
         // Populate abilities and moves
-        const abilities = await getAbilitiesForPokemon(pokemonId);
+        const abilities = await getAllAbilities();
         console.log('Fetched abilities:', abilities);
         populateSelect('details-ability-select', abilities, '特性を選択');
 
