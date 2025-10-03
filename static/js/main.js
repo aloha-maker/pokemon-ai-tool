@@ -11,6 +11,7 @@ import { PartyManagement } from './modules/partyManagement.js';
 import { Calculator } from './modules/calculator.js';
 import { Simulator } from './modules/simulator.js';
 import { ItemEditor } from './modules/itemEditor.js';
+import { PokemonDetailEditor } from './modules/pokemonDetailEditor.js';
 import { initFormSelects } from './modules/formHelpers.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new Calculator();
     new Simulator();
     new ItemEditor();
+    new PokemonDetailEditor();
     
     // フォーム選択肢の初期化
     initFormSelects();
