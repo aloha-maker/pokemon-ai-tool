@@ -58,14 +58,46 @@ export class PredictionManager {
             const response = await fetch(`/api/parties/${partyId}`);
             if (!response.ok) throw new Error('パーティ情報の取得に失敗しました。');
             const party = await response.json();
-            const myPartyInputs = document.querySelectorAll('#my-party-display .pokemon-input');
-            myPartyInputs.forEach(input => input.value = '');
 
-            party.members.forEach((member, index) => {
-                if (index < myPartyInputs.length) {
-                    myPartyInputs[index].value = member.pokemon_name;
+            // Clear existing values
+            const myPartySlots = document.querySelectorAll('#my-party-display .pokemon-slot');
+            myPartySlots.forEach(slot => {
+                slot.querySelector('.pokemon-input').value = '';
+                const itemSelect = slot.querySelector('.item-select');
+                if(itemSelect) {
+                    itemSelect.value = '';
+                    itemSelect.dispatchEvent(new Event('change'));
+                }
+                const teraSelect = slot.querySelector('.tera-type-select');
+                if(teraSelect) {
+                    teraSelect.value = '';
+                    teraSelect.dispatchEvent(new Event('change'));
                 }
             });
+
+            // Populate new values
+            party.members.forEach((member, index) => {
+                if (index < myPartySlots.length) {
+                    const slot = myPartySlots[index];
+                    slot.querySelector('.pokemon-input').value = member.pokemon_name || '';
+                    
+                    const itemSelect = slot.querySelector('.item-select');
+                    if (itemSelect) {
+                        itemSelect.value = member.held_item_id || '';
+                        itemSelect.dispatchEvent(new Event('change')); // To update icon
+                    }
+
+                    const teraSelect = slot.querySelector('.tera-type-select');
+                    if (teraSelect) {
+                        teraSelect.value = member.tera_type_id || '';
+                        teraSelect.dispatchEvent(new Event('change')); // To update icon
+                    }
+                }
+            });
+
+            // Dispatch event for other modules to update their state
+            const event = new CustomEvent('partyLoaded', { detail: party.members });
+            document.dispatchEvent(event);
 
         } catch (error) {
             console.error(error);
