@@ -247,14 +247,128 @@
                                     予測を開始
                                 </button>
                             </div>
-                            <form id="opponent-party-form">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン1" value="マスカーニャ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン2" value="ラウドボーン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン3" value="ウェーニバル" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン4" value="ドドゲザン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン5" value="キノガッサ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン6" value="ミミッキュ" list="pokemon-datalist">
-                            </form>
+                            <div class="row gx-1" id="opponent-party-display">
+                                <div class="col-2 position-relative pokemon-slot">
+                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
+                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
+                                    <div class="position-relative">
+                                        <img src="https://placehold.co/96x96/333/ccc?text=P1" class="img-fluid rounded w-100">
+                                        <div class="hp-bar-container progress" style="height: 20px;">
+                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン1" list="pokemon-datalist" value="マスカーニャ">
+                                    </div>
+                                    <div class="item-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-1">
+                                        <select class="form-select form-select-sm item-select" id="opponent-item-1"></select>
+                                    </div>
+                                    <div class="tera-type-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-1">
+                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-1"></select>
+                                    </div>
+                                </div>
+                                <div class="col-2 position-relative pokemon-slot">
+                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
+                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
+                                    <div class="position-relative">
+                                        <img src="https://placehold.co/96x96/333/ccc?text=P2" class="img-fluid rounded w-100">
+                                        <div class="hp-bar-container progress" style="height: 20px;">
+                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン2" list="pokemon-datalist" value="ラウドボーン">
+                                    </div>
+                                    <div class="item-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-2">
+                                        <select class="form-select form-select-sm item-select" id="opponent-item-2"></select>
+                                    </div>
+                                    <div class="tera-type-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-2">
+                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-2"></select>
+                                    </div>
+                                </div>
+                                <div class="col-2 position-relative pokemon-slot">
+                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
+                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
+                                    <div class="position-relative">
+                                        <img src="https://placehold.co/96x96/333/ccc?text=P3" class="img-fluid rounded w-100">
+                                        <div class="hp-bar-container progress" style="height: 20px;">
+                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン3" list="pokemon-datalist" value="ウェーニバル">
+                                    </div>
+                                    <div class="item-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-3">
+                                        <select class="form-select form-select-sm item-select" id="opponent-item-3"></select>
+                                    </div>
+                                    <div class="tera-type-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-3">
+                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-3"></select>
+                                    </div>
+                                </div>
+                                <div class="col-2 position-relative pokemon-slot">
+                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
+                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
+                                    <div class="position-relative">
+                                        <img src="https://placehold.co/96x96/333/ccc?text=P4" class="img-fluid rounded w-100">
+                                        <div class="hp-bar-container progress" style="height: 20px;">
+                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン4" list="pokemon-datalist" value="ドドゲザン">
+                                    </div>
+                                    <div class="item-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-4">
+                                        <select class="form-select form-select-sm item-select" id="opponent-item-4"></select>
+                                    </div>
+                                    <div class="tera-type-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-4">
+                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-4"></select>
+                                    </div>
+                                </div>
+                                <div class="col-2 position-relative pokemon-slot">
+                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
+                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
+                                    <div class="position-relative">
+                                        <img src="https://placehold.co/96x96/333/ccc?text=P5" class="img-fluid rounded w-100">
+                                        <div class="hp-bar-container progress" style="height: 20px;">
+                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン5" list="pokemon-datalist" value="キノガッサ">
+                                    </div>
+                                    <div class="item-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-5">
+                                        <select class="form-select form-select-sm item-select" id="opponent-item-5"></select>
+                                    </div>
+                                    <div class="tera-type-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-5">
+                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-5"></select>
+                                    </div>
+                                </div>
+                                <div class="col-2 position-relative pokemon-slot">
+                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
+                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
+                                    <div class="position-relative">
+                                        <img src="https://placehold.co/96x96/333/ccc?text=P6" class="img-fluid rounded w-100">
+                                        <div class="hp-bar-container progress" style="height: 20px;">
+                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
+                                        </div>
+                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン6" list="pokemon-datalist" value="ミミッキュ">
+                                    </div>
+                                    <div class="item-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-6">
+                                        <select class="form-select form-select-sm item-select" id="opponent-item-6"></select>
+                                    </div>
+                                    <div class="tera-type-container d-flex align-items-center mt-1">
+                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-6">
+                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-6"></select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
