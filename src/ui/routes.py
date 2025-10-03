@@ -107,11 +107,9 @@ def get_master_data(resource):
             # name_ja がないテーブル (moves) のために name を使う -> name_jaが存在するため修正
             if resource == 'pokemons':
                 # ポケモン名で重複を除外する（フォルム違いなどをまとめる）
-                cursor.execute("SELECT MIN(id) as id, name_ja FROM pokemons GROUP BY name_ja ORDER BY name_ja")
-            elif resource in ['moves']:
-                 cursor.execute(f"SELECT id, name, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY id")
+                cursor.execute("SELECT MIN(id) as id, name, name_ja FROM pokemons GROUP BY name_ja ORDER BY name_ja")
             else:
-                 cursor.execute(f"SELECT id, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY name_ja")
+                 cursor.execute(f"SELECT id, name, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY name_ja")
             items = cursor.fetchall()
         return jsonify([dict(item) for item in items]), 200
     except Exception as e:
@@ -200,8 +198,6 @@ def get_pokemon_abilities(pokemon_id):
         return jsonify(abilities), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# --- F-06: パーティ管理 (Parties) ---
 
 @api_bp.route('/parties', methods=['GET'])
 def get_parties():

@@ -1,40 +1,44 @@
 import { populateSelect } from './formHelpers.js';
 
-// Assuming an API endpoint to get moves for a specific pokemon
-async function getMovesForPokemon(pokemonName) {
-    if (!pokemonName) return [];
-    try {
-        // This API endpoint doesn't exist yet. I'm assuming it will.
-        const response = await fetch(`/api/pokemon/${pokemonName}/moves`);
-        if (!response.ok) {
-            console.error(`Failed to fetch moves for ${pokemonName}`);
-            return [];
+// This can be cached to avoid re-fetching
+let pokemonMasterList = [];
+async function getPokemonIdByName(name) {
+    if (pokemonMasterList.length === 0) {
+        try {
+            const response = await fetch('/api/master/pokemons');
+            pokemonMasterList = await response.json();
+        } catch (e) {
+            console.error("Failed to fetch pokemon master list", e);
+            return null;
         }
-        return await response.json();
-    } catch (error) {
-        console.error(`Error fetching moves for ${pokemonName}:`, error);
-        return [];
     }
+    const pokemon = pokemonMasterList.find(p => p.name_ja === name);
+    return pokemon ? pokemon.id : null;
 }
 
-async function getAbilitiesForPokemon(pokemonName) {
-    if (!pokemonName) return [];
-    try {
-        // The existing updateAbilitiesForPokemon uses pokemonId. I'll need to get the ID from the name.
-        const masterResponse = await fetch('/api/master/pokemons');
-        const pokemons = await masterResponse.json();
-        const pokemon = pokemons.find(p => p.name_ja === pokemonName);
-        if (!pokemon) return [];
 
-        const response = await fetch(`/api/pokemon/${pokemon.id}/abilities`);
+async function getAllMoves() {
+    try {
+        const response = await fetch(`/api/master/moves`);
         if (!response.ok) return [];
         return await response.json();
     } catch (error) {
-        console.error(`Error fetching abilities for ${pokemonName}:`, error);
+        console.error(`Error fetching moves:`, error);
         return [];
     }
 }
 
+async function getAbilitiesForPokemon(pokemonId) {
+    if (!pokemonId) return [];
+    try {
+        const response = await fetch(`/api/pokemon/${pokemonId}/abilities`);
+        if (!response.ok) return [];
+        return await response.json();
+    } catch (error) {
+        console.error(`Error fetching abilities for pokemon ${pokemonId}:`, error);
+        return [];
+    }
+}
 
 export class PokemonDetailEditor {
     constructor() {
@@ -120,26 +124,37 @@ export class PokemonDetailEditor {
 
         this.pokemonNameEl.textContent = pokemonName;
 
-        // Populate abilities
-        const abilities = await getAbilitiesForPokemon(pokemonName);
+        const pokemonId = await getPokemonIdByName(pokemonName);
+        if (!pokemonId) {
+            alert('ポケモンが見つかりません。');
+            return;
+        }
+
+        // Populate abilities and moves
+        const abilities = await getAbilitiesForPokemon(pokemonId);
         populateSelect('details-ability-select', abilities, '特性を選択');
 
-        // Populate moves
-        const moves = await getMovesForPokemon(pokemonName);
+        const moves = await getAllMoves();
         this.moveSelects.forEach(select => {
             populateSelect(select.id, moves, '技を選択');
         });
         
         // Load state
         const state = this.partyState[this.currentSlot];
-        this.abilitySelect.value = state.ability_id || '';
-        
-        this.moveSelects.forEach((select, i) => {
-            select.value = state.moves[i]?.id || '';
-        });
-        this.ppInputs.forEach((input, i) => {
-            input.value = state.moves[i]?.pp || '8'; // Default to 8 for now
-        });
+        if (state) {
+            this.abilitySelect.value = state.ability_id || '';
+            
+            this.moveSelects.forEach((select, i) => {
+                if (state.moves[i]) {
+                    select.value = state.moves[i].id || '';
+                }
+            });
+            this.ppInputs.forEach((input, i) => {
+                if (state.moves[i]) {
+                    input.value = state.moves[i].pp ?? '8'; 
+                }
+            });
+        }
 
         this.modal.show();
     }

@@ -531,3 +531,5 @@ class DatabaseManager:
         """
         cursor.execute(query, (pokemon_id,))
         return [dict(row) for row in cursor.fetchall()]
+
+
