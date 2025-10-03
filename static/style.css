@@ -65,7 +65,6 @@ body {
 }
 
 .pokemon-input {
-    position: absolute;
     bottom: 10px; /* HPバーの高さ分、上に移動 */
     left: 0;
     right: 0;
@@ -95,7 +94,6 @@ body {
 
 /* HP Bar Styles */
 .hp-bar-container {
-    position: absolute;
     bottom: 0;
     left: 5%;
     right: 5%;
@@ -104,7 +102,6 @@ body {
 }
 
 .hp-text {
-    position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
