@@ -29,4 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // フォーム選択肢の初期化
     initFormSelects();
+
+    // 持ち物アイコンのクリックイベント
+    document.querySelectorAll('.item-icon').forEach(icon => {
+        icon.style.cursor = 'pointer'; // クリック可能であることを示すカーソル
+        icon.addEventListener('click', () => {
+            icon.classList.toggle('grayscale');
+        });
+    });
 });
