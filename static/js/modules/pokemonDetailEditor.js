@@ -116,7 +116,7 @@ export class PokemonDetailEditor {
     }
 
     async openModalFor(slot) {
-        const pokemonName = slot.querySelector('.pokemon-input').value;
+        const pokemonName = slot.querySelector('.pokemon-input').value.trim();
         if (!pokemonName) {
             alert('先にポケモン名を入力してください。');
             return;
@@ -126,12 +126,14 @@ export class PokemonDetailEditor {
 
         const pokemonId = await getPokemonIdByName(pokemonName);
         if (!pokemonId) {
-            alert('ポケモンが見つかりません。');
+            alert(`ポケモン「${pokemonName}」がマスターデータに見つかりません。`);
             return;
         }
+        console.log(`Pokemon: ${pokemonName}, ID: ${pokemonId}`);
 
         // Populate abilities and moves
         const abilities = await getAbilitiesForPokemon(pokemonId);
+        console.log('Fetched abilities:', abilities);
         populateSelect('details-ability-select', abilities, '特性を選択');
 
         const moves = await getAllMoves();
@@ -141,8 +143,10 @@ export class PokemonDetailEditor {
         
         // Load state
         const state = this.partyState[this.currentSlot];
+        console.log('Loading state for slot', this.currentSlot, state);
         if (state) {
             this.abilitySelect.value = state.ability_id || '';
+            console.log(`Set ability dropdown to: ${this.abilitySelect.value}`);
             
             this.moveSelects.forEach((select, i) => {
                 if (state.moves[i]) {
