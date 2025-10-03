@@ -137,8 +137,8 @@ export class PredictionManager {
             const hpText = slot.querySelector('.hp-text');
             const icon = slot.querySelector('.starter-icon');
 
-            // --- 1. 選出/先発のクリック処理 (自分パーティのみ) ---
-            if (partyDisplayContainer.id === 'my-party-display' && img) {
+            // --- 1. 選出/先発のクリック処理 ---
+            if (img) {
                 img.style.cursor = 'pointer';
                 img.dataset.clickState = '0';
                 img.addEventListener('click', () => {
