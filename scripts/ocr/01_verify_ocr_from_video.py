@@ -5,20 +5,18 @@ import shutil
 import hashlib
 from glob import glob
 
-# === 設定 ===
+
 INPUT_DIR = r'C:\Users\daiki\Videos\pokemon\input_videos'
 OUTPUT_DIR = r'C:\Users\daiki\Videos\pokemon\cropped_images'
 PROCESSED_DIR = r'C:\Users\daiki\Videos\pokemon\processed_videos'
 ROI_FILE = r'C:\pokemon-ai-tool\roi_config.json'
 EXTRACT_PER_SECOND = 0.3  # 1秒に3枚抽出
 
-# Windows 長パス対応
 def win_safe_path(path):
     if os.name == 'nt':
         return "\\\\?\\" + os.path.abspath(path)
     return path
 
-# ROI 読み込み
 with open(ROI_FILE, "r", encoding="utf-8") as f:
     roi_dict = json.load(f)
 
@@ -59,30 +57,20 @@ def process_video(video_path):
                 if roi_img.size == 0:
                     continue
 
-                # 保存ディレクトリ作成
                 roi_dir = os.path.join(OUTPUT_DIR, video_name, roi_name)
                 os.makedirs(roi_dir, exist_ok=True)
+                filename = f"{short_hash}_{frame_idx:06d}.jpg"
+                save_path = win_safe_path(os.path.join(roi_dir, filename))
 
-                # 短いファイル名
-                base_name = f"{short_hash}_{frame_idx:06d}"
-                img_path = win_safe_path(os.path.join(roi_dir, base_name + ".jpg"))
-                txt_path = win_safe_path(os.path.join(roi_dir, base_name + ".txt"))
-
-                # 画像保存
-                if cv2.imwrite(img_path, roi_img):
-                    # OCR学習用テキストファイル作成
-                    with open(txt_path, "w", encoding="utf-8") as t:
-                        t.write(roi_name)  # ROI名をそのままラベルとして保存
-                    save_count += 1
+                if not cv2.imwrite(save_path, roi_img):
+                    print(f"⚠ 保存失敗: {save_path}")
                 else:
-                    print(f"⚠ 保存失敗: {img_path}")
+                    save_count += 1
 
         frame_idx += 1
 
     cap.release()
     print(f"✅ {video_name} 処理完了（保存画像数: {save_count}）")
-
-    # 処理済フォルダへ移動
     shutil.move(video_path, os.path.join(PROCESSED_DIR, os.path.basename(video_path)))
 
 def main():
