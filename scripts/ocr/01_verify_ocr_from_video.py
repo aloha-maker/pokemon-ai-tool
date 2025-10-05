@@ -6,9 +6,9 @@ import hashlib
 from glob import glob
 
 
-INPUT_DIR = r'C:\Users\daiki\Videos\pokemon\input_videos'
-OUTPUT_DIR = r'C:\Users\daiki\Videos\pokemon\cropped_images'
-PROCESSED_DIR = r'C:\Users\daiki\Videos\pokemon\processed_videos'
+INPUT_DIR = r'C:\pokemon-ai-tool\.traindata\video\input_videos'
+OUTPUT_DIR = r'C:\pokemon-ai-tool\.traindata\text2img'
+PROCESSED_DIR = r'C:\pokemon-ai-tool\.traindata\video\processed_videos'
 ROI_FILE = r'C:\pokemon-ai-tool\roi_config.json'
 EXTRACT_PER_SECOND = 0.3  # 1秒に3枚抽出
 

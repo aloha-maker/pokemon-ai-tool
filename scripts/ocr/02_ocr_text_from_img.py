@@ -3,6 +3,7 @@ import cv2
 import pytesseract
 from PIL import Image
 import re
+import shutil
 
 class OCRTextGenerator:
     def __init__(self):
@@ -10,17 +11,22 @@ class OCRTextGenerator:
         OCRテキスト生成クラス（ディレクトリ直書き版）
         """
         # ディレクトリパスを直書き
-        self.image_dir = r'C:\Users\daiki\Videos\pokemon\input_img'
-        self.output_text_dir = r'C:\Users\daiki\Videos\pokemon\output_text'
+        self.image_dir = r'C:\pokemon-ai-tool\.traindata\text2img'
+        self.output_dir = r'C:\workspace\tesstrain\data\jpn_pokemon-ground-truth'
+        # self.output_text_dir = r'C:\Users\daiki\Videos\pokemon\output_text'
         
         # Tesseractのパス設定
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
         
-        # 出力ディレクトリを作成
-        os.makedirs(self.output_text_dir, exist_ok=True)
+        # 入力・出力ディレクトリを作成
+        os.makedirs(self.image_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
         
-        # ポケモン対戦でよく使われる単語を辞書に追加（精度向上のため）
-        self.custom_config = r'--oem 3 --psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- '
+        # tessdata_custom への絶対パスを構築
+        script_path = os.path.abspath(__file__)
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
+        tessdata_dir = os.path.join(project_root, 'tessdata_custom')
+        self.custom_config = f'--tessdata-dir {tessdata_dir} --oem 3 --psm 7'
     
     def preprocess_image(self, image_path):
         """
@@ -57,7 +63,7 @@ class OCRTextGenerator:
             text = pytesseract.image_to_string(
                 processed_image, 
                 config=self.custom_config,
-                lang='eng'
+                lang='jpn+jpn_pokemon'
             )
             
             # テキストのクリーニング
@@ -73,16 +79,13 @@ class OCRTextGenerator:
         """
         抽出したテキストをクリーニングする
         """
-        # 改行と余分な空白を除去
-        text = re.sub(r'\s+', ' ', text.strip())
-        
-        # 特殊文字を除去（英数字とハイフンのみ許可）
-        text = re.sub(r'[^a-zA-Z0-9\s-]', '', text)
+        # 空白文字（スペース、改行など）をすべて削除
+        cleaned_text = re.sub(r'\s+', '', text)
         
         # 連続するハイフンを単一のハイフンに
-        text = re.sub(r'-+', '-', text)
+        cleaned_text = re.sub(r'-+', '-', cleaned_text)
         
-        return text.strip()
+        return cleaned_text
     
     def generate_text_files(self):
         """
@@ -104,7 +107,7 @@ class OCRTextGenerator:
         
         print(f"{len(image_files)}個の画像ファイルを処理します...")
         print(f"入力ディレクトリ: {self.image_dir}")
-        print(f"出力ディレクトリ: {self.output_text_dir}")
+        print(f"出力ディレクトリ: {self.image_dir}")
         print("-" * 50)
         
         success_count = 0
@@ -119,7 +122,7 @@ class OCRTextGenerator:
                 # テキストファイル名を生成（拡張子を.txtに変更）
                 base_name = os.path.splitext(image_file)[0]
                 text_file_name = f"{base_name}.gt.txt"
-                text_file_path = os.path.join(self.output_text_dir, text_file_name)
+                text_file_path = os.path.join(self.image_dir, text_file_name)
                 
                 # テキストファイルを保存
                 with open(text_file_path, 'w', encoding='utf-8') as f:
@@ -127,6 +130,14 @@ class OCRTextGenerator:
                 
                 print(f"✓ {text_file_name} -> '{extracted_text}'")
                 success_count += 1
+
+                # 生成したファイルを指定ディレクトリに移動
+                try:
+                    shutil.move(image_path, self.output_dir)
+                    shutil.move(text_file_path, self.output_dir)
+                    print(f"  -> Moved to {self.output_dir}")
+                except shutil.Error as e:
+                    print(f"  ! 移動エラー: {e}")
             else:
                 print(f"✗ {image_file} (テキストを抽出できませんでした)")
         

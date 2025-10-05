@@ -185,8 +185,12 @@ class GameStateParser:
                     # 前処理を適用
                     preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
                     
-                    # OCRを実行 (日本語を指定)
-                    config = '--psm 7 -l jpn' # psm 7: 1行として認識
+                    # OCRを実行 (日本語+カスタムモデルを指定)
+                    # スクリプトの場所を基準にtessdata_customへの絶対パスを構築
+                    script_path = os.path.abspath(__file__)
+                    project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
+                    tessdata_dir = os.path.join(project_root, 'tessdata_custom')
+                    config = f'--tessdata-dir {tessdata_dir} --psm 7 -l jpn+jpn_pokemon'
                     text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
 
                     # ポケモン名フィールドの場合は補正を試みる
@@ -221,7 +225,12 @@ class GameStateParser:
                             continue
 
                         preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
-                        config = '--psm 7 -l jpn'
+                        # OCRを実行 (日本語+カスタムモデルを指定)
+                        # スクリプトの場所を基準にtessdata_customへの絶対パスを構築
+                        script_path = os.path.abspath(__file__)
+                        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
+                        tessdata_dir = os.path.join(project_root, 'tessdata_custom')
+                        config = f'--tessdata-dir {tessdata_dir} --psm 7 -l jpn+jpn_pokemon'
                         text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
                         texts.append(text)
                     except Exception as e:
