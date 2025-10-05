@@ -13,7 +13,7 @@ class GameStateParser:
     """
     キャプチャしたゲーム画面から盤面情報を抽出・構造化するクラス。
     """
-    def __init__(self, roi_config_path='roi_config.json', pokemon_master_path='data/master_data/pokemons.csv'):
+    def __init__(self, roi_config_path='instance/roi_config.json', pokemon_master_path='data/master_data/pokemons.csv'):
         """
         Args:
             roi_config_path (str): ROI設定が記述されたJSONファイルのパス。

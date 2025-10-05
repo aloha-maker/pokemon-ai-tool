@@ -445,7 +445,7 @@ def get_video_result(log_id):
 
 # --- ROI Editor API Endpoints ---
 
-ROI_CONFIG_PATH = 'roi_config.json'
+ROI_CONFIG_PATH = 'instance/roi_config.json'
 
 @app.route('/api/roi/config', methods=['GET'])
 def get_roi_config():

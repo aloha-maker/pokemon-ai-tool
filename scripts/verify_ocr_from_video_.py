@@ -43,7 +43,7 @@ def main(video_path):
 
     # GameStateParserとテンプレートを初期化
     parser = GameStateParser(
-        roi_config_path='roi_config.json',
+        roi_config_path='instance/roi_config.json',
         pokemon_master_path='data/master_data/pokemons.csv'
     )
     templates = {"my_status": cv2.imread(".img/my_status.png", cv2.IMREAD_GRAYSCALE)}

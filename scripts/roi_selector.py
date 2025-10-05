@@ -51,9 +51,9 @@ while True:
 
 # ループ終了後、JSONファイルに保存
 if rois:
-    with open('roi_config.json', 'w', encoding='utf-8') as f:
+    with open('instance/roi_config.json', 'w', encoding='utf-8') as f:
         json.dump(rois, f, indent=4, ensure_ascii=False)
-    print("\nROI設定を 'roi_config.json' に保存しました。")
+    print("\nROI設定を 'instance/roi_config.json' に保存しました。")
 else:
     print("\nROIは選択されませんでした。ファイルは保存されません。")
 

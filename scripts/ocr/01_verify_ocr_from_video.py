@@ -9,7 +9,7 @@ from glob import glob
 INPUT_DIR = r'C:\pokemon-ai-tool\.traindata\video\input_videos'
 OUTPUT_DIR = r'C:\pokemon-ai-tool\.traindata\text2img'
 PROCESSED_DIR = r'C:\pokemon-ai-tool\.traindata\video\processed_videos'
-ROI_FILE = r'C:\pokemon-ai-tool\roi_config.json'
+ROI_FILE = r'C:\pokemon-ai-tool\instance\roi_config.json'
 EXTRACT_PER_SECOND = 0.3  # 1秒に3枚抽出
 
 def win_safe_path(path):
@@ -49,7 +49,18 @@ def process_video(video_path):
             break
 
         if frame_idx % frame_interval == 0:
-            for roi_name, (x, y, w, h) in roi_dict.items():
+            # 各ROIに対して処理
+            for roi_name, value in roi_dict.items():
+                # 'reference_resolution' は座標データではないためスキップ
+                if roi_name == 'reference_resolution':
+                    continue
+                
+                # 値が4つの要素を持つリストであることを確認
+                if not (isinstance(value, list) and len(value) == 4):
+                    print(f"警告: ROI '{roi_name}' の形式が不正です。スキップします。")
+                    continue
+
+                x, y, w, h = value
                 if x + w > width or y + h > height:
                     continue
 
