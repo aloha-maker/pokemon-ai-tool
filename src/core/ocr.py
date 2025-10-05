@@ -247,7 +247,7 @@ class PokemonRecognizer:
     """
     STANDARD_SIZE = (96, 96)  # 比較用の標準サイズ
 
-    def __init__(self, template_dir='data/pokemon_images', threshold=0.8):
+    def __init__(self, template_dir='data/pokemon_images', threshold=0.6):
         """
         Args:
             template_dir (str): ポケモンのテンプレート画像が格納されているディレクトリ。

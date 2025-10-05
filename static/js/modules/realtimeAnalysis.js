@@ -182,6 +182,8 @@ export class RealtimeAnalysis {
             const response = await fetch('/api/party/recognize_opponent', { method: 'POST' });
             const data = await response.json();
 
+            console.log('Received data from API:', data); // デバッグ用に追加
+
             if (data.success && data.party) {
                 const opponentInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
                 data.party.forEach((pokemonName, index) => {
