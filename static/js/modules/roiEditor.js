@@ -50,6 +50,29 @@ export class ROIEditor {
                 }
             });
         }
+
+        const addRoiBtn = document.getElementById('add-roi-btn');
+        const newRoiNameInput = document.getElementById('new-roi-name');
+
+        if (addRoiBtn && newRoiNameInput && this.selector) {
+            addRoiBtn.addEventListener('click', () => {
+                const newRoiName = newRoiNameInput.value.trim();
+                if (newRoiName) {
+                    const exists = Array.from(this.selector.options).some(option => option.value === newRoiName);
+                    if (!exists) {
+                        const newOption = new Option(newRoiName, newRoiName);
+                        this.selector.add(newOption);
+                        newRoiNameInput.value = '';
+                        this.selector.value = newRoiName;
+                        this.selector.dispatchEvent(new Event('change'));
+                    } else {
+                        alert('そのROI名はすでに存在します。');
+                    }
+                } else {
+                    alert('新しいROIの名前を入力してください。');
+                }
+            });
+        }
     }
 
     async initEditor() {
