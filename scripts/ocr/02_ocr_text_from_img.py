@@ -12,15 +12,10 @@ class OCRTextGenerator:
         """
         # ディレクトリパスを直書き
         self.image_dir = r'C:\pokemon-ai-tool\.traindata\text2img'
-        self.output_dir = r'C:\workspace\tesstrain\data\jpn_pokemon-ground-truth'
-        # self.output_text_dir = r'C:\Users\daiki\Videos\pokemon\output_text'
+        # self.output_dir = r'C:\workspace\tesstrain\data\jpn_pokemon-ground-truth'
         
         # Tesseractのパス設定
         pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-        
-        # 入力・出力ディレクトリを作成
-        os.makedirs(self.image_dir, exist_ok=True)
-        os.makedirs(self.output_dir, exist_ok=True)
         
         # tessdata_custom への絶対パスを構築
         script_path = os.path.abspath(__file__)
@@ -130,14 +125,6 @@ class OCRTextGenerator:
                 
                 print(f"✓ {text_file_name} -> '{extracted_text}'")
                 success_count += 1
-
-                # 生成したファイルを指定ディレクトリに移動
-                try:
-                    shutil.move(image_path, self.output_dir)
-                    shutil.move(text_file_path, self.output_dir)
-                    print(f"  -> Moved to {self.output_dir}")
-                except shutil.Error as e:
-                    print(f"  ! 移動エラー: {e}")
             else:
                 print(f"✗ {image_file} (テキストを抽出できませんでした)")
         

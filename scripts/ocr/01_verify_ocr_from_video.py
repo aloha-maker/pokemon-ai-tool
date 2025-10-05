@@ -70,7 +70,7 @@ def process_video(video_path):
 
                 roi_dir = os.path.join(OUTPUT_DIR, video_name, roi_name)
                 os.makedirs(roi_dir, exist_ok=True)
-                filename = f"{short_hash}_{frame_idx:06d}.jpg"
+                filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.jpg"
                 save_path = win_safe_path(os.path.join(roi_dir, filename))
 
                 if not cv2.imwrite(save_path, roi_img):
