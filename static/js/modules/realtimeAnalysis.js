@@ -11,6 +11,7 @@ export class RealtimeAnalysis {
         this.captureImage = document.getElementById('capture-image');
         this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
         this.ocrDebugCode = document.querySelector('#ocr-debug-content code');
+        this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
         
         if (this.toggleAnalysisButton) {
             this.init();
@@ -35,6 +36,10 @@ export class RealtimeAnalysis {
                 this.socket.emit('get_suggestion', {});
             });
         }
+
+        if (this.recognizePartyBtn) {
+            this.recognizePartyBtn.addEventListener('click', () => this.handleRecognizeParty());
+        }
     }
 
     initSocketListeners() {
@@ -50,6 +55,7 @@ export class RealtimeAnalysis {
             this.toggleAnalysisButton.classList.add('btn-danger');
             this.windowSelect.disabled = true;
             this.windowRefreshButton.disabled = true;
+            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
 
             if (data.video_feed_url) {
                 this.captureImage.src = data.video_feed_url;
@@ -67,6 +73,7 @@ export class RealtimeAnalysis {
             this.toggleAnalysisButton.classList.add('btn-primary');
             this.windowSelect.disabled = false;
             this.windowRefreshButton.disabled = false;
+            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = true;
 
             this.captureImage.src = "https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview";
         });
@@ -158,6 +165,39 @@ export class RealtimeAnalysis {
                     <p>現在、推奨できるアクションはありません。</p>
                 </div>
             `;
+        }
+    }
+
+    async handleRecognizeParty() {
+        if (!this.recognizePartyBtn || this.recognizePartyBtn.disabled) return;
+
+        const originalHtml = this.recognizePartyBtn.innerHTML;
+        this.recognizePartyBtn.disabled = true;
+        this.recognizePartyBtn.innerHTML = `
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            認識中...
+        `;
+
+        try {
+            const response = await fetch('/api/party/recognize_opponent', { method: 'POST' });
+            const data = await response.json();
+
+            if (data.success && data.party) {
+                const opponentInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
+                data.party.forEach((pokemonName, index) => {
+                    if (opponentInputs[index]) {
+                        opponentInputs[index].value = pokemonName || ''; // 認識失敗時は空にする
+                    }
+                });
+            } else {
+                alert(`パーティの認識に失敗しました: ${data.error || '不明なエラー'}`);
+            }
+        } catch (error) {
+            console.error('パーティ認識APIの呼び出し中にエラーが発生しました:', error);
+            alert('パーティの認識中にエラーが発生しました。');
+        } finally {
+            this.recognizePartyBtn.disabled = false;
+            this.recognizePartyBtn.innerHTML = originalHtml;
         }
     }
 }
