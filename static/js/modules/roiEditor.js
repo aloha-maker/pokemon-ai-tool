@@ -80,6 +80,14 @@ export class ROIEditor {
             const configResponse = await fetch('/api/roi/config');
             this.roiConfig = await configResponse.json();
 
+            // roiConfigのキーを元にドロップダウンを動的に生成
+            this.selector.innerHTML = ''; // 既存のオプションをクリア
+            for (const key in this.roiConfig) {
+                if (key === 'reference_resolution') continue;
+                const option = new Option(key, key);
+                this.selector.add(option);
+            }
+
             this.roiImage.onload = () => {
                 this.canvas.width = 1920;
                 this.canvas.height = 1080;

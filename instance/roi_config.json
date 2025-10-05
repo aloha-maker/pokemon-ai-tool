@@ -1,4 +1,16 @@
 {
+    "live_comment_row1": [
+        291,
+        780,
+        1247,
+        72
+    ],
+    "live_comment_row2": [
+        291,
+        850,
+        1224,
+        67
+    ],
     "my_pokemon_hp": [
         95,
         941,
@@ -11,6 +23,18 @@
         283,
         62
     ],
+    "my_tokusei_row1": [
+        312,
+        477,
+        261,
+        65
+    ],
+    "my_tokusei_row2": [
+        310,
+        542,
+        266,
+        56
+    ],
     "opponent_pokemon_hp": [
         1530,
         150,
@@ -18,21 +42,21 @@
         47
     ],
     "opponent_pokemon_name": [
-        1515,
-        86,
-        320,
-        64
+        1527,
+        98,
+        280,
+        51
     ],
+    "reference_resolution": {
+        "width": 1920,
+        "height": 1080
+    },
     "your_party": [
         1229,
         228,
         312,
         610
     ],
-    "reference_resolution": {
-        "width": 1920,
-        "height": 1080
-    },
     "your_poke1": [
         1233,
         240,
@@ -68,30 +92,6 @@
         740,
         107,
         91
-    ],
-    "my_tokusei_row1": [
-        312,
-        477,
-        261,
-        65
-    ],
-    "my_tokusei_row2": [
-        310,
-        542,
-        266,
-        56
-    ],
-    "live_comment_row1": [
-        291,
-        777,
-        704,
-        67
-    ],
-    "live_comment_row2": [
-        289,
-        840,
-        706,
-        72
     ],
     "your_tokusei_row1": [
         1343,
