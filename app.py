@@ -17,12 +17,19 @@ from src.ai.predictor import ActionAIModel
 from src.database.manager import DatabaseManager
 from src.core.video_processor import VideoProcessor
 from src.ui.routes import api_bp # ★ 追加
+from src.core.ocr import PokemonRecognizer
 
 app = Flask(__name__)
 app.register_blueprint(api_bp) # ★ 追加
 
 socketio = SocketIO(app)
 executor = Executor(app)
+
+# --- Recognizer Initialization ---
+pokemon_recognizer = PokemonRecognizer()
+
+# --- Directory Setup ---
+os.makedirs('static/captures', exist_ok=True)
 
 # --- Video Processing Globals ---
 VIDEO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'videos')
@@ -100,6 +107,9 @@ def ocr_and_suggestion_thread(window_title: str):
         frame = capturer.capture_frame()
         
         if frame is not None:
+            # 最新のフレームをAPIから参照できるように一時保存
+            cv2.imwrite('static/captures/latest_frame.jpg', frame)
+
             # OCRのためにリサイズ
             frame = cv2.resize(frame, (1920, 1080))
             current_state = parser.parse_frame(frame)
@@ -483,6 +493,47 @@ def get_roi_image_path():
 
     """育成済みポケモン管理ページを表示する。"""
     return render_template('trained_pokemon_management.html')
+
+@app.route('/api/party/recognize_opponent', methods=['POST'])
+def recognize_opponent_party():
+    """現在のフレームから相手のパーティ6体を認識する"""
+    latest_frame_path = 'static/captures/latest_frame.jpg'
+
+    if not os.path.exists(latest_frame_path):
+        return jsonify({"success": False, "error": "キャプチャ画像が見つかりません。リアルタイム解析が実行されているか確認してください。"}), 404
+
+    try:
+        frame = cv2.imread(latest_frame_path)
+        if frame is None:
+            return jsonify({"success": False, "error": "キャプチャ画像の読み込みに失敗しました。"}), 500
+
+        with open(ROI_CONFIG_PATH, 'r', encoding='utf-8') as f:
+            roi_config = json.load(f)
+
+        party_rois = [
+            roi_config.get('your_poke1'),
+            roi_config.get('your_poke2'),
+            roi_config.get('your_poke3'),
+            roi_config.get('your_poke4'),
+            roi_config.get('your_poke5'),
+            roi_config.get('your_poke6'),
+        ]
+
+        recognized_party = []
+        for roi in party_rois:
+            if roi and isinstance(roi, list) and len(roi) == 4:
+                x, y, w, h = roi
+                roi_image = frame[y:y+h, x:x+w]
+                pokemon_name = pokemon_recognizer.recognize(roi_image)
+                recognized_party.append(pokemon_name)
+            else:
+                recognized_party.append("") # ROI設定がない場合は空文字
+        
+        return jsonify({"success": True, "party": recognized_party})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"パーティの認識中にエラーが発生しました: {str(e)}"}), 500
+
 
 if __name__ == '__main__':
     # アプリケーションをデバッグモードで実行

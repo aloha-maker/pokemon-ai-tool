@@ -239,3 +239,69 @@ class GameStateParser:
                 game_state[key] = texts
 
         return game_state
+
+
+class PokemonRecognizer:
+    """
+    テンプレートマッチングを用いて、画像からポケモンを認識するクラス。
+    """
+    def __init__(self, template_dir='data/pokemon_images', threshold=0.8):
+        """
+        Args:
+            template_dir (str): ポケモンのテンプレート画像が格納されているディレクトリ。
+            threshold (float): テンプレートマッチングの類似度スコアの閾値。
+        """
+        self.template_dir = template_dir
+        self.threshold = threshold
+        self.templates = self._load_templates()
+
+    def _load_templates(self):
+        """テンプレート画像をメモリに読み込む。"""
+        templates = {}
+        # 各ポケモンのディレクトリを走査
+        for pokemon_name in os.listdir(self.template_dir):
+            pokemon_dir = os.path.join(self.template_dir, pokemon_name)
+            if os.path.isdir(pokemon_dir):
+                # ディレクトリ内の画像ファイル（例: icon.png）を探す
+                # ここでは単純化のため、特定の名前のファイルを読むか、最初の画像ファイルを読む想定
+                # 実際のファイル名に合わせて要調整
+                image_files = [f for f in os.listdir(pokemon_dir) if f.endswith(('.png', '.jpg'))]
+                if image_files:
+                    template_path = os.path.join(pokemon_dir, image_files[0])
+                    template_img = cv2.imread(template_path, cv2.IMREAD_GRAYSCALE)
+                    if template_img is not None:
+                        templates[pokemon_name] = template_img
+        print(f"{len(templates)}個のポケモンテンプレートを読み込みました。")
+        return templates
+
+    def recognize(self, image: np.ndarray) -> str:
+        """
+        単一の画像から最も一致するポケモンの名前を返す。
+
+        Args:
+            image (np.ndarray): 認識対象の画像 (ROIから切り抜かれたもの)。
+
+        Returns:
+            str: 認識されたポケモンの名前。見つからなければ空文字を返す。
+        """
+        if image is None or image.size == 0 or not self.templates:
+            return ""
+
+        # 入力画像をグレースケールに変換
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        best_match = {"name": "", "score": self.threshold}
+
+        for name, template in self.templates.items():
+            # テンプレートが入力画像より大きい場合はスキップ
+            if template.shape[0] > gray_image.shape[0] or template.shape[1] > gray_image.shape[1]:
+                continue
+
+            res = cv2.matchTemplate(gray_image, template, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, _ = cv2.minMaxLoc(res)
+
+            if max_val > best_match["score"]:
+                best_match["name"] = name
+                best_match["score"] = max_val
+
+        return best_match["name"]
