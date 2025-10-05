@@ -500,7 +500,7 @@ def get_roi_image_path():
 
 @app.route('/api/party/recognize_opponent', methods=['POST'])
 def recognize_opponent_party():
-    """現在のフレームから相手のパーティ6体を認識する"""
+    """現在のフレームから相手のパーティ6体を認識し、画像を保存する"""
     latest_frame_path = 'static/captures/latest_frame.jpg'
 
     if not os.path.exists(latest_frame_path):
@@ -511,22 +511,20 @@ def recognize_opponent_party():
         if frame is None:
             return jsonify({"success": False, "error": "キャプチャ画像の読み込みに失敗しました。"}), 500
 
-        # デバッグ用に、処理対象のフレーム全体を保存
+        # タイムスタンプで今回処理用のフォルダを作成
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        full_frame_filename = f"debug_full_frame_{timestamp}.jpg"
-        full_frame_save_path = os.path.join(DEBUG_IMAGE_DIR, full_frame_filename)
+        output_dir_for_this_run = os.path.join(DEBUG_IMAGE_DIR, timestamp)
+        os.makedirs(output_dir_for_this_run, exist_ok=True)
+
+        # 切り抜き前の全体画像を保存
+        full_frame_save_path = os.path.join(output_dir_for_this_run, "full_frame.jpg")
         cv2.imwrite(full_frame_save_path, frame)
 
         with open(ROI_CONFIG_PATH, 'r', encoding='utf-8') as f:
             roi_config = json.load(f)
 
         party_rois = [
-            roi_config.get('your_poke1'),
-            roi_config.get('your_poke2'),
-            roi_config.get('your_poke3'),
-            roi_config.get('your_poke4'),
-            roi_config.get('your_poke5'),
-            roi_config.get('your_poke6'),
+            roi_config.get(f'your_poke{i}') for i in range(1, 7)
         ]
 
         recognized_party = []
@@ -542,11 +540,11 @@ def recognize_opponent_party():
                 x, y, w, h = roi
                 roi_image = frame[y:y+h, x:x+w]
 
-                # デバッグ用に、切り抜いたROI画像を保存
                 if roi_image.size > 0:
-                    debug_roi_filename = f"{timestamp}_{roi_name}.jpg"
-                    debug_roi_save_path = os.path.join(DEBUG_IMAGE_DIR, debug_roi_filename)
-                    cv2.imwrite(debug_roi_save_path, roi_image)
+                    # 切り抜いたROI画像を保存
+                    roi_filename = f"{roi_name}.jpg"
+                    roi_save_path = os.path.join(output_dir_for_this_run, roi_filename)
+                    cv2.imwrite(roi_save_path, roi_image)
 
                 recognition_details = pokemon_recognizer.recognize(roi_image)
                 pokemon_name = recognition_details.get("name", "")
