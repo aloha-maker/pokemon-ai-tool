@@ -245,6 +245,8 @@ class PokemonRecognizer:
     """
     テンプレートマッチングを用いて、画像からポケモンを認識するクラス。
     """
+    STANDARD_SIZE = (96, 96)  # 比較用の標準サイズ
+
     def __init__(self, template_dir='data/pokemon_images', threshold=0.8):
         """
         Args:
@@ -256,52 +258,67 @@ class PokemonRecognizer:
         self.templates = self._load_templates()
 
     def _load_templates(self):
-        """テンプレート画像をメモリに読み込む。"""
+        """テンプレート画像をメモリに読み込み、標準サイズにリサイズする。"""
         templates = {}
-        # 各ポケモンのディレクトリを走査
+        if not os.path.isdir(self.template_dir):
+            print(f"警告: テンプレートディレクトリ '{self.template_dir}' が見つかりません。")
+            return templates
+
         for pokemon_name in os.listdir(self.template_dir):
             pokemon_dir = os.path.join(self.template_dir, pokemon_name)
             if os.path.isdir(pokemon_dir):
-                # ディレクトリ内の画像ファイル（例: icon.png）を探す
-                # ここでは単純化のため、特定の名前のファイルを読むか、最初の画像ファイルを読む想定
-                # 実際のファイル名に合わせて要調整
                 image_files = [f for f in os.listdir(pokemon_dir) if f.endswith(('.png', '.jpg'))]
                 if image_files:
                     template_path = os.path.join(pokemon_dir, image_files[0])
-                    template_img = cv2.imread(template_path, cv2.IMREAD_GRAYSCALE)
-                    if template_img is not None:
-                        templates[pokemon_name] = template_img
+                    try:
+                        # 日本語パス対応
+                        with open(template_path, 'rb') as f:
+                            img_binary = np.fromfile(f, dtype=np.uint8)
+                        template_img = cv2.imdecode(img_binary, cv2.IMREAD_GRAYSCALE)
+                        
+                        if template_img is not None:
+                            # 標準サイズにリサイズして保持
+                            resized_template = cv2.resize(template_img, self.STANDARD_SIZE, interpolation=cv2.INTER_AREA)
+                            templates[pokemon_name] = resized_template
+                        else:
+                            print(f"警告: テンプレート画像をデコードできませんでした: {template_path}")
+
+                    except Exception as e:
+                        print(f"警告: テンプレート画像の読み込みに失敗しました: {template_path}, エラー: {e}")
+                        
         print(f"{len(templates)}個のポケモンテンプレートを読み込みました。")
         return templates
 
-    def recognize(self, image: np.ndarray) -> str:
+    def recognize(self, image: np.ndarray) -> dict:
         """
-        単一の画像から最も一致するポケモンの名前を返す。
+        単一の画像から最も一致するポケモンの情報を返す。
 
         Args:
             image (np.ndarray): 認識対象の画像 (ROIから切り抜かれたもの)。
 
         Returns:
-            str: 認識されたポケモンの名前。見つからなければ空文字を返す。
+            dict: 認識結果の情報を含む辞書。
+                  {'name': str, 'score': float, 'template_name': str}
         """
         if image is None or image.size == 0 or not self.templates:
-            return ""
+            return {"name": "", "score": 0.0, "template_name": ""}
 
-        # 入力画像をグレースケールに変換
+        # 入力画像をグレースケールに変換し、標準サイズにリサイズ
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        resized_image = cv2.resize(gray_image, self.STANDARD_SIZE, interpolation=cv2.INTER_AREA)
 
-        best_match = {"name": "", "score": self.threshold}
+        best_match = {"name": "", "score": 0.0, "template_name": ""}
 
         for name, template in self.templates.items():
-            # テンプレートが入力画像より大きい場合はスキップ
-            if template.shape[0] > gray_image.shape[0] or template.shape[1] > gray_image.shape[1]:
-                continue
-
-            res = cv2.matchTemplate(gray_image, template, cv2.TM_CCOEFF_NORMED)
+            res = cv2.matchTemplate(resized_image, template, cv2.TM_CCOEFF_NORMED)
             _, max_val, _, _ = cv2.minMaxLoc(res)
 
             if max_val > best_match["score"]:
-                best_match["name"] = name
-                best_match["score"] = max_val
+                best_match["template_name"] = name
+                best_match["score"] = float(max_val)
 
-        return best_match["name"]
+        # 閾値を超えていれば、認識成功とする
+        if best_match["score"] >= self.threshold:
+            best_match["name"] = best_match["template_name"]
+
+        return best_match

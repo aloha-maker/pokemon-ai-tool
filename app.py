@@ -30,6 +30,8 @@ pokemon_recognizer = PokemonRecognizer()
 
 # --- Directory Setup ---
 os.makedirs('static/captures', exist_ok=True)
+DEBUG_IMAGE_DIR = '.img'
+os.makedirs(DEBUG_IMAGE_DIR, exist_ok=True)
 
 # --- Video Processing Globals ---
 VIDEO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'videos')
@@ -107,12 +109,14 @@ def ocr_and_suggestion_thread(window_title: str):
         frame = capturer.capture_frame()
         
         if frame is not None:
-            # 最新のフレームをAPIから参照できるように一時保存
-            cv2.imwrite('static/captures/latest_frame.jpg', frame)
+            # 先にOCRやテンプレートマッチングで使う基準解像度(1920x1080)にリサイズ
+            frame_resized = cv2.resize(frame, (1920, 1080))
 
-            # OCRのためにリサイズ
-            frame = cv2.resize(frame, (1920, 1080))
-            current_state = parser.parse_frame(frame)
+            # リサイズ後の画像をAPIから参照できるように一時保存
+            cv2.imwrite('static/captures/latest_frame.jpg', frame_resized)
+
+            # OCR処理にはリサイズ後のフレームを使用
+            current_state = parser.parse_frame(frame_resized)
             
             with game_state_lock:
                 shared_game_state["state"] = current_state
@@ -507,6 +511,12 @@ def recognize_opponent_party():
         if frame is None:
             return jsonify({"success": False, "error": "キャプチャ画像の読み込みに失敗しました。"}), 500
 
+        # デバッグ用に、処理対象のフレーム全体を保存
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        full_frame_filename = f"debug_full_frame_{timestamp}.jpg"
+        full_frame_save_path = os.path.join(DEBUG_IMAGE_DIR, full_frame_filename)
+        cv2.imwrite(full_frame_save_path, frame)
+
         with open(ROI_CONFIG_PATH, 'r', encoding='utf-8') as f:
             roi_config = json.load(f)
 
@@ -520,16 +530,36 @@ def recognize_opponent_party():
         ]
 
         recognized_party = []
-        for roi in party_rois:
+        debug_info = []
+        roi_names = [f'your_poke{i}' for i in range(1, 7)]
+
+        for i, roi in enumerate(party_rois):
+            roi_name = roi_names[i]
+            pokemon_name = ""
+            recognition_details = {}
+
             if roi and isinstance(roi, list) and len(roi) == 4:
                 x, y, w, h = roi
                 roi_image = frame[y:y+h, x:x+w]
-                pokemon_name = pokemon_recognizer.recognize(roi_image)
-                recognized_party.append(pokemon_name)
-            else:
-                recognized_party.append("") # ROI設定がない場合は空文字
+
+                # デバッグ用に、切り抜いたROI画像を保存
+                if roi_image.size > 0:
+                    debug_roi_filename = f"{timestamp}_{roi_name}.jpg"
+                    debug_roi_save_path = os.path.join(DEBUG_IMAGE_DIR, debug_roi_filename)
+                    cv2.imwrite(debug_roi_save_path, roi_image)
+
+                recognition_details = pokemon_recognizer.recognize(roi_image)
+                pokemon_name = recognition_details.get("name", "")
+            
+            recognized_party.append(pokemon_name)
+            debug_info.append({
+                "roi": roi_name,
+                "recognized_name": pokemon_name,
+                "best_match_template": recognition_details.get("template_name", ""),
+                "score": round(recognition_details.get("score", 0.0), 4)
+            })
         
-        return jsonify({"success": True, "party": recognized_party})
+        return jsonify({"success": True, "party": recognized_party, "debug_info": debug_info})
 
     except Exception as e:
         return jsonify({"success": False, "error": f"パーティの認識中にエラーが発生しました: {str(e)}"}), 500
