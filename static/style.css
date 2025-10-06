@@ -130,3 +130,10 @@ body {
     text-shadow: 0 0 3px black;
     cursor: pointer; /* Make it clickable */
 }
+
+.item-icon,
+.tera-type-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain; /* 画像のアスペクト比を保ちつつ、エリア内に収める */
+}

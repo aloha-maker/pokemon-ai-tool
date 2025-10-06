@@ -101,7 +101,7 @@ export async function initFormSelects() {
 
                     if (iconElement) {
                         if (itemName) {
-                            iconElement.src = `/static/images/items/${itemName}.png`;
+                            iconElement.src = `/static/item_icons/${itemName}.png`;
                             iconElement.alt = selectedOption.textContent;
                         } else {
                             // Reset to placeholder if no item is selected
@@ -128,7 +128,7 @@ export async function initFormSelects() {
 
                     if (iconElement) {
                         if (typeName) {
-                            iconElement.src = `/static/images/types/${typeName}.png`;
+                            iconElement.src = `/static/type_icons/${typeName}.png`;
                             iconElement.alt = selectedOption.textContent;
                         } else {
                             iconElement.src = 'https://placehold.co/24x24/333/ccc?text=?';
