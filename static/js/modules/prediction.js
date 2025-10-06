@@ -102,6 +102,18 @@ export class PredictionManager {
                 if (index < myPartySlots.length) {
                     const slot = myPartySlots[index];
                     slot.querySelector('.pokemon-input').value = member.pokemon_name || '';
+
+                    // アイコンを更新
+                    const img = slot.querySelector('img');
+                    if (img) {
+                        const pokemonName = member.pokemon_name;
+                        if (pokemonName) {
+                            img.src = `/static/pokemon_icons/${pokemonName}.png`;
+                        } else {
+                            const placeholderIndex = index + 1;
+                            img.src = `https://placehold.co/96x96/333/ccc?text=P${placeholderIndex}`;
+                        }
+                    }
                     
                     const itemSelect = slot.querySelector('.item-select');
                     if (itemSelect) {
@@ -130,12 +142,41 @@ export class PredictionManager {
     initPartyDisplay(partyDisplayContainer) {
         const pokemonSlots = partyDisplayContainer.querySelectorAll('.pokemon-slot');
 
-        pokemonSlots.forEach(slot => {
+        pokemonSlots.forEach((slot, index) => {
             const img = slot.querySelector('img');
             const hpBarContainer = slot.querySelector('.hp-bar-container');
             const hpBar = slot.querySelector('.hp-bar');
             const hpText = slot.querySelector('.hp-text');
             const icon = slot.querySelector('.starter-icon');
+            const pokemonInput = slot.querySelector('.pokemon-input');
+
+            // 相手パーティの場合のみ、入力イベントでアイコンを更新
+            if (partyDisplayContainer.id === 'opponent-party-display') {
+                if (pokemonInput && img) {
+                    const updateIcon = () => {
+                        const pokemonName = pokemonInput.value.trim();
+                        if (pokemonName) {
+                            const originalSrc = img.src;
+                            img.src = `/static/pokemon_icons/${pokemonName}.png`;
+                            img.onerror = () => {
+                                img.src = originalSrc; // エラー時は元の画像に戻す
+                                img.onerror = null; // エラーハンドラを一度きりにする
+                            };
+                        } else {
+                            const placeholderIndex = index + 1;
+                            img.src = `https://placehold.co/96x96/333/ccc?text=P${placeholderIndex}`;
+                        }
+                    };
+
+                    pokemonInput.addEventListener('change', updateIcon);
+
+                    // 初期値がある場合に備えて、イベントを発火
+                    if (pokemonInput.value) {
+                        updateIcon();
+                    }
+                }
+            }
+
 
             // --- 1. 選出/先発のクリック処理 ---
             if (img) {
