@@ -1,4 +1,3 @@
-
 import traceback
 import math
 import uuid
@@ -186,10 +185,6 @@ def delete_item(item_id):
         if 'FOREIGN KEY constraint failed' in str(e):
             return jsonify({'error': 'This item is currently in use by a trained Pokémon and cannot be deleted.'}), 409
         return jsonify({'error': str(e)}), 500
-
-
-
-
 
 @api_bp.route('/parties', methods=['GET'])
 def get_parties():
@@ -445,5 +440,69 @@ def advance_simulation_turn(sim_id):
 
     except Exception as e:
         print(f"Error in advance_simulation_turn: {e}")
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+# --- F-12: 分析ダッシュボード (Analysis Dashboard) ---
+
+@api_bp.route('/dashboard', methods=['GET'])
+def get_dashboard_data():
+    """ダッシュボードに表示するための主要な分析データをまとめて取得する。"""
+    try:
+        with DatabaseManager() as db:
+            # 総合サマリー
+            summary = db.get_dashboard_summary()
+            
+            # ポケモン別分析
+            opponent_ranking = db.get_opponent_pokemon_ranking()
+            win_rate_by_opponent = db.get_win_rate_by_opponent()
+
+            # 遭遇率と勝率をマージ
+            opponent_stats = {}
+            for p in opponent_ranking:
+                opponent_stats[p['pokemon_name']] = {'count': p['count']}
+            for p in win_rate_by_opponent:
+                if p['pokemon_name'] in opponent_stats:
+                    opponent_stats[p['pokemon_name']].update({
+                        'win_rate': p['win_rate'],
+                        'total_matches': p['total_matches']
+                    })
+
+            # 勝率でソートして、要注意・得意なポケモンを決定
+            sorted_by_win_rate = sorted(
+                [p for p in win_rate_by_opponent if p['total_matches'] >= 3], # 3戦以上を対象
+                key=lambda x: x['win_rate']
+            )
+            watch_out_pokemon = sorted_by_win_rate[:5]
+            good_at_pokemon = sorted_by_win_rate[-5:][::-1]
+
+            # 選出分析
+            my_selection_rate = db.get_my_pokemon_selection_rate()
+            selection_pattern_win_rate = db.get_selection_pattern_win_rate()
+
+        return jsonify({
+            'summary': summary,
+            'opponent_ranking': opponent_ranking,
+            'watch_out_pokemon': watch_out_pokemon,
+            'good_at_pokemon': good_at_pokemon,
+            'my_selection_rate': my_selection_rate,
+            'selection_pattern_win_rate': selection_pattern_win_rate[:10] # 上位10件
+        }), 200
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/dashboard/customization', methods=['GET'])
+def get_customization_data():
+    """指定されたポケモンのカスタマイズ（技・持ち物・テラス）ランキングを取得する。"""
+    pokemon_name = request.args.get('pokemon_name')
+    if not pokemon_name:
+        return jsonify({'error': 'pokemon_name query parameter is required.'}), 400
+    
+    try:
+        with DatabaseManager() as db:
+            customization_data = db.get_opponent_pokemon_customization_ranking(pokemon_name)
+        return jsonify(customization_data), 200
+    except Exception as e:
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
