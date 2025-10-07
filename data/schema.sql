@@ -143,3 +143,41 @@ CREATE TABLE IF NOT EXISTS trained_pokemons (
     FOREIGN KEY (move3_id) REFERENCES moves(id),
     FOREIGN KEY (move4_id) REFERENCES moves(id)
 );
+
+-- 対戦ログ（正規化版）
+CREATE TABLE IF NOT EXISTS battles (
+    battle_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    battle_date TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
+    season INTEGER,
+    regulation TEXT,
+    battle_format TEXT NOT NULL CHECK(battle_format IN ('シングル', 'ダブル')),
+    my_rank INTEGER,
+    opponent_rank INTEGER,
+    result TEXT NOT NULL CHECK(result IN ('win', 'lose', 'unknown')),
+    my_first_pokemon TEXT,
+    opponent_first_pokemon TEXT,
+    memo TEXT
+);
+
+CREATE TABLE IF NOT EXISTS pokemons_log (
+    pokemon_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pokemon_name TEXT NOT NULL,
+    nickname TEXT,
+    moves TEXT,
+    terastal_type TEXT,
+    item TEXT,
+    ability TEXT,
+    UNIQUE(pokemon_name, nickname, moves, terastal_type, item, ability)
+);
+
+CREATE TABLE IF NOT EXISTS parties_log (
+    party_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    battle_id INTEGER NOT NULL,
+    pokemon_id INTEGER,
+    pokemon_name TEXT NOT NULL,
+    is_opponent BOOLEAN NOT NULL,
+    is_selected BOOLEAN NOT NULL,
+    FOREIGN KEY (battle_id) REFERENCES battles (battle_id),
+    FOREIGN KEY (pokemon_id) REFERENCES pokemons_log (pokemon_id)
+);
+

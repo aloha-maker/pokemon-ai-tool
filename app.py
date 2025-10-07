@@ -386,6 +386,43 @@ def register_generated_party():
         # import traceback; traceback.print_exc()
         return jsonify({"error": f"パーティの登録中にエラーが発生しました: {str(e)}"}), 500
 
+@app.route('/api/battles/save_result', methods=['POST'])
+def save_battle_result():
+    """対戦結果をDBに保存する"""
+    data = request.json
+    my_party_id = data.get('my_party_id')
+    opponent_party = data.get('opponent_party')
+    result = data.get('result') # 'win' or 'lose'
+
+    if not all([my_party_id, opponent_party, result]) or result not in ['win', 'lose']:
+        return jsonify({"error": "パーティ情報または勝敗結果が不正です。"}), 400
+
+    try:
+        with DatabaseManager() as db:
+            log_id = db.save_battle_result(my_party_id, opponent_party, result)
+        return jsonify({"message": "対戦結果を保存しました。", "log_id": log_id}), 201
+    except Exception as e:
+        return jsonify({"error": f"データベースへの保存中にエラーが発生しました: {str(e)}"}), 500
+
+
+@app.route('/api/battles/prepare', methods=['POST'])
+def prepare_battle():
+    """対戦前のパーティ情報をDBに保存する"""
+    data = request.json
+    my_party_id = data.get('my_party_id')
+    opponent_party = data.get('opponent_party')
+
+    if not my_party_id or not isinstance(opponent_party, list) or len(opponent_party) == 0:
+        return jsonify({"error": "パーティ情報が不正です。"}), 400
+
+    try:
+        with DatabaseManager() as db:
+            log_id = db.prepare_battle_log(my_party_id, opponent_party)
+        return jsonify({"message": "対戦パーティを保存しました。", "log_id": log_id}), 201
+    except Exception as e:
+        return jsonify({"error": f"データベースへの保存中にエラーが発生しました: {str(e)}"}), 500
+
+
 # --- Video Analysis API Endpoints ---
 
 @app.route('/api/videos/upload', methods=['POST'])

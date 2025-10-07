@@ -207,11 +207,91 @@ class DatabaseManager:
                 video_task_id,
                 battle_data_json,
                 'unknown', # 解析直後は結果不明
-                my_party_id
             )
         )
         self.conn.commit()
         return cursor.lastrowid
+
+    def save_battle_result(self, my_party_id: int, opponent_party: list[str], result: str) -> int:
+        """
+        正規化されたテーブル構成で対戦結果を保存する。
+        """
+        if result not in ['win', 'lose']:
+            raise ValueError("result must be either 'win' or 'lose'")
+
+        cursor = self.get_cursor()
+        try:
+            # 1. battles テーブルに対戦記録を作成
+            # battle_format はUIにないため 'シングル' 固定とする
+            cursor.execute(
+                "INSERT INTO battles (result, battle_format) VALUES (?, ?)",
+                (result, 'シングル')
+            )
+            battle_id = cursor.lastrowid
+
+            # 2. 自分のパーティを parties_log に記録
+            my_pokemon_names = self.get_party_pokemon_names(my_party_id)
+            my_party_log_data = []
+            for name in my_pokemon_names:
+                # 自分のポケモンは pokemon_id を NULL にする
+                my_party_log_data.append((battle_id, None, name, 0, 0))
+            
+            cursor.executemany(
+                "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
+                my_party_log_data
+            )
+
+            # 3. 相手のパーティを pokemons_log と parties_log に記録
+            opponent_party_log_data = []
+            for name in opponent_party:
+                # 3a. pokemons_log に同じポケモンがいないか確認 (詳細不明なので名前のみで判断)
+                cursor.execute(
+                    "SELECT pokemon_id FROM pokemons_log WHERE pokemon_name = ? AND nickname IS NULL AND moves IS NULL AND terastal_type IS NULL AND item IS NULL AND ability IS NULL", 
+                    (name,)
+                )
+                row = cursor.fetchone()
+                
+                if row:
+                    pokemon_id = row['pokemon_id']
+                else:
+                    # 3b. いなければ pokemons_log に新規登録
+                    cursor.execute("INSERT INTO pokemons_log (pokemon_name) VALUES (?)", (name,))
+                    pokemon_id = cursor.lastrowid
+                
+                opponent_party_log_data.append((battle_id, pokemon_id, name, 1, 0))
+
+            cursor.executemany(
+                "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
+                opponent_party_log_data
+            )
+
+            self.conn.commit()
+            return battle_id
+        except Exception as e:
+            self.conn.rollback()
+            raise e
+
+    def prepare_battle_log(self, my_party_id: int, opponent_party: list[str]) -> int:
+        """
+        対戦前のパーティ情報で `battle_logs` テーブルにレコードを作成する。
+        resultは'unknown'で登録される。
+        戻り値は追加されたレコードのID。
+        """
+        cursor = self.get_cursor()
+        try:
+            cursor.execute(
+                "INSERT INTO battle_logs (my_party_id, opponent_party, result) VALUES (?, ?, ?)",
+                (
+                    my_party_id,
+                    json.dumps(opponent_party, ensure_ascii=False),
+                    'unknown'
+                )
+            )
+            self.conn.commit()
+            return cursor.lastrowid
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
     def get_pokemons_by_names(self, names: list[str]) -> list[dict]:
         """複数のポケモン名から詳細データのリストを取得する。"""

@@ -4,6 +4,7 @@ export class PartySaver {
         this.resultModalEl = document.getElementById('result-modal');
         this.resultModal = this.resultModalEl ? new bootstrap.Modal(this.resultModalEl) : null;
         this.resultButtons = document.querySelectorAll('#result-modal [data-result]');
+        this.alertContainer = document.querySelector('.container-fluid');
 
         if (this.savePartyBtn && this.resultModal) {
             this.init();
@@ -12,48 +13,97 @@ export class PartySaver {
 
     init() {
         this.savePartyBtn.addEventListener('click', () => {
+            // 先にパーティ情報が入力されているかチェック
+            const data = this.gatherBattleData();
+            if (!data.my_party_id) {
+                this.showAlert('自パーティが選択されていません。', 'warning');
+                return;
+            }
+            if (data.opponent_party.length === 0) {
+                this.showAlert('相手パーティが入力されていません。', 'warning');
+                return;
+            }
+            // 問題なければモーダル表示
             this.resultModal.show();
         });
 
         this.resultButtons.forEach(button => {
             button.addEventListener('click', (e) => {
-                const result = e.currentTarget.dataset.result;
-                this.saveParty(result);
+                const result = e.currentTarget.dataset.result; // 'win' or 'lose'
+                this.saveBattleResult(result);
                 this.resultModal.hide();
             });
         });
     }
 
-    gatherPartyData() {
-        // This function will gather all the data from the form.
-        // For now, it's a placeholder.
-        console.log("Gathering party data...");
-        const myPartySlots = document.querySelectorAll('#my-party-display .pokemon-slot');
-        const opponentPartySlots = document.querySelectorAll('#opponent-party-display .pokemon-slot');
+    gatherBattleData() {
+        const myPartySelect = document.getElementById('my-party-select');
+        const myPartyId = myPartySelect.value;
 
-        const getSlotData = (slot) => {
-            const pokemonName = slot.querySelector('.pokemon-input')?.value || null;
-            const itemId = slot.querySelector('.item-select')?.value || null;
-            const teraTypeId = slot.querySelector('.tera-type-select')?.value || null;
-            // More details like ability, moves, pp will be fetched from pokemonDetailEditor's state.
-            return { pokemonName, itemId, teraTypeId };
+        const opponentPartyInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
+        const opponentParty = Array.from(opponentPartyInputs)
+            .map(input => input.value.trim())
+            .filter(name => name !== '');
+
+        return {
+            my_party_id: myPartyId,
+            opponent_party: opponentParty
         };
-
-        const myParty = Array.from(myPartySlots).map(getSlotData);
-        const opponentParty = Array.from(opponentPartySlots).map(getSlotData);
-
-        return { myParty, opponentParty };
     }
 
-    async saveParty(result) {
-        console.log(`Saving party with result: ${result}`);
-        const partyData = this.gatherPartyData();
-        
-        // Here I would need to get the full details (ability, moves, etc.)
-        // and send them to a new API endpoint, e.g., /api/history/add
-        
-        // For now, just log the data.
-        console.log(partyData);
-        alert(`パーティ情報を保存しました。結果: ${result}`);
+    async saveBattleResult(result) {
+        const data = this.gatherBattleData();
+        data.result = result; // 'win' or 'lose'
+
+        try {
+            const response = await fetch('/api/battles/save_result', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            const responseData = await response.json();
+
+            if (response.ok) {
+                this.showAlert(`対戦結果 (ID: ${responseData.log_id}) を保存しました。`, 'success');
+                console.log('Success:', responseData);
+            } else {
+                throw new Error(responseData.error || '不明なエラーが発生しました。');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            this.showAlert(`エラー: ${error.message}`, 'danger');
+        }
+    }
+
+    showAlert(message, type) {
+        const existingAlert = this.alertContainer.querySelector('.dynamic-alert');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show dynamic-alert`;
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '2000';
+
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+
+        this.alertContainer.prepend(alertDiv);
+
+        setTimeout(() => {
+            const bootstrapAlert = bootstrap.Alert.getOrCreateInstance(alertDiv);
+            if (bootstrapAlert) {
+                bootstrapAlert.close();
+            }
+        }, 5000);
     }
 }
