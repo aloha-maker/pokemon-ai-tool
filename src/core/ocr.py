@@ -4,6 +4,7 @@ import numpy as np
 import json
 import os
 import pandas as pd
+import re
 
 # Tesseractの実行ファイルのパスを指定 (Windowsの場合)
 # Mac/Linuxの場合は不要なことが多い
@@ -94,6 +95,18 @@ class GameStateParser:
         else:
             return text
 
+    def _clean_text(self, text: str) -> str:
+        """
+        抽出したテキストをクリーニングする
+        """
+        # 空白文字（スペース、改行など）をすべて削除
+        cleaned_text = re.sub(r'\s+', '', text)
+        
+        # 連続するハイフンを単一のハイフンに
+        cleaned_text = re.sub(r'-+', '-', cleaned_text)
+        
+        return cleaned_text
+
     def _preprocess_image_for_ocr(self, img: np.ndarray) -> np.ndarray:
         """
         OCRの精度を向上させるための画像前処理。
@@ -154,90 +167,59 @@ class GameStateParser:
             scale_w = frame_w / ref_w
             scale_h = frame_h / ref_h
         else:
-            # 基準解像度がなければスケーリングしない
             scale_w, scale_h = 1.0, 1.0
 
         game_state = {}
+        
+        # 処理対象のROIキーを限定
+        target_rois = [
+            'live_comment_row1', 'live_comment_row2', 'my_pokemon_name', 
+            'my_tokusei_row1', 'my_tokusei_row2', 'opponent_pokemon_name'
+        ]
 
         for key, roi_orig in self.rois.items():
-            # ROIが単一の座標リストの場合 (名前、HPなど)
+            # 対象外のROIはスキップ
+            if key not in target_rois:
+                continue
+
             if isinstance(roi_orig, list) and len(roi_orig) == 4:
                 try:
-                    # ROIをスケーリング
                     roi = self._scale_roi(tuple(roi_orig), scale_w, scale_h)
                     x, y, w, h = roi
 
-                    # ROIがフレームの範囲内にあるかチェック
                     if x + w > frame_w or y + h > frame_h:
                         print(f"警告: ROI '{key}' が画像サイズ({frame_w}x{frame_h})を超えています。スキップします。")
                         game_state[key] = "Error: ROI out of bounds"
                         continue
 
-                    # ROIを切り出し
                     cropped_img = frame[y:y+h, x:x+w]
                     
-                    # 切り出した画像が空でないかチェック
                     if cropped_img.size == 0:
                         print(f"警告: ROI '{key}' で切り抜かれた画像が空です。スキップします。")
                         game_state[key] = "Error: Cropped image is empty"
                         continue
 
-                    # 前処理を適用
                     preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
                     
-                    # OCRを実行 (日本語+カスタムモデルを指定)
-                    # スクリプトの場所を基準にtessdata_customへの絶対パスを構築
                     script_path = os.path.abspath(__file__)
                     project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
                     tessdata_dir = os.path.join(project_root, 'tessdata_custom')
                     config = f'--tessdata-dir {tessdata_dir} --psm 7 -l jpn+jpn_pokemon'
                     text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
 
-                    # ポケモン名フィールドの場合は補正を試みる
-                    if key.endswith('_name'):
-                        text = self._find_closest_pokemon_name(text)
-                    
-                    game_state[key] = text
+                    # テキストクリーニングを実行
+                    cleaned_text = self._clean_text(text)
+
+                    # ポケモン名フィールドの場合は補正を試みる (対象を限定)
+                    if key in ['my_pokemon_name', 'opponent_pokemon_name']:
+                        game_state[key] = self._find_closest_pokemon_name(cleaned_text)
+                    else:
+                        game_state[key] = cleaned_text
+
                 except Exception as e:
                     print(f"エラー: ROI '{key}' の処理中にエラーが発生しました: {e}")
                     game_state[key] = "Error"
             
-            # ROIが座標リストのリストの場合 (技リストなど)
-            elif isinstance(roi_orig, list):
-                texts = []
-                for i, r_orig in enumerate(roi_orig):
-                    try:
-                        # ROIをスケーリング
-                        r = self._scale_roi(tuple(r_orig), scale_w, scale_h)
-                        x, y, w, h = r
-
-                        # ROIがフレームの範囲内にあるかチェック
-                        if x + w > frame_w or y + h > frame_h:
-                            print(f"警告: ROI '{key}[{i}]' が画像サイズ({frame_w}x{frame_h})を超えています。スキップします。")
-                            texts.append("Error: ROI out of bounds")
-                            continue
-
-                        cropped_img = frame[y:y+h, x:x+w]
-
-                        if cropped_img.size == 0:
-                            print(f"警告: ROI '{key}[{i}]' で切り抜かれた画像が空です。スキップします。")
-                            texts.append("Error: Cropped image is empty")
-                            continue
-
-                        preprocessed_img = self._preprocess_image_for_ocr(cropped_img)
-                        # OCRを実行 (日本語+カスタムモデルを指定)
-                        # スクリプトの場所を基準にtessdata_customへの絶対パスを構築
-                        script_path = os.path.abspath(__file__)
-                        project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
-                        tessdata_dir = os.path.join(project_root, 'tessdata_custom')
-                        config = f'--tessdata-dir {tessdata_dir} --psm 7 -l jpn+jpn_pokemon'
-                        text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
-                        texts.append(text)
-                    except Exception as e:
-                        print(f"エラー: ROI '{key}' の要素 {i} の処理中にエラーが発生しました: {e}")
-                        texts.append("Error")
-                game_state[key] = texts
-
         return self._format_game_state(game_state)
 
     def _parse_hp(self, hp_text: str) -> float | None:

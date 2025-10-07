@@ -104,26 +104,30 @@ export class RealtimeAnalysis {
 
     appendRealtimeLog(state) {
         const logEntry = document.createElement('div');
-        logEntry.classList.add('log-entry', 'mb-1');
+        logEntry.classList.add('log-entry', 'mb-2', 'pb-1', 'border-bottom', 'border-secondary', 'border-opacity-25');
 
         const timestamp = new Date().toLocaleTimeString();
-        let message = `<span class="text-muted me-2">[${timestamp}]</span>`;
+        let content = `<div class="text-muted small">[${timestamp}]</div>`;
 
-        if (state.game_text && state.game_text.trim()) {
-            message += `<span class="text-info">${escapeHTML(state.game_text)}</span>`;
-        } else {
-            // ゲームテキストがない場合は、ポケモン情報だけでも表示
-            const myPoke = state.my_pokemon_1_name || '不明';
-            const oppPoke = state.opponent_pokemon_1_name || '不明';
-            const myHp = state.my_pokemon_1_hp_percent !== null ? state.my_pokemon_1_hp_percent : '??';
-            const oppHp = state.opponent_pokemon_1_hp_percent !== null ? state.opponent_pokemon_1_hp_percent : '??';
-            message += `自分: ${escapeHTML(myPoke)} (HP: ${myHp}%) vs 相手: ${escapeHTML(oppPoke)} (HP: ${oppHp}%)`;
+        const rawResult = state.raw_ocr_result;
+        let hasContent = false;
+
+        if (rawResult && typeof rawResult === 'object' && Object.keys(rawResult).length > 0) {
+            content += '<ul class="list-unstyled mb-0 small">';
+            for (const [key, value] of Object.entries(rawResult)) {
+                if (value && String(value).trim()) { // 値が空や空白でない場合のみ表示
+                    content += `<li><span class="text-info" style="min-width: 180px; display: inline-block;">${escapeHTML(key)}:</span> <strong>${escapeHTML(value)}</strong></li>`;
+                    hasContent = true;
+                }
+            }
+            content += '</ul>';
         }
         
-        logEntry.innerHTML = message;
-
-        // 新しいログを先頭に追加
-        this.logOutput.prepend(logEntry);
+        // 表示すべき内容がある場合のみログに追加
+        if (hasContent) {
+            logEntry.innerHTML = content;
+            this.logOutput.prepend(logEntry);
+        }
 
         // ログが50件を超えたら古いものを削除
         if (this.logOutput.children.length > 50) {
