@@ -238,7 +238,58 @@ class GameStateParser:
                         texts.append("Error")
                 game_state[key] = texts
 
-        return game_state
+        return self._format_game_state(game_state)
+
+    def _parse_hp(self, hp_text: str) -> float | None:
+        """HPのOCRテキスト("100/100", "85"など)をパーセンテージに変換する。"""
+        if not hp_text:
+            return None
+        try:
+            if '/' in hp_text: # "100/100" 形式
+                current, max_hp = map(int, hp_text.split('/'))
+                return round((current / max_hp) * 100, 1)
+            else: # "85" 形式 (パーセント表示と仮定)
+                return float(hp_text)
+        except (ValueError, ZeroDivisionError):
+            return None
+
+    def _format_game_state(self, raw_state: dict) -> dict:
+        """OCR結果をraw_battle_events_logのスキーマに近づけるためのフォーマットを行う。"""
+        formatted = {}
+
+        # テキストログの結合
+        game_text_1 = raw_state.get('live_comment_row1', '')
+        game_text_2 = raw_state.get('live_comment_row2', '')
+        formatted['game_text'] = f"{game_text_1} {game_text_2}".strip()
+
+        # 自分側ポケモン1
+        formatted['my_pokemon_1_name'] = raw_state.get('my_pokemon_name')
+        formatted['my_pokemon_1_hp_percent'] = self._parse_hp(raw_state.get('my_pokemon_hp'))
+        formatted['my_pokemon_1_status'] = None # TODO: 状態異常のROIを追加
+
+        # 相手側ポケモン1
+        formatted['opponent_pokemon_1_name'] = raw_state.get('opponent_pokemon_name')
+        formatted['opponent_pokemon_1_hp_percent'] = self._parse_hp(raw_state.get('opponent_pokemon_hp'))
+        formatted['opponent_pokemon_1_status'] = None # TODO: 状態異常のROIを追加
+
+        # ダブルバトル用のプレースホルダー
+        formatted['my_pokemon_2_name'] = None
+        formatted['my_pokemon_2_hp_percent'] = None
+        formatted['my_pokemon_2_status'] = None
+        formatted['opponent_pokemon_2_name'] = None
+        formatted['opponent_pokemon_2_hp_percent'] = None
+        formatted['opponent_pokemon_2_status'] = None
+
+        # 特性・フィールド効果
+        # TODO: 複数のROIの結果からどちらが発動したかなどを判断するロジックが必要
+        formatted['triggered_ability'] = raw_state.get('my_tokusei_row1') or raw_state.get('your_tokusei_row1')
+        formatted['field_effects'] = None
+        
+        # 元のOCR結果も保持しておく
+        formatted['raw_ocr_result'] = raw_state
+
+        return formatted
+
 
 
 class PokemonRecognizer:

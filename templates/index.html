@@ -404,19 +404,30 @@
                             </div>
                         </div>
                         <div class="tab-pane fade h-100" id="battle-advice-pane" role="tabpanel" aria-labelledby="battle-advice-tab">
-                            <!-- AIの行動提案 -->
-                            <div id="suggestion-overlay" class="h-100">
-                                <div class="text-center text-muted pt-5 h-100">
-                                    <p>「解析を開始」すると、ここにAIの推奨アクションが表示されます。</p>
+                            <div class="d-flex flex-column h-100">
+                                <!-- 上半分: AIの行動提案 -->
+                                <div id="suggestion-overlay" class="flex-grow-1" style="overflow-y: auto;">
+                                    <div class="text-center text-muted pt-5 h-100">
+                                        <p>「解析を開始」すると、ここにAIの推奨アクションが表示されます。</p>
+                                    </div>
                                 </div>
-                            </div>
-                             <!-- OCRデバッグ情報 -->
-                            <div id="ocr-debug-area" class="mt-2">
-                                <small><a class="text-decoration-none" data-bs-toggle="collapse" href="#ocr-debug-content" role="button" aria-expanded="false" aria-controls="ocr-debug-content">
-                                    <i class="bi bi-bug"></i> OCRデバッグ情報を表示/非表示
-                                </a></small>
-                                <div class="collapse" id="ocr-debug-content">
-                                    <pre class="bg-dark text-light p-2 rounded small"><code>{}</code></pre>
+
+                                <!-- 下半分: リアルタイムバトルログ -->
+                                <div class="glass-card-inside p-2 mt-2 flex-shrink-0" style="height: 50%; display: flex; flex-direction: column;">
+                                    <h6 class="neon-text-purple mb-2 flex-shrink-0">リアルタイムバトルログ</h6>
+                                    <div id="realtime-log-output" class="font-monospace small flex-grow-1" style="overflow-y: auto;">
+                                        <!-- ログがここに表示される -->
+                                    </div>
+                                </div>
+
+                                <!-- OCRデバッグ情報 (ログエリアの外) -->
+                                <div id="ocr-debug-area" class="mt-2 flex-shrink-0">
+                                    <small><a class="text-decoration-none" data-bs-toggle="collapse" href="#ocr-debug-content" role="button" aria-expanded="false" aria-controls="ocr-debug-content">
+                                        <i class="bi bi-bug"></i> OCRデバッグ情報を表示/非表示
+                                    </a></small>
+                                    <div class="collapse" id="ocr-debug-content">
+                                        <pre class="bg-dark text-light p-2 rounded small"><code>{}</code></pre>
+                                    </div>
                                 </div>
                             </div>
                         </div>

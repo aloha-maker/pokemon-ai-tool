@@ -12,6 +12,7 @@ export class RealtimeAnalysis {
         this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
         this.ocrDebugCode = document.querySelector('#ocr-debug-content code');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
+        this.logOutput = document.getElementById('realtime-log-output'); // 追加
         
         if (this.toggleAnalysisButton) {
             this.init();
@@ -79,9 +80,19 @@ export class RealtimeAnalysis {
         });
 
         this.socket.on('ocr_update', (data) => {
+            const gameState = data.state;
+
+            // OCRデバッグ情報の更新
             if (this.ocrDebugCode) {
-                this.ocrDebugCode.textContent = JSON.stringify(data.state, null, 2);
+                this.ocrDebugCode.textContent = JSON.stringify(gameState, null, 2);
             }
+
+            // リアルタイムログの表示
+            if (this.logOutput && gameState) {
+                this.appendRealtimeLog(gameState);
+            }
+
+            // AIの行動提案をリクエスト
             this.socket.emit('get_suggestion', {});
         });
 
@@ -89,6 +100,35 @@ export class RealtimeAnalysis {
             console.log('Suggestion received:', data);
             this.displaySuggestion(data);
         });
+    }
+
+    appendRealtimeLog(state) {
+        const logEntry = document.createElement('div');
+        logEntry.classList.add('log-entry', 'mb-1');
+
+        const timestamp = new Date().toLocaleTimeString();
+        let message = `<span class="text-muted me-2">[${timestamp}]</span>`;
+
+        if (state.game_text && state.game_text.trim()) {
+            message += `<span class="text-info">${escapeHTML(state.game_text)}</span>`;
+        } else {
+            // ゲームテキストがない場合は、ポケモン情報だけでも表示
+            const myPoke = state.my_pokemon_1_name || '不明';
+            const oppPoke = state.opponent_pokemon_1_name || '不明';
+            const myHp = state.my_pokemon_1_hp_percent !== null ? state.my_pokemon_1_hp_percent : '??';
+            const oppHp = state.opponent_pokemon_1_hp_percent !== null ? state.opponent_pokemon_1_hp_percent : '??';
+            message += `自分: ${escapeHTML(myPoke)} (HP: ${myHp}%) vs 相手: ${escapeHTML(oppPoke)} (HP: ${oppHp}%)`;
+        }
+        
+        logEntry.innerHTML = message;
+
+        // 新しいログを先頭に追加
+        this.logOutput.prepend(logEntry);
+
+        // ログが50件を超えたら古いものを削除
+        if (this.logOutput.children.length > 50) {
+            this.logOutput.removeChild(this.logOutput.lastChild);
+        }
     }
 
     async updateWindowList() {
