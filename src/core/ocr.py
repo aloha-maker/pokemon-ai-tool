@@ -111,25 +111,16 @@ class GameStateParser:
     def _preprocess_image_for_ocr(self, img: np.ndarray) -> np.ndarray:
         """
         OCRの精度を向上させるための画像前処理。
+        scripts/ocr/02_ocr_text_from_img.py の処理に合わせる
         """
         # 1. グレースケール化
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        # 2. 画像の拡大（アップスケーリング）
-        #    補間方法には高品質なものを選択 (LANCZOS4 > CUBIC > LINEAR)
-        height, width = gray.shape
-        scale_factor = 2
-        upscaled = cv2.resize(gray, (width * scale_factor, height * scale_factor), interpolation=cv2.INTER_CUBIC)
-
-        # 3. ノイズ除去（メディアンフィルタ）
-        #    カーネルサイズは奇数である必要があり、3や5が一般的。
-        denoised = cv2.medianBlur(upscaled, 3)
+        # 2. ノイズ除去（メディアンフィルタ）
+        denoised = cv2.medianBlur(gray, 3)
         
-        # 4. 二値化（背景と文字をくっきり分ける）
-        #    Adaptive Thresholdingは、照明が均一でない場合に特に有効
-        binary = cv2.adaptiveThreshold(
-            denoised, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
-        )
+        # 3. 二値化（大津の方法）
+        _, binary = cv2.threshold(denoised, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         
         return binary
 
@@ -218,7 +209,7 @@ class GameStateParser:
                     script_path = os.path.abspath(__file__)
                     project_root = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
                     tessdata_dir = os.path.join(project_root, 'tessdata_custom')
-                    config = f'--tessdata-dir {tessdata_dir} --psm 7 -l jpn+jpn_pokemon'
+                    config = f'--tessdata-dir {tessdata_dir} --oem 3 --psm 7 -l jpn+jpn_pokemon'
                     text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
 
                     cleaned_text = self._clean_text(text)

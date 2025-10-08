@@ -128,7 +128,7 @@ def ocr_and_suggestion_thread(window_title: str):
             print("OCRスレッドでのフレームキャプチャに失敗しました。")
 
         # OCRの実行頻度を制御（例: 1秒ごと）
-        socketio.sleep(0.5)
+        socketio.sleep(1)
     
     print("バックグラウンドOCR/AIスレッドを停止しました。")
 
