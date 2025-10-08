@@ -137,3 +137,7 @@ body {
     height: 24px;
     object-fit: contain; /* 画像のアスペクト比を保ちつつ、エリア内に収める */
 }
+
+#realtime-log-output {
+    max-height: 40vh; /* ログエリアの最大高さをビューポートの25%に制限 */
+}
