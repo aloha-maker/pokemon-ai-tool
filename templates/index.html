@@ -25,7 +25,7 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
 <body>
-    <div class="container-fluid vh-100 p-3 d-flex flex-column">
+    <div class="container-fluid vh-100 p-3 d-flex flex-column" style="overflow: hidden;">
         <header class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="neon-text-purple mb-0">ポケモン対戦補助AIツール</h1>
             <div>
@@ -92,7 +92,7 @@
                 </div>
 
                 <!-- 選出予測 -->
-                <div class="glass-card p-3 d-flex flex-column">
+                <div class="glass-card p-3 d-flex flex-column flex-grow-1">
                     
                     <!-- パーティ入力フォーム -->
                     <div class="row">
@@ -406,28 +406,23 @@
                         <div class="tab-pane fade h-100" id="battle-advice-pane" role="tabpanel" aria-labelledby="battle-advice-tab">
                             <div class="d-flex flex-column h-100">
                                 <!-- 上半分: AIの行動提案 -->
-                                <div id="suggestion-overlay" class="flex-grow-1" style="overflow-y: auto;">
+                                <div id="suggestion-overlay" class="h-50" style="overflow-y: auto;">
                                     <div class="text-center text-muted pt-5 h-100">
                                         <p>「解析を開始」すると、ここにAIの推奨アクションが表示されます。</p>
                                     </div>
                                 </div>
 
-                                <!-- 下半分: リアルタイムバトルログ -->
-                                <div class="glass-card-inside p-2 mt-2 flex-shrink-0" style="height: 50%; display: flex; flex-direction: column;">
-                                    <h6 class="neon-text-purple mb-2 flex-shrink-0">リアルタイムバトルログ</h6>
-                                    <div id="realtime-log-output" class="font-monospace small flex-grow-1" style="overflow-y: auto;">
-                                        <!-- ログがここに表示される -->
+                                <!-- 下半分: ログ & デバッグ -->
+                                <div class="h-50 d-flex flex-column">
+                                    <!-- リアルタイムバトルログ -->
+                                    <div class="glass-card-inside p-2 mt-2 flex-grow-1" style="display: flex; flex-direction: column; min-height: 0;">
+                                        <h6 class="neon-text-purple mb-2 flex-shrink-0">リアルタイムバトルログ</h6>
+                                        <div id="realtime-log-output" class="font-monospace small flex-grow-1" style="overflow-y: auto;">
+                                            <!-- ログがここに表示される -->
+                                        </div>
                                     </div>
-                                </div>
 
-                                <!-- OCRデバッグ情報 (ログエリアの外) -->
-                                <div id="ocr-debug-area" class="mt-2 flex-shrink-0">
-                                    <small><a class="text-decoration-none" data-bs-toggle="collapse" href="#ocr-debug-content" role="button" aria-expanded="false" aria-controls="ocr-debug-content">
-                                        <i class="bi bi-bug"></i> OCRデバッグ情報を表示/非表示
-                                    </a></small>
-                                    <div class="collapse" id="ocr-debug-content">
-                                        <pre class="bg-dark text-light p-2 rounded small"><code>{}</code></pre>
-                                    </div>
+
                                 </div>
                             </div>
                         </div>

@@ -10,7 +10,6 @@ export class RealtimeAnalysis {
         this.toggleAnalysisButton = document.getElementById('toggle-analysis-button');
         this.captureImage = document.getElementById('capture-image');
         this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
-        this.ocrDebugCode = document.querySelector('#ocr-debug-content code');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
         this.logOutput = document.getElementById('realtime-log-output'); // 追加
         
@@ -81,11 +80,6 @@ export class RealtimeAnalysis {
 
         this.socket.on('ocr_update', (data) => {
             const gameState = data.state;
-
-            // OCRデバッグ情報の更新
-            if (this.ocrDebugCode) {
-                this.ocrDebugCode.textContent = JSON.stringify(gameState, null, 2);
-            }
 
             // リアルタイムログの表示
             if (this.logOutput && gameState) {
