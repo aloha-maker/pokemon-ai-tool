@@ -5,6 +5,7 @@ import json
 import os
 import pandas as pd
 import re
+import time
 
 # Tesseractの実行ファイルのパスを指定 (Windowsの場合)
 # Mac/Linuxの場合は不要なことが多い
@@ -160,7 +161,6 @@ class GameStateParser:
 
         frame_h, frame_w = frame.shape[:2]
 
-        # スケーリング係数を計算
         if self.reference_resolution:
             ref_w = self.reference_resolution.get("width", frame_w)
             ref_h = self.reference_resolution.get("height", frame_h)
@@ -171,14 +171,16 @@ class GameStateParser:
 
         game_state = {}
         
-        # 処理対象のROIキーを限定
         target_rois = [
             'live_comment_row1', 'live_comment_row2', 'my_pokemon_name', 
             'my_tokusei_row1', 'my_tokusei_row2', 'opponent_pokemon_name'
         ]
 
+        # デバッグ用画像の保存先ディレクトリ
+        debug_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..' , '..', '.img', 'ocr')
+        os.makedirs(debug_dir, exist_ok=True)
+
         for key, roi_orig in self.rois.items():
-            # 対象外のROIはスキップ
             if key not in target_rois:
                 continue
 
@@ -193,6 +195,18 @@ class GameStateParser:
                         continue
 
                     cropped_img = frame[y:y+h, x:x+w]
+
+                    # デバッグ用に切り取った画像を保存
+                    timestamp = int(time.time() * 1000)
+                    filename = f"{timestamp}_{key}.png"
+                    filepath = os.path.join(debug_dir, filename)
+                    try:
+                        # imwriteは日本語パスを直接扱えない場合があるため、エンコードする
+                        is_success, im_buf_arr = cv2.imencode(".png", cropped_img)
+                        if is_success:
+                            im_buf_arr.tofile(filepath)
+                    except Exception as e:
+                        print(f"デバッグ画像の保存に失敗: {e}")
                     
                     if cropped_img.size == 0:
                         print(f"警告: ROI '{key}' で切り抜かれた画像が空です。スキップします。")
@@ -207,10 +221,8 @@ class GameStateParser:
                     config = f'--tessdata-dir {tessdata_dir} --psm 7 -l jpn+jpn_pokemon'
                     text = pytesseract.image_to_string(preprocessed_img, config=config).strip()
 
-                    # テキストクリーニングを実行
                     cleaned_text = self._clean_text(text)
 
-                    # ポケモン名フィールドの場合は補正を試みる (対象を限定)
                     if key in ['my_pokemon_name', 'opponent_pokemon_name']:
                         game_state[key] = self._find_closest_pokemon_name(cleaned_text)
                     else:
