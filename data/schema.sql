@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS parties;
 DROP TABLE IF EXISTS party_members;
 DROP TABLE IF EXISTS battle_logs;
 DROP TABLE IF EXISTS analysis_results;
+DROP TABLE IF EXISTS raw_battle_events;
 
 -- ポケモン図鑑テーブル
 CREATE TABLE pokemons (
@@ -180,4 +181,17 @@ CREATE TABLE IF NOT EXISTS parties_log (
     FOREIGN KEY (battle_id) REFERENCES battles (battle_id),
     FOREIGN KEY (pokemon_id) REFERENCES pokemons_log (pokemon_id)
 );
+
+-- OCRによる生ログ（時系列、正規化版）
+CREATE TABLE raw_battle_events (
+    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    battle_id INTEGER NOT NULL,
+    sequence INTEGER NOT NULL,
+    log_timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'localtime')),
+    roi_name TEXT NOT NULL,
+    ocr_text TEXT,
+    FOREIGN KEY (battle_id) REFERENCES battles (battle_id),
+    UNIQUE(battle_id, sequence, roi_name)
+);
+
 

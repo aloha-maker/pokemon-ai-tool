@@ -1,5 +1,6 @@
 export class PartySaver {
-    constructor() {
+    constructor(realtimeAnalysis) {
+        this.realtimeAnalysis = realtimeAnalysis; // インスタンスを保持
         this.savePartyBtn = document.getElementById('save-party-button');
         this.resultModalEl = document.getElementById('result-modal');
         this.resultModal = this.resultModalEl ? new bootstrap.Modal(this.resultModalEl) : null;
@@ -55,8 +56,15 @@ export class PartySaver {
         const data = this.gatherBattleData();
         data.result = result; // 'win' or 'lose'
 
+        // ログバッファを取得してペイロードに追加
+        if (this.realtimeAnalysis) {
+            data.raw_events = this.realtimeAnalysis.getLogBuffer();
+        } else {
+            data.raw_events = [];
+        }
+
         try {
-            const response = await fetch('/api/battles/save_result', {
+            const response = await fetch('/api/battles/save_result_with_log', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

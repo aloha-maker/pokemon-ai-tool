@@ -405,6 +405,28 @@ def save_battle_result():
         return jsonify({"error": f"データベースへの保存中にエラーが発生しました: {str(e)}"}), 500
 
 
+@app.route('/api/battles/save_result_with_log', methods=['POST'])
+def save_battle_result_with_log():
+    """対戦結果とリアルタイムOCRログをDBに保存する"""
+    data = request.json
+    my_party_id = data.get('my_party_id')
+    opponent_party = data.get('opponent_party')
+    result = data.get('result')
+    raw_events = data.get('raw_events', []) # ログデータ
+
+    if not all([my_party_id, opponent_party, result]) or result not in ['win', 'lose']:
+        return jsonify({"error": "パーティ情報または勝敗結果が不正です。"}), 400
+
+    try:
+        with DatabaseManager() as db:
+            battle_id = db.save_battle_result_with_log(my_party_id, opponent_party, result, raw_events)
+        return jsonify({"message": "対戦結果とログを保存しました。", "battle_id": battle_id}), 201
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"データベースへの保存中にエラーが発生しました: {str(e)}"}), 500
+
+
 @app.route('/api/battles/prepare', methods=['POST'])
 def prepare_battle():
     """対戦前のパーティ情報をDBに保存する"""

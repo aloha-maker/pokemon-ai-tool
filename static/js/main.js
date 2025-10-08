@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new DashboardManager();
     new PartyGenerator();
     new PredictionManager();
-    new RealtimeAnalysis();
+    const realtimeAnalysis = new RealtimeAnalysis();
     new VideoAnalysis();
     new ROIEditor();
     new TrainedPokemonManager();
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new Simulator();
     new ItemEditor();
     new PokemonDetailEditor();
-    new PartySaver();
+    new PartySaver(realtimeAnalysis);
     
     // フォーム選択肢の初期化
     initFormSelects();

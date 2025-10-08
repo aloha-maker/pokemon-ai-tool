@@ -12,6 +12,8 @@ export class RealtimeAnalysis {
         this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
         this.logOutput = document.getElementById('realtime-log-output'); // 追加
+        this.logBuffer = [];
+        this.sequence = 0;
         
         if (this.toggleAnalysisButton) {
             this.init();
@@ -127,6 +129,24 @@ export class RealtimeAnalysis {
         if (this.logOutput.children.length > 50) {
             this.logOutput.removeChild(this.logOutput.lastChild);
         }
+
+        // バッファへの保存処理
+        if (hasContent) {
+            for (const [key, value] of Object.entries(rawResult)) {
+                if (value && String(value).trim()) {
+                    this.logBuffer.push({
+                        sequence: this.sequence,
+                        roi_name: key,
+                        ocr_text: value
+                    });
+                }
+            }
+            this.sequence++; // 内容のあるイベントのみシーケンスを進める
+        }
+    }
+
+    getLogBuffer() {
+        return this.logBuffer;
     }
 
     async updateWindowList() {
@@ -166,6 +186,12 @@ export class RealtimeAnalysis {
             if (!windowTitle) {
                 alert('キャプチャ対象のウィンドウを選択してください。');
                 return;
+            }
+            // 解析開始時にバッファとシーケンスをリセット
+            this.logBuffer = [];
+            this.sequence = 0;
+            if (this.logOutput) {
+                this.logOutput.innerHTML = ''; // 画面のログもクリア
             }
             console.log(`Requesting to start analysis for window: ${windowTitle}`);
             this.socket.emit('start_analysis', { window_title: windowTitle });
