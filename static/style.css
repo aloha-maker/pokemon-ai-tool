@@ -117,7 +117,9 @@ body {
 }
 
 .grayscale {
-    filter: grayscale(100%);
+    filter: grayscale(100%) brightness(50%); /* 輝度を50%に下げる（値は調整可能） */
+    /* 必要であれば、transitionプロパティも調整してスムーズな変化に */
+    transition: filter 0.3s ease-out;
 }
 
 .pokemon-settings-icon {
