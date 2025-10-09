@@ -31,8 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     new PokemonDetailEditor();
     new PartySaver(realtimeAnalysis);
     
-    // フォーム選択肢の初期化
-    initFormSelects();
+    // フォーム選択肢の初期化はボタンクリック時に行う
+    // initFormSelects();
 
     // 持ち物アイコンのクリックイベント
     document.querySelectorAll('.item-icon').forEach(icon => {

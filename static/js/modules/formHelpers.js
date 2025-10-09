@@ -4,11 +4,12 @@ export function populateSelect(elementId, data, defaultOptionText, options = {})
     const select = document.getElementById(elementId);
     if (!select) return;
 
-    select.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
     const defaultOption = document.createElement('option');
     defaultOption.value = '';
     defaultOption.textContent = defaultOptionText;
-    select.appendChild(defaultOption);
+    fragment.appendChild(defaultOption);
 
     data.forEach(item => {
         const option = document.createElement('option');
@@ -17,8 +18,11 @@ export function populateSelect(elementId, data, defaultOptionText, options = {})
         if (options.dataAttribute) {
             option.dataset[options.dataAttribute.name] = item[options.dataAttribute.value];
         }
-        select.appendChild(option);
+        fragment.appendChild(option);
     });
+
+    select.innerHTML = '';
+    select.appendChild(fragment);
 }
 
 export async function updateAbilitiesForPokemon(pokemonId) {
@@ -38,7 +42,26 @@ export async function updateAbilitiesForPokemon(pokemonId) {
     }
 }
 
+
+document.addEventListener('DOMContentLoaded', () => {
+    const loadButton = document.getElementById('load-master-data-btn');
+    if (loadButton) {
+        loadButton.addEventListener('click', initFormSelects);
+    }
+});
+
 export async function initFormSelects() {
+    const button = document.getElementById('load-master-data-btn');
+    const spinner = button.querySelector('.spinner-border');
+    const icon = button.querySelector('.button-icon');
+    const text = button.querySelector('.button-text');
+
+    // --- 開始処理 ---
+    button.disabled = true;
+    spinner.classList.remove('d-none');
+    icon.classList.add('d-none');
+    text.textContent = '読込中...';
+
     const resources = {
         'pokemon-master-id': 'pokemons',
         'tera-type-id': 'types',
@@ -149,8 +172,26 @@ export async function initFormSelects() {
 
         console.log("フォームの選択肢を初期化しました。");
 
+        // --- 成功時のUI更新 ---
+        button.classList.remove('btn-secondary');
+        button.classList.add('btn-success');
+        text.textContent = '読込完了';
+        icon.className = 'button-icon bi bi-check-circle-fill'; // アイコンを変更
+
     } catch (error) {
         console.error("マスターデータの初期化に失敗しました:", error);
-        alert("フォームの初期化に失敗しました。ページをリロードしてみてください。");
+        alert("フォームの初期化に失敗しました。ページをリロードして再試行してください。");
+
+        // --- 失敗時のUI更新 ---
+        button.disabled = false; // 再試行可能にする
+        button.classList.remove('btn-secondary');
+        button.classList.add('btn-danger');
+        text.textContent = '再試行';
+        icon.className = 'button-icon bi bi-exclamation-triangle-fill';
+
+    } finally {
+        // --- 終了処理 ---
+        spinner.classList.add('d-none');
+        icon.classList.remove('d-none');
     }
 }
