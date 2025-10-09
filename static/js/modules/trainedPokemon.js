@@ -113,7 +113,7 @@ export class TrainedPokemonManager {
         this.form.reset();
         document.getElementById('pokemon-id').value = '';
 
-        const fields = ['pokemon-master-id', 'nickname', 'level', 'tera-type-id', 'held-item-id', 'ability-id', 'nature-id', 'move1-id', 'move2-id', 'move3-id', 'move4-id', 'ev-hp', 'ev-atk', 'ev-def', 'ev-spa', 'ev-spd', 'ev-spe'];
+        const fields = ['pokemon-master-id', 'nickname', 'tera-type-id', 'held-item-id', 'ability-id', 'nature-id', 'move1-id', 'move2-id', 'move3-id', 'move4-id', 'ev-hp', 'ev-atk', 'ev-def', 'ev-spa', 'ev-spd', 'ev-spe'];
         fields.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
