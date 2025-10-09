@@ -734,7 +734,7 @@ def recognize_opponent_party():
 
                 if roi_image.size > 0:
                     # 切り抜いたROI画像を保存
-                    roi_filename = f"{roi_name}.jpg"
+                    roi_filename = f"{roi_name}.png"
                     roi_save_path = os.path.join(output_dir_for_this_run, roi_filename)
                     cv2.imwrite(roi_save_path, roi_image)
 
