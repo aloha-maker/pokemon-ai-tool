@@ -12,6 +12,8 @@ export class RealtimeAnalysis {
         this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
         this.logOutput = document.getElementById('realtime-log-output'); // 追加
+        this.startCameraBtn = document.getElementById('start-camera-btn');
+        this.startOcrBtn = document.getElementById('start-ocr-btn');
         this.logBuffer = [];
         this.sequence = 0;
         
@@ -24,24 +26,12 @@ export class RealtimeAnalysis {
         this.updateWindowList();
         this.initSocketListeners();
         
-        if (this.windowRefreshButton) {
-            this.windowRefreshButton.addEventListener('click', () => this.updateWindowList());
-        }
-        
-        if (this.toggleAnalysisButton) {
-            this.toggleAnalysisButton.addEventListener('click', () => this.handleToggleAnalysis());
-        }
-        
-        if (this.suggestionRefreshButton) {
-            this.suggestionRefreshButton.addEventListener('click', () => {
-                console.log('Manually requesting suggestion...');
-                this.socket.emit('get_suggestion', {});
-            });
-        }
-
-        if (this.recognizePartyBtn) {
-            this.recognizePartyBtn.addEventListener('click', () => this.handleRecognizeParty());
-        }
+        this.windowRefreshButton?.addEventListener('click', () => this.updateWindowList());
+        this.toggleAnalysisButton?.addEventListener('click', () => this.handleToggleAnalysis());
+        this.suggestionRefreshButton?.addEventListener('click', () => this.socket.emit('get_suggestion', {}));
+        this.recognizePartyBtn?.addEventListener('click', () => this.handleRecognizeParty());
+        this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
+        this.startOcrBtn?.addEventListener('click', () => this.handleStartOcr());
     }
 
     initSocketListeners() {
@@ -51,17 +41,25 @@ export class RealtimeAnalysis {
 
         this.socket.on('analysis_started', (data) => {
             console.log('Analysis started by server.');
-            this.toggleAnalysisButton.dataset.state = 'running';
-            this.toggleAnalysisButton.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 解析を停止';
-            this.toggleAnalysisButton.classList.remove('btn-primary');
-            this.toggleAnalysisButton.classList.add('btn-danger');
-            this.windowSelect.disabled = true;
-            this.windowRefreshButton.disabled = true;
-            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
+            this.setUIState('running_window');
 
             if (data.video_feed_url) {
                 this.captureImage.src = data.video_feed_url;
             }
+        });
+
+        this.socket.on('camera_started', (data) => {
+            console.log('Camera stream started by server.');
+            this.setUIState('running_camera');
+
+            if (data.video_feed_url) {
+                this.captureImage.src = data.video_feed_url;
+            }
+        });
+
+        this.socket.on('ocr_started', () => {
+            console.log('OCR started by server.');
+            this.setUIState('running_camera_ocr');
         });
 
         this.socket.on('analysis_stopped', (data) => {
@@ -69,14 +67,7 @@ export class RealtimeAnalysis {
             if (data && data.error) {
                 alert(`解析が停止しました: ${data.error}`);
             }
-            this.toggleAnalysisButton.dataset.state = 'stopped';
-            this.toggleAnalysisButton.innerHTML = '<i class="bi bi-play-circle-fill"></i> 解析を開始';
-            this.toggleAnalysisButton.classList.remove('btn-danger');
-            this.toggleAnalysisButton.classList.add('btn-primary');
-            this.windowSelect.disabled = false;
-            this.windowRefreshButton.disabled = false;
-            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = true;
-
+            this.setUIState('stopped');
             this.captureImage.src = "https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview";
         });
 
@@ -145,6 +136,82 @@ export class RealtimeAnalysis {
         }
     }
 
+    setUIState(state) {
+        this.currentState = state;
+        const btn = this.toggleAnalysisButton;
+        const cameraBtn = this.startCameraBtn;
+        const ocrBtn = this.startOcrBtn;
+
+        // デフォルト状態
+        btn.disabled = false;
+        cameraBtn.disabled = false;
+        ocrBtn.disabled = true;
+        this.windowSelect.disabled = false;
+        this.windowRefreshButton.disabled = false;
+        this.recognizePartyBtn.disabled = true;
+
+        btn.dataset.state = 'stopped';
+        btn.innerHTML = '<i class="bi bi-play-circle-fill"></i> 解析を開始';
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
+
+        cameraBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i> 仮想カメラ読込';
+        cameraBtn.classList.remove('btn-danger');
+        cameraBtn.classList.add('btn-info');
+
+        if (state === 'stopped') {
+            // デフォルトのまま
+        } else if (state === 'running_window') {
+            btn.dataset.state = 'running';
+            btn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
+            btn.classList.add('btn-danger');
+            cameraBtn.disabled = true;
+            this.windowSelect.disabled = true;
+            this.windowRefreshButton.disabled = true;
+            this.recognizePartyBtn.disabled = false;
+        } else if (state === 'running_camera') {
+            cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
+            cameraBtn.classList.add('btn-danger');
+            btn.disabled = true;
+            ocrBtn.disabled = false;
+            this.windowSelect.disabled = true;
+            this.windowRefreshButton.disabled = true;
+            this.recognizePartyBtn.disabled = false;
+        } else if (state === 'running_camera_ocr') {
+            cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
+            cameraBtn.classList.add('btn-danger');
+            btn.disabled = true;
+            ocrBtn.disabled = true; // OCR実行中は無効
+            this.windowSelect.disabled = true;
+            this.windowRefreshButton.disabled = true;
+            this.recognizePartyBtn.disabled = false;
+        }
+    }
+
+    handleStartCamera() {
+        const cameraIndex = document.getElementById('camera-index-input').value || 0;
+        if (this.currentState === 'running_camera' || this.currentState === 'running_camera_ocr') {
+            this.socket.emit('stop_analysis', {});
+        } else {
+            this.clearLogs();
+            this.socket.emit('start_camera', { camera_index: parseInt(cameraIndex, 10) });
+        }
+    }
+
+    handleStartOcr() {
+        if (this.currentState === 'running_camera') {
+            this.socket.emit('start_ocr', {});
+        }
+    }
+
+    clearLogs() {
+        this.logBuffer = [];
+        this.sequence = 0;
+        if (this.logOutput) {
+            this.logOutput.innerHTML = ''; // 画面のログもクリア
+        }
+    }
+
     getLogBuffer() {
         return this.logBuffer;
     }
@@ -179,25 +246,18 @@ export class RealtimeAnalysis {
     }
 
     handleToggleAnalysis() {
-        const state = this.toggleAnalysisButton.dataset.state;
-
-        if (state === 'stopped') {
+        if (this.currentState === 'running_window') {
+            console.log('Requesting to stop analysis.');
+            this.socket.emit('stop_analysis', {});
+        } else {
             const windowTitle = this.windowSelect.value;
             if (!windowTitle) {
                 alert('キャプチャ対象のウィンドウを選択してください。');
                 return;
             }
-            // 解析開始時にバッファとシーケンスをリセット
-            this.logBuffer = [];
-            this.sequence = 0;
-            if (this.logOutput) {
-                this.logOutput.innerHTML = ''; // 画面のログもクリア
-            }
+            this.clearLogs();
             console.log(`Requesting to start analysis for window: ${windowTitle}`);
             this.socket.emit('start_analysis', { window_title: windowTitle });
-        } else if (state === 'running') {
-            console.log('Requesting to stop analysis.');
-            this.socket.emit('stop_analysis', {});
         }
     }
 
