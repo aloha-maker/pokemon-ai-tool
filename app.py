@@ -270,7 +270,7 @@ def start_camera(data):
     emit('camera_started', {'video_feed_url': video_feed_url, 'ocr_started': False})
 
 @socketio.on('start_ocr')
-def start_ocr():
+def start_ocr(data=None):
     """クライアントからの要求でOCR処理のみを開始する"""
     global ocr_thread
     if ocr_thread and ocr_thread.is_alive():
