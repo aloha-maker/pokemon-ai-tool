@@ -2,12 +2,12 @@ from PIL import Image
 import os
 import glob
 
-def convert_jpg_to_tif(input_path, output_path=None):
+def convert_png_to_tif(input_path, output_path=None):
     """
-    JPG画像をTIFF形式に変換する関数
+    PNG画像をTIFF形式に変換する関数
     
     Args:
-        input_path (str): 入力JPGファイルのパス
+        input_path (str): 入力PNGファイルのパス
         output_path (str, optional): 出力TIFFファイルのパス。指定しない場合は入力ファイル名を基に自動生成
     """
     try:
@@ -35,7 +35,7 @@ def convert_jpg_to_tif(input_path, output_path=None):
 
 def convert_directory(input_dir, output_dir=None):
     """
-    ディレクトリ内のすべてのJPGファイルをTIFFに変換する関数
+    ディレクトリ内のすべてのPNGファイルをTIFFに変換する関数
     
     Args:
         input_dir (str): 入力ディレクトリのパス
@@ -47,26 +47,26 @@ def convert_directory(input_dir, output_dir=None):
     # 出力ディレクトリが存在しない場合は作成
     os.makedirs(output_dir, exist_ok=True)
     
-    # JPGファイルを検索
-    jpg_files = glob.glob(os.path.join(input_dir, "*.jpg"))
+    # PNGファイルを検索
+    png_files = glob.glob(os.path.join(input_dir, "*.png"))
     
-    if not jpg_files:
-        print(f"{input_dir} にJPGファイルが見つかりません")
+    if not png_files:
+        print(f"{input_dir} にPNGファイルが見つかりません")
         return
     
-    print(f"{len(jpg_files)} 個のJPGファイルを変換します...")
+    print(f"{len(png_files)} 個のPNGファイルを変換します...")
     
     success_count = 0
-    for jpg_file in jpg_files:
+    for png_file in png_files:
         # 出力ファイル名を生成
-        base_name = os.path.splitext(os.path.basename(jpg_file))[0]
+        base_name = os.path.splitext(os.path.basename(png_file))[0]
         output_file = os.path.join(output_dir, base_name + '.tif')
         
         # 変換実行
-        if convert_jpg_to_tif(jpg_file, output_file):
+        if convert_png_to_tif(png_file, output_file):
             success_count += 1
     
-    print(f"変換完了: {success_count}/{len(jpg_files)} ファイル")
+    print(f"変換完了: {success_count}/{len(png_file)} ファイル")
 
 # 使用例
 if __name__ == "__main__":
@@ -74,4 +74,4 @@ if __name__ == "__main__":
     # convert_jpg_to_tif(r"C:\workspace\tesstrain\data\jpn_pokemon-ground-truth\3cb86be6_008400.jpg", r"C:\workspace\tesstrain\data\jpn_pokemon-ground-truth\3cb86be6_008400.tif")
     
     # ディレクトリ内の全ファイルを変換
-    convert_directory(r"C:\workspace\tesstrain\data\jpn_pokemon-ground-truth", r"C:\workspace\tesstrain\data\jpn_pokemon-ground-truth")
+    convert_directory(r"C:\pokemon-ai-tool\.traindata\text2img", r"C:\pokemon-ai-tool\.traindata\text2img")

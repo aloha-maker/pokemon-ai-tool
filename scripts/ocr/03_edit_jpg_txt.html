@@ -155,7 +155,7 @@
             <div>
                 <label>フォルダを選択:</label>
                 <button id="selectFolderBtn">フォルダを選択</button>
-                <div class="info-text">画像ファイル（.jpg）とそれに対応する.gt.txtファイルのペアを自動検出します</div>
+                <div class="info-text">画像ファイル（.jpg.png）とそれに対応する.gt.txtファイルのペアを自動検出します</div>
                 <div class="status" id="status" style="display:none;"></div>
             </div>
         </div>
@@ -233,7 +233,7 @@
                 for await (const entry of directoryHandle.values()) {
                     if (entry.kind === 'file') {
                         const name = entry.name.toLowerCase();
-                        if (name.endsWith('.jpg') || name.endsWith('.jpeg')) {
+                        if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png')) {
                             imageFiles.push(entry);
                         } else if (name.endsWith('.gt.txt')) {
                             const baseName = entry.name.slice(0, -7); // .gt.txt を除く
@@ -244,7 +244,7 @@
 
                 // ペアを作成
                 for (const imgHandle of imageFiles) {
-                    const baseName = imgHandle.name.replace(/\.(jpg|jpeg)$/i, '');
+                    const baseName = imgHandle.name.replace(/\.(jpg|jpeg|png)$/i, '');
                     const txtHandle = textFileHandles.get(baseName);
                     
                     filePairs.push({
