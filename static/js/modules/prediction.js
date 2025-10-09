@@ -109,6 +109,11 @@ export class PredictionManager {
                         const pokemonName = member.pokemon_name;
                         if (pokemonName) {
                             img.src = `/static/pokemon_icons/${pokemonName}.png`;
+                            // 画像の読み込みに失敗した場合のフォールバック
+                            img.onerror = () => {
+                                img.src = `https://placehold.co/96x96/333/ccc?text=?`;
+                                img.onerror = null;
+                            };
                         } else {
                             const placeholderIndex = index + 1;
                             img.src = `https://placehold.co/96x96/333/ccc?text=P${placeholderIndex}`;
@@ -150,30 +155,28 @@ export class PredictionManager {
             const icon = slot.querySelector('.starter-icon');
             const pokemonInput = slot.querySelector('.pokemon-input');
 
-            // 相手パーティの場合のみ、入力イベントでアイコンを更新
-            if (partyDisplayContainer.id === 'opponent-party-display') {
-                if (pokemonInput && img) {
-                    const updateIcon = () => {
-                        const pokemonName = pokemonInput.value.trim();
-                        if (pokemonName) {
-                            const originalSrc = img.src;
-                            img.src = `/static/pokemon_icons/${pokemonName}.png`;
-                            img.onerror = () => {
-                                img.src = originalSrc; // エラー時は元の画像に戻す
-                                img.onerror = null; // エラーハンドラを一度きりにする
-                            };
-                        } else {
-                            const placeholderIndex = index + 1;
-                            img.src = `https://placehold.co/96x96/333/ccc?text=P${placeholderIndex}`;
-                        }
-                    };
-
-                    pokemonInput.addEventListener('change', updateIcon);
-
-                    // 初期値がある場合に備えて、イベントを発火
-                    if (pokemonInput.value) {
-                        updateIcon();
+            // ポケモン名入力イベントでアイコンを更新 (自・相手共通)
+            if (pokemonInput && img) {
+                const updateIcon = () => {
+                    const pokemonName = pokemonInput.value.trim();
+                    if (pokemonName) {
+                        img.src = `/static/pokemon_icons/${pokemonName}.png`;
+                        // 画像の読み込みに失敗した場合のフォールバック
+                        img.onerror = () => {
+                            img.src = `https://placehold.co/96x96/333/ccc?text=?`;
+                            img.onerror = null; // エラーハンドラを一度きりにする
+                        };
+                    } else {
+                        const placeholderIndex = index + 1;
+                        img.src = `https://placehold.co/96x96/333/ccc?text=P${placeholderIndex}`;
                     }
+                };
+
+                pokemonInput.addEventListener('change', updateIcon);
+
+                // 初期値がある場合に備えて、イベントを発火
+                if (pokemonInput.value) {
+                    updateIcon();
                 }
             }
 
