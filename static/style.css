@@ -141,3 +141,9 @@ body {
 #realtime-log-output {
     max-height: 40vh; /* ログエリアの最大高さをビューポートの25%に制限 */
 }
+
+.tera-type-icon.terastallized-effect {
+    transform: scale(2.5); /* サイズを1.5倍に */
+    filter: brightness(1.5); /* 輝度を1.5倍に（値は調整可能） */
+    transition: transform 0.2s ease-out, filter 0.2s ease-out; /* スムーズなアニメーション */
+}
