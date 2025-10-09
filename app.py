@@ -186,6 +186,8 @@ def camera_capture_worker(camera_index):
     """カメラキャプチャを行い、latest_frame.jpgを更新するワーカー"""
     print(f"[Log] カメラキャプチャワーカー開始。デバイス: {camera_index}")
     cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
     if not cap.isOpened():
         print(f"警告: カメラデバイス {camera_index} を開けません。")
         socketio.emit('analysis_stopped', {'error': f'カメラデバイス {camera_index} が見つかりません。'})
