@@ -5,7 +5,6 @@ import shutil
 import hashlib
 from glob import glob
 
-
 INPUT_DIR = r'C:\pokemon-ai-tool\.traindata\video\input_videos'
 OUTPUT_DIR = r'C:\pokemon-ai-tool\.traindata\text2img'
 PROCESSED_DIR = r'C:\pokemon-ai-tool\.traindata\video\processed_videos'
@@ -55,6 +54,10 @@ def process_video(video_path):
                 if roi_name == 'reference_resolution':
                     continue
                 
+                # your_party と your_poke1～6 をスキップ
+                if roi_name == 'your_party' or any(roi_name.startswith(f"your_poke{i}") for i in range(1, 7)):
+                    continue
+                
                 # 値が4つの要素を持つリストであることを確認
                 if not (isinstance(value, list) and len(value) == 4):
                     print(f"警告: ROI '{roi_name}' の形式が不正です。スキップします。")
@@ -70,7 +73,6 @@ def process_video(video_path):
 
                 roi_dir = os.path.join(OUTPUT_DIR, video_name, roi_name)
                 os.makedirs(roi_dir, exist_ok=True)
-                # filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.jpg"
                 filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.png"
                 save_path = win_safe_path(os.path.join(roi_dir, filename))
 
