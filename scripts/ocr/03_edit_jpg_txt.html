@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,51 +11,60 @@
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             padding: 20px;
             background: #f5f5f5;
         }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
+
         .file-input {
             margin-bottom: 20px;
             padding: 20px;
             background: #f9f9f9;
             border-radius: 4px;
         }
+
         .file-input label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
         }
+
         .info-text {
             font-size: 12px;
             color: #666;
             margin-top: 4px;
         }
+
         .content {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 20px;
         }
+
         .panel {
             border: 1px solid #ddd;
             border-radius: 4px;
             padding: 15px;
             background: #fafafa;
         }
+
         .panel h3 {
             margin-bottom: 15px;
             color: #333;
         }
+
         .image-container {
             width: 100%;
             min-height: 300px;
@@ -65,11 +75,13 @@
             border: 2px dashed #ddd;
             border-radius: 4px;
         }
+
         .image-container img {
             max-width: 100%;
             max-height: 500px;
             object-fit: contain;
         }
+
         textarea {
             width: 100%;
             min-height: 300px;
@@ -80,20 +92,25 @@
             border-radius: 4px;
             resize: vertical;
         }
+
         .controls {
             display: flex;
-            justify-content: flex-end; /* 右寄せに変更 */
+            justify-content: flex-end;
+            /* 右寄せに変更 */
             align-items: center;
-            gap: 20px; /* ボタン間の間隔を追加 */
+            gap: 20px;
+            /* ボタン間の間隔を追加 */
             padding: 15px;
             background: #f9f9f9;
             border-radius: 4px;
         }
+
         .navigation {
             display: flex;
             gap: 10px;
             align-items: center;
         }
+
         button {
             padding: 8px 16px;
             background: #007bff;
@@ -103,33 +120,41 @@
             cursor: pointer;
             font-size: 14px;
         }
+
         button:hover {
             background: #0056b3;
         }
+
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
+
         .save-btn {
             background: #28a745;
         }
+
         .save-btn:hover {
             background: #218838;
         }
+
         .page-info {
             font-weight: 600;
             color: #333;
         }
+
         .filename {
             font-size: 14px;
             color: #666;
             margin-top: 8px;
         }
+
         .no-data {
             color: #999;
             text-align: center;
             padding: 40px;
         }
+
         .status {
             margin-top: 10px;
             padding: 10px;
@@ -137,20 +162,23 @@
             border-radius: 4px;
             font-size: 13px;
         }
+
         .error {
             background: #ffebee;
             color: #c62828;
         }
+
         .success {
             background: #e8f5e9;
             color: #2e7d32;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1 style="margin-bottom: 20px;">画像・テキスト比較エディタ</h1>
-        
+
         <div class="file-input">
             <div>
                 <label>フォルダを選択:</label>
@@ -177,6 +205,7 @@
 
         <div class="controls">
             <div class="navigation">
+                <div id="saveStatus" class="status" style="display:none; margin-left:10px; min-width:120px;"></div>
                 <button id="prevBtn" disabled>前へ</button>
                 <span class="page-info" id="pageInfo">0 / 0</span>
                 <button id="nextBtn" disabled>次へ</button>
@@ -246,7 +275,7 @@
                 for (const imgHandle of imageFiles) {
                     const baseName = imgHandle.name.replace(/\.(jpg|jpeg|png)$/i, '');
                     const txtHandle = textFileHandles.get(baseName);
-                    
+
                     filePairs.push({
                         imageHandle: imgHandle,
                         textHandle: txtHandle || null,
@@ -304,24 +333,24 @@
                 await writable.write(content);
                 await writable.close();
 
-                showStatus('保存しました', 'success');
+                showStatus('保存しました', 'success', 'save');
                 setTimeout(() => {
                     status.style.display = 'none';
                 }, 2000);
             } catch (err) {
                 console.error('保存エラー:', err);
-                showStatus('保存に失敗しました', 'error');
+                showStatus('保存に失敗しました', 'error', 'save');
             }
         });
 
         async function updateDisplay() {
             const maxLength = filePairs.length;
-            
+
             pageInfo.textContent = maxLength > 0 ? `${currentIndex + 1} / ${maxLength}` : '0 / 0';
-            
+
             prevBtn.disabled = currentIndex === 0 || maxLength === 0;
             nextBtn.disabled = currentIndex >= maxLength - 1 || maxLength === 0;
-            
+
             if (maxLength === 0) {
                 imageContainer.innerHTML = '<div class="no-data">フォルダを選択してください</div>';
                 imageName.textContent = '';
@@ -332,7 +361,7 @@
             }
 
             const pair = filePairs[currentIndex];
-            
+
             try {
                 // 画像表示
                 if (pair.imageHandle) {
@@ -341,7 +370,7 @@
                     imageContainer.innerHTML = `<img src="${url}" alt="Image">`;
                     imageName.textContent = `ファイル名: ${pair.imageHandle.name}`;
                 }
-                
+
                 // テキスト表示
                 if (pair.textHandle) {
                     const file = await pair.textHandle.getFile();
@@ -352,7 +381,7 @@
                     textArea.value = '';
                     textName.textContent = `対応する.gt.txtファイルがありません（新規作成可能）`;
                 }
-                
+
                 saveBtn.disabled = false;
             } catch (err) {
                 console.error('表示エラー:', err);
@@ -360,11 +389,19 @@
             }
         }
 
-        function showStatus(message, type) {
-            status.style.display = 'block';
-            status.className = 'status ' + type;
-            status.textContent = message;
+        function showStatus(message, type, target = 'main') {
+            const targetElem = (target === 'save') ? document.getElementById('saveStatus') : status;
+            targetElem.style.display = 'block';
+            targetElem.className = 'status ' + type;
+            targetElem.textContent = message;
+
+            if (target === 'save') {
+                setTimeout(() => targetElem.style.display = 'none', 2000);
+            }
         }
+
+
     </script>
 </body>
+
 </html>
