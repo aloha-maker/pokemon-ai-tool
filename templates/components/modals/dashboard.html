@@ -1,0 +1,135 @@
+<!-- components/modals/dashboard.html -->
+<div class="modal fade" id="dashboard-modal" tabindex="-1" aria-labelledby="dashboardLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content glass-card">
+            <div class="modal-header border-0">
+                <h5 class="modal-title neon-text-blue" id="dashboardLabel">
+                    <i class="bi bi-graph-up"></i> 分析ダッシュボード
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="dashboard-alert-container"></div>
+                <div id="dashboard-loading" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">分析データを読み込んでいます...</p>
+                </div>
+                <div id="dashboard-content" class="container-fluid d-none">
+                    <!-- 1段目: サマリーとランク推移 -->
+                    <div class="row mb-4">
+                        <div class="col-lg-4">
+                            <div class="glass-card-inside p-3 h-100">
+                                <h4 class="neon-text-purple">戦績サマリー</h4>
+                                <div class="row text-center mt-3">
+                                    <div class="col-6 mb-3">
+                                        <div class="fs-4 fw-bold" id="summary-win-rate">--%</div>
+                                        <div class="small text-muted">勝率</div>
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <div class="fs-4 fw-bold" id="summary-total-matches">--</div>
+                                        <div class="small text-muted">総対戦数</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fs-4 fw-bold text-success" id="summary-wins">--</div>
+                                        <div class="small text-muted">勝利数</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="fs-4 fw-bold text-danger" id="summary-losses">--</div>
+                                        <div class="small text-muted">敗北数</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="glass-card-inside p-3 h-100">
+                                <h4 class="neon-text-purple">ランク推移</h4>
+                                <canvas id="rank-history-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2段目: ポケモン別分析 -->
+                    <div class="row mb-4">
+                        <div class="col-lg-4">
+                            <div class="glass-card-inside p-3 h-100">
+                                <h4 class="neon-text-purple">遭遇率が高い相手</h4>
+                                <table class="table table-sm table-borderless table-hover">
+                                    <thead><tr><th>#</th><th>ポケモン</th><th>遭遇回数</th></tr></thead>
+                                    <tbody id="opponent-ranking-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="glass-card-inside p-3 h-100">
+                                <h4 class="neon-text-purple">要注意ポケモン (勝率↓)</h4>
+                                <table class="table table-sm table-borderless table-hover">
+                                    <thead><tr><th>ポケモン</th><th>勝率</th><th>対戦数</th></tr></thead>
+                                    <tbody id="watch-out-pokemon-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="glass-card-inside p-3 h-100">
+                                <h4 class="neon-text-purple">得意なポケモン (勝率↑)</h4>
+                                <table class="table table-sm table-borderless table-hover">
+                                    <thead><tr><th>ポケモン</th><th>勝率</th><th>対戦数</th></tr></thead>
+                                    <tbody id="good-at-pokemon-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3段目: 選出分析と環境分析 -->
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="glass-card-inside p-3 h-100">
+                                <h4 class="neon-text-purple">自分の選出率</h4>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <canvas id="my-selection-rate-chart"></canvas>
+                                    </div>
+                                    <div class="col-6">
+                                        <h5 class="neon-text-blue">選出パターン別勝率</h5>
+                                        <div class="table-responsive" style="max-height: 250px;">
+                                            <table class="table table-sm table-borderless table-hover">
+                                                <thead><tr><th>選出パターン</th><th>勝率</th><th>対戦数</th></tr></thead>
+                                                <tbody id="selection-pattern-tbody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="glass-card-inside p-3 h-100">
+                                <h4 class="neon-text-purple">環境メタ分析</h4>
+                                <div class="input-group mb-3">
+                                    <select id="customization-pokemon-select" class="form-select">
+                                        <option selected>分析したいポケモンを選択...</option>
+                                    </select>
+                                    <button id="customization-analyze-btn" class="btn btn-primary neon-border">分析</button>
+                                </div>
+                                <div id="customization-results" class="row d-none">
+                                    <div class="col-md-4">
+                                        <h6>人気技</h6>
+                                        <ul id="customization-moves-ul" class="list-unstyled"></ul>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6>人気持ち物</h6>
+                                        <ul id="customization-items-ul" class="list-unstyled"></ul>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6>人気テラスタイプ</h6>
+                                        <ul id="customization-teras-ul" class="list-unstyled"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,49 @@
+<!-- components/modals/roi_editor.html -->
+<div class="modal fade" id="roi-editor-modal" tabindex="-1" aria-labelledby="roiEditorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content glass-card">
+            <div class="modal-header border-0">
+                <h5 class="modal-title neon-text-blue" id="roiEditorModalLabel">
+                    <i class="bi bi-pencil-square"></i> ROIエディタ
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">
+                    ここでゲーム画面の読み取り範囲を調整します。「解析開始」でプレビュー画像を表示後、下のドロップダウンから編集したい項目を選び、画像の上をドラッグして範囲を指定してください。
+                </p>
+                <div class="row">
+                    <div class="col-md-9">
+                        <canvas id="roi-canvas" class="border border-primary" style="max-width: 100%;"></canvas>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="roi-selector" class="form-label">編集対象:</label>
+                            <select id="roi-selector" class="form-select">
+                                <!-- オプションはJSによって動的に読み込まれます -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-roi-name" class="form-label">新規ROIを追加:</label>
+                            <div class="input-group">
+                                <input type="text" id="new-roi-name" class="form-control" placeholder="例: my_pokemon_moves">
+                                <button class="btn btn-outline-secondary" type="button" id="add-roi-btn">追加</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="roi-image-upload" class="form-label">背景画像を変更:</label>
+                            <input type="file" id="roi-image-upload" class="form-control" accept="image/*">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">座標 (x, y, w, h):</label>
+                            <div id="roi-coords" class="text-light">N/A</div>
+                        </div>
+                        <button id="save-roi-btn" class="btn btn-primary neon-border w-100">
+                            <i class="bi bi-save"></i> ROI設定を保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

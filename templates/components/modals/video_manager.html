@@ -1,0 +1,52 @@
+<!-- components/modals/video_manager.html -->
+<div class="modal fade" id="video-manager-modal" tabindex="-1" aria-labelledby="videoManagerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content glass-card">
+            <div class="modal-header border-0">
+                <h5 class="modal-title neon-text-blue" id="videoManagerLabel">
+                    <i class="bi bi-film"></i> 動画管理・解析
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 動画アップロードセクション -->
+                <div class="mb-4 p-3 glass-card-inside">
+                    <h4 class="neon-text-purple mb-3">新規動画アップロード</h4>
+                    <div class="input-group">
+                        <input type="file" class="form-control" id="video-file-input" accept="video/mp4,video/quicktime,video/x-msvideo">
+                        <button class="btn btn-primary neon-border" type="button" id="video-upload-button">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-upload"></i> アップロードして解析開始
+                        </button>
+                    </div>
+                    <div class="progress mt-3" style="height: 10px; display: none;">
+                        <div id="video-upload-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div id="video-upload-alert" class="alert mt-3" style="display: none;"></div>
+                </div>
+
+                <!-- 解析タスク一覧セクション -->
+                <div>
+                    <h4 class="neon-text-purple mb-3">解析タスク一覧</h4>
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table table-sm table-borderless">
+                            <thead>
+                                <tr>
+                                    <th>ファイル名</th>
+                                    <th>Task ID</th>
+                                    <th>ステータス</th>
+                                    <th>アクション</th>
+                                </tr>
+                            </thead>
+                            <tbody id="video-tasks-tbody">
+                                <tr class="text-center">
+                                    <td colspan="4" class="text-muted">アップロードされた動画はありません。</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

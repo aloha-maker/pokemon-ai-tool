@@ -1,0 +1,66 @@
+<!-- components/modals/party_generator.html -->
+<div class="modal fade" id="party-generator-modal" tabindex="-1" aria-labelledby="partyGeneratorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-card">
+            <div class="modal-header border-0">
+                <h5 class="modal-title neon-text-blue" id="partyGeneratorLabel">
+                    <i class="bi bi-magic"></i> パーティ自動生成
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- 左: 入力フォーム -->
+                    <div class="col-md-5">
+                        <h4 class="neon-text-purple">条件入力</h4>
+                        <form id="party-generator-form">
+                            <div class="mb-3">
+                                <label for="available-pokemon" class="form-label">使用可能なポケモン</label>
+                                <textarea class="form-control" id="available-pokemon" rows="6" placeholder="ピカチュウ
+リザードン
+フシギバナ
+カメックス
+...">ピカチュウ
+リザードン
+フシギバナ
+カメックス
+ゲンガー
+ラプラス
+カビゴン
+サンダース</textarea>
+                                <div class="form-text">1行に1匹ずつ入力してください。</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="tactical-concept" class="form-label">戦術コンセプト</label>
+                                <input type="text" class="form-control" id="tactical-concept" placeholder="例: 対面構築、サイクル戦重視" value="対面構築">
+                            </div>
+                            <div class="d-grid">
+                                <button type="button" id="generate-party-button" class="btn btn-primary neon-border">
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    生成を開始
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- 右: 生成結果 -->
+                    <div class="col-md-7">
+                        <h4 class="neon-text-purple">生成結果</h4>
+                        <div id="party-generation-result-area" class="p-3" style="min-height: 300px;">
+                            <div class="text-center text-muted pt-5">
+                                <p>条件を入力して「生成を開始」を押してください</p>
+                            </div>
+                        </div>
+                        <div id="register-party-area" class="d-none mt-3">
+                            <div class="d-grid">
+                                <button class="btn btn-success neon-border" id="register-generated-party-btn">
+                                    このパーティを登録
+                                </button>
+                            </div>
+                            <div id="register-party-alert" class="alert mt-2" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

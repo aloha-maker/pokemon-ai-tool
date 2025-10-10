@@ -1,0 +1,117 @@
+<!-- F-07: 計算機モーダル -->
+<div class="modal fade" id="calculator-modal" tabindex="-1" aria-labelledby="calculatorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content glass-card">
+            <div class="modal-header border-0">
+                <h5 class="modal-title neon-text-blue" id="calculatorModalLabel"><i class="bi bi-calculator"></i> ステータス・ダメージ計算機</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" id="calc-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="status-calc-tab" data-bs-toggle="tab" data-bs-target="#status-calc-pane" type="button" role="tab">ステータス計算</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="damage-calc-tab" data-bs-toggle="tab" data-bs-target="#damage-calc-pane" type="button" role="tab">ダメージ計算</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="calc-tab-content">
+                    <!-- ステータス計算タブ -->
+                    <div class="tab-pane fade show active p-3" id="status-calc-pane" role="tabpanel">
+                        <form id="status-calc-form">
+                            <div class="row">
+                                <!-- 入力 -->
+                                <div class="col-md-6">
+                                    <h5 class="neon-text-purple">入力</h5>
+                                    <div class="mb-3">
+                                        <label for="calc-pokemon-id" class="form-label">ポケモン</label>
+                                        <select class="form-select" id="calc-pokemon-id" required></select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="calc-level" class="form-label">レベル</label>
+                                        <input type="number" class="form-control" id="calc-level" value="50" min="1" max="100" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="calc-nature-id" class="form-label">性格</label>
+                                        <select class="form-select" id="calc-nature-id" required></select>
+                                    </div>
+                                    <h6>努力値 (EV)</h6>
+                                    <div class="row g-2">
+                                        <div class="col-4"><label>HP</label><input type="number" class="form-control ev-calc-input" id="ev-calc-hp" value="0" min="0" max="252"></div>
+                                        <div class="col-4"><label>攻撃</label><input type="number" class="form-control ev-calc-input" id="ev-calc-atk" value="0" min="0" max="252"></div>
+                                        <div class="col-4"><label>防御</label><input type="number" class="form-control ev-calc-input" id="ev-calc-def" value="0" min="0" max="252"></div>
+                                        <div class="col-4"><label>特攻</label><input type="number" class="form-control ev-calc-input" id="ev-calc-spa" value="0" min="0" max="252"></div>
+                                        <div class="col-4"><label>特防</label><input type="number" class="form-control ev-calc-input" id="ev-calc-spd" value="0" min="0" max="252"></div>
+                                        <div class="col-4"><label>素早</label><input type="number" class="form-control ev-calc-input" id="ev-calc-spe" value="0" min="0" max="252"></div>
+                                    </div>
+                                    <div class="text-end"><small>合計: <span id="ev-calc-total">0</span> / 510</small></div>
+                                </div>
+                                <!-- 結果 -->
+                                <div class="col-md-6">
+                                    <h5 class="neon-text-purple">計算結果</h5>
+                                    <div id="status-calc-result" class="pt-3">
+                                        <!-- JSで結果が表示される -->
+                                        <p class="text-muted">ポケモンを選択して値を入力してください。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- ダメージ計算タブ -->
+                    <div class="tab-pane fade p-3" id="damage-calc-pane" role="tabpanel">
+                        <form id="damage-calc-form">
+                            <div class="row">
+                                <!-- 攻撃側 -->
+                                <div class="col-md-6">
+                                    <h5 class="neon-text-purple">攻撃側</h5>
+                                    <div class="p-3 glass-card-inside">
+                                        <div class="mb-2">
+                                            <label class="form-label">ポケモン</label>
+                                            <select class="form-select form-select-sm calc-pokemon-selector" id="attacker-pokemon-id"></select>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-4"><label>レベル</label><input type="number" class="form-control form-control-sm" id="attacker-level" value="50"></div>
+                                            <div class="col-8"><label>性格</label><select class="form-select form-select-sm calc-nature-selector" id="attacker-nature-id"></select></div>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label">技</label>
+                                            <select class="form-select form-select-sm calc-move-selector" id="attacker-move-id"></select>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-6"><label>攻撃/特攻 実数値</label><input type="number" class="form-control form-control-sm" id="attacker-stat" value="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- 防御側 -->
+                                <div class="col-md-6">
+                                    <h5 class="neon-text-purple">防御側</h5>
+                                    <div class="p-3 glass-card-inside">
+                                        <div class="mb-2">
+                                            <label class="form-label">ポケモン</label>
+                                            <select class="form-select form-select-sm calc-pokemon-selector" id="defender-pokemon-id"></select>
+                                        </div>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-4"><label>レベル</label><input type="number" class="form-control form-control-sm" id="defender-level" value="50"></div>
+                                            <div class="col-8"><label>性格</label><select class="form-select form-select-sm calc-nature-selector" id="defender-nature-id"></select></div>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-6"><label>HP 実数値</label><input type="number" class="form-control form-control-sm" id="defender-hp" value="100"></div>
+                                            <div class="col-6"><label>防御/特防 実数値</label><input type="number" class="form-control form-control-sm" id="defender-stat" value="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                        <!-- 計算結果 -->
+                        <div class="mt-4">
+                            <h5 class="neon-text-purple">計算結果</h5>
+                            <div id="damage-calc-result" class="p-3 glass-card-inside">
+                                <p class="text-muted">各項目を入力してください。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
