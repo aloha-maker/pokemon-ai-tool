@@ -9,6 +9,7 @@ import threading
 import cv2
 import pygetwindow
 from urllib.parse import quote
+from src import state
 from src.core.capture import ScreenCapturer
 from src.ai.party_generator import PartyGenerator
 from src.ai.win_rate_predictor import WinRatePredictor
@@ -18,6 +19,10 @@ from src.database.manager import DatabaseManager
 from src.core.video_processor import VideoProcessor
 from src.ui.routes import api_bp # ★ 追加
 from src.core.ocr import PokemonRecognizer
+from src.streaming.generators import video_stream_generator, camera_stream_generator
+from src.workers.capture import window_capture_worker, camera_capture_worker
+from src.workers.ocr import ocr_worker
+from src.workers.video import analyze_video_task
 
 app = Flask(__name__)
 app.register_blueprint(api_bp) # ★ 追加
@@ -35,76 +40,12 @@ os.makedirs(DEBUG_IMAGE_DIR, exist_ok=True)
 
 # --- Video Processing Globals ---
 VIDEO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'videos')
-video_tasks = {}
 
 # --- Background OCR and AI Thread ---
-
-# スレッドを管理するためのグローバル変数
-capture_thread = None
-ocr_thread = None
-background_thread_stop_event = threading.Event()
-game_state_lock = threading.Lock()
-shared_game_state = {
-    "state": None,
-    "last_updated": None
-}
+# All global variables have been moved to state.py
 
 # --- Real-time Video Streaming ---
-def video_stream_generator(window_title: str):
-    """画面キャプチャを行い、M-JPEGストリームのフレームを生成するジェネレータ"""
-    print(f"ビデオストリームを開始します。対象: {window_title}")
-    capturer = ScreenCapturer(window_title)
-    if not capturer._find_window():
-        print(f"警告: ウィンドウ '{window_title}' が見つかりません。ストリームを開始できません。")
-        return
-
-    while not background_thread_stop_event.is_set():
-        frame = capturer.capture_frame()
-        if frame is None:
-            # ウィンドウが閉じるなどした場合
-            print("ビデオストリームのフレーム取得に失敗しました。")
-            time.sleep(1) # リトライ待機
-            continue
-
-        # パフォーマンスのためにリサイズ（例: 1280x720）。元の解像度が必要な場合は削除。
-        frame = cv2.resize(frame, (1280, 720))
-        is_success, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-        if not is_success:
-            continue
-        
-        frame_bytes = buffer.tobytes()
-        
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-        
-        # フレームレートを制御 (約30 FPS)
-        socketio.sleep(1/30)
-    
-    print("ビデオストリームを停止しました。")
-
-# --- Real-time Camera Streaming ---
-def camera_stream_generator(camera_index=0):
-    """ワーカーが保存した最新のフレーム画像を読み込み、M-JPEGストリームとして生成するジェネレータ"""
-    print(f"ファイルベースのカメラストリームを開始します。")
-    latest_frame_path = 'static/captures/latest_frame.jpg'
-
-    while not background_thread_stop_event.is_set():
-        if os.path.exists(latest_frame_path):
-            try:
-                with open(latest_frame_path, 'rb') as f:
-                    frame_bytes = f.read()
-                
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-            except IOError as e:
-                print(f"フレーム画像の読み込みに失敗しました: {e}")
-                time.sleep(1) # リトライ待機
-        else:
-            # ファイルがまだ生成されていない場合
-            time.sleep(0.5)
-
-        # フレームレートを制御 (約30 FPS)
-        socketio.sleep(1/30)
+# Stream generators have been moved to src/streaming/generators.py
 
 @app.route('/camera_feed')
 def camera_feed():
@@ -125,130 +66,39 @@ def video_feed():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 # --- Background OCR & AI Thread ---
-def ocr_worker():
-    """
-    バックグラウンドでOCRを定期的に実行するワーカー（画像ソースに依存しない）
-    'static/captures/latest_frame.jpg' を監視して処理を行う
-    """
-    print("OCRワーカーを開始します。")
-    parser = GameStateParser()
-    
-    while not background_thread_stop_event.is_set():
-        frame_path = 'static/captures/latest_frame.jpg'
-        if os.path.exists(frame_path):
-            try:
-                frame = cv2.imread(frame_path)
-                if frame is not None:
-                    # OCR処理には常に1920x1080の解像度を期待
-                    frame_resized = cv2.resize(frame, (1920, 1080))
-                    current_state = parser.parse_frame(frame_resized)
-                    
-                    with game_state_lock:
-                        shared_game_state["state"] = current_state
-                        shared_game_state["last_updated"] = time.time()
-                    
-                    socketio.emit('ocr_update', {'state': current_state})
-                else:
-                    print("OCRワーカー: フレームの読み込みに失敗しました。")
-            except Exception as e:
-                print(f"OCRワーカーでエラーが発生しました: {e}")
-        else:
-            # print("OCRワーカー: latest_frame.jpgが見つかりません。キャプチャソースがアクティブか確認してください。")
-            pass # キャプチャが開始されるまで待機
 
-        socketio.sleep(1) # OCRの実行頻度を制御
-    
-    print("OCRワーカーを停止しました。")
-
-def window_capture_worker(window_title):
-    """ウィンドウキャプチャを行い、latest_frame.jpgを更新するワーカー"""
-    print(f"ウィンドウキャプチャワーカーを開始します。対象: {window_title}")
-    capturer = ScreenCapturer(window_title)
-    if not capturer._find_window():
-        print(f"警告: ウィンドウ '{window_title}' が見つかりません。")
-        socketio.emit('analysis_stopped', {'error': f'ウィンドウ「{window_title}」が見つかりません。'})
-        return
-
-    while not background_thread_stop_event.is_set():
-        frame = capturer.capture_frame()
-        if frame is not None:
-            cv2.imwrite('static/captures/latest_frame.jpg', frame)
-        else:
-            print("ウィンドウキャプチャワーカー: フレーム取得に失敗しました。")
-            # ウィンドウが閉じられた可能性
-            background_thread_stop_event.set()
-            socketio.emit('analysis_stopped', {'error': 'キャプチャ対象のウィンドウが閉じられた可能性があります。'})
-            break
-        socketio.sleep(1/30) # キャプチャフレームレート
-    print("ウィンドウキャプチャワーカーを停止しました。")
-
-def camera_capture_worker(camera_index):
-    """カメラキャプチャを行い、latest_frame.jpgを更新するワーカー"""
-    print(f"[Log] カメラキャプチャワーカー開始。デバイス: {camera_index}")
-    cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-    if not cap.isOpened():
-        print(f"警告: カメラデバイス {camera_index} を開けません。")
-        socketio.emit('analysis_stopped', {'error': f'カメラデバイス {camera_index} が見つかりません。'})
-        return
-
-    while not background_thread_stop_event.is_set():
-        ret, frame = cap.read()
-        if ret:
-            is_success, buffer = cv2.imencode(".jpg", frame)
-            if is_success:
-                tmp_path = 'static/captures/latest_frame.tmp'
-                final_path = 'static/captures/latest_frame.jpg'
-                with open(tmp_path, 'wb') as f:
-                    f.write(buffer)
-                try:
-                    os.replace(tmp_path, final_path)
-                except PermissionError:
-                    # The reader thread might have the file open. It's safe to skip.
-                    pass
-        else:
-            print("カメラキャプチャワーカー: フレーム取得に失敗しました。")
-            background_thread_stop_event.set()
-            socketio.emit('analysis_stopped', {'error': 'カメラからの映像取得に失敗しました。'})
-            break
-        socketio.sleep(1/30) # キャプチャフレームレート
-    
-    cap.release()
-    print("カメラキャプチャワーカーを停止しました。")
+# Worker functions have been moved to the src/workers/ directory.
 
 
 @socketio.on('connect')
 def connect():
     print("Client connected")
     # サーバー再起動時などに意図せず残っているスレッドを停止させる
-    global capture_thread, ocr_thread
-    if capture_thread or ocr_thread:
-        background_thread_stop_event.set()
-        capture_thread = None
-        ocr_thread = None
+    if state.capture_thread or state.ocr_thread:
+        state.background_thread_stop_event.set()
+        state.capture_thread = None
+        state.ocr_thread = None
     emit('my_response', {'data': 'Connected'})
 
 @socketio.on('start_analysis')
 def start_analysis(data):
     """クライアントからの要求でウィンドウキャプチャとOCRを開始する"""
-    global capture_thread, ocr_thread
     window_title = data.get('window_title')
 
     if not window_title:
         emit('analysis_stopped', {'error': 'ウィンドウが選択されていません。'})
         return
 
-    if capture_thread and capture_thread.is_alive() or ocr_thread and ocr_thread.is_alive():
+    if state.capture_thread and state.capture_thread.is_alive() or state.ocr_thread and state.ocr_thread.is_alive():
         print("既に何らかの解析スレッドが実行中です。")
         emit('analysis_stopped', {'error': '他の解析が実行中です。先に停止してください。'})
         return
 
     print(f"ウィンドウ解析の開始を要求されました。対象: {window_title}")
-    background_thread_stop_event.clear()
+    state.background_thread_stop_event.clear()
     
-    capture_thread = socketio.start_background_task(target=window_capture_worker, window_title=window_title)
-    ocr_thread = socketio.start_background_task(target=ocr_worker)
+    state.capture_thread = socketio.start_background_task(target=window_capture_worker, socketio=socketio, window_title=window_title)
+    state.ocr_thread = socketio.start_background_task(target=ocr_worker, socketio=socketio)
     
     video_feed_url = f'/video_feed?window_title={quote(window_title)}'
     emit('analysis_started', {'video_feed_url': video_feed_url, 'ocr_started': True})
@@ -256,17 +106,16 @@ def start_analysis(data):
 @socketio.on('start_camera')
 def start_camera(data):
     """クライアントからの要求でカメラキャプチャとストリームを開始する (OCRは開始しない)"""
-    global capture_thread
-    if capture_thread and capture_thread.is_alive() or ocr_thread and ocr_thread.is_alive():
+    if state.capture_thread and state.capture_thread.is_alive() or state.ocr_thread and state.ocr_thread.is_alive():
         print("既に何らかの解析スレッドが実行中です。")
         emit('analysis_stopped', {'error': '他の解析が実行中です。先に停止してください。'})
         return
 
     print("カメラストリームの開始を要求されました。")
-    background_thread_stop_event.clear()
+    state.background_thread_stop_event.clear()
     
     camera_index = data.get('camera_index', 0)
-    capture_thread = socketio.start_background_task(target=camera_capture_worker, camera_index=camera_index)
+    state.capture_thread = socketio.start_background_task(target=camera_capture_worker, socketio=socketio, camera_index=camera_index)
 
     video_feed_url = f'/camera_feed?camera_index={camera_index}'
     emit('camera_started', {'video_feed_url': video_feed_url, 'ocr_started': False})
@@ -274,34 +123,32 @@ def start_camera(data):
 @socketio.on('start_ocr')
 def start_ocr(data=None):
     """クライアントからの要求でOCR処理のみを開始する"""
-    global ocr_thread
-    if ocr_thread and ocr_thread.is_alive():
+    if state.ocr_thread and state.ocr_thread.is_alive():
         print("既にOCRスレッドは実行中です。")
         return
-    if not capture_thread or not capture_thread.is_alive():
+    if not state.capture_thread or not state.capture_thread.is_alive():
         print("OCR開始要求がありましたが、キャプチャが実行されていません。")
         emit('analysis_stopped', {'error': 'OCRを開始するには、先にウィンドウかカメラの読み込みを開始してください。'})
         return
     
     print("OCR処理の開始を要求されました。")
     # background_thread_stop_event はキャプチャ開始時にクリアされているはず
-    ocr_thread = socketio.start_background_task(target=ocr_worker)
+    state.ocr_thread = socketio.start_background_task(target=ocr_worker, socketio=socketio)
     emit('ocr_started')
 
 @socketio.on('stop_analysis')
 def stop_analysis(data=None):
     """クライアントからの要求で全ての解析スレッドを停止する"""
-    global capture_thread, ocr_thread
     print("解析の停止を要求されました。")
-    background_thread_stop_event.set()
+    state.background_thread_stop_event.set()
 
     # スレッドの終了を待つ（任意、タイムアウトを設定することも可能）
-    if capture_thread:
-        capture_thread.join()
-        capture_thread = None
-    if ocr_thread:
-        ocr_thread.join()
-        ocr_thread = None
+    if state.capture_thread:
+        state.capture_thread.join()
+        state.capture_thread = None
+    if state.ocr_thread:
+        state.ocr_thread.join()
+        state.ocr_thread = None
 
     socketio.emit('analysis_stopped')
 
@@ -310,15 +157,15 @@ def stop_analysis(data=None):
 def disconnect():
     print('Client disconnected')
     # Consider stopping the thread if the user disconnects
-    # background_thread_stop_event.set()
+    # state.background_thread_stop_event.set()
 
 @socketio.on('get_suggestion')
 def handle_get_suggestion(json_data):
     """
     クライアントからの要求に応じて、最新の盤面情報からAIの提案を生成する
     """
-    with game_state_lock:
-        current_state = shared_game_state["state"]
+    with state.game_state_lock:
+        current_state = state.shared_game_state["state"]
     
     if current_state:
         # AIモデルで行動を予測
@@ -598,7 +445,7 @@ def upload_video():
         file.save(filepath)
         
         # タスクの状態を初期化
-        video_tasks[task_id] = {"status": "PENDING", "result": None, "filename": file.filename}
+        state.video_tasks[task_id] = {"status": "PENDING", "result": None, "filename": file.filename}
         
         # バックグラウンドで動画解析を実行
         executor.submit(analyze_video_task, task_id, filepath)
@@ -609,7 +456,7 @@ def upload_video():
 
 @app.route('/api/videos/status/<task_id>', methods=['GET'])
 def get_video_status(task_id):
-    task = video_tasks.get(task_id)
+    task = state.video_tasks.get(task_id)
     if not task:
         return jsonify({"error": "Task not found"}), 404
     return jsonify(task)
@@ -618,7 +465,7 @@ def analyze_video_task(task_id, filepath):
     """バックグラウンドで実行される動画解析タスク"""
     try:
         print(f"[Task {task_id}] Video analysis started for {filepath}")
-        video_tasks[task_id]["status"] = "PROCESSING"
+        state.video_tasks[task_id]["status"] = "PROCESSING"
         
         # VideoProcessorは、解析結果としてターンデータのdictを返すと想定
         processor = VideoProcessor(filepath)
@@ -628,14 +475,14 @@ def analyze_video_task(task_id, filepath):
         with DatabaseManager() as db:
             log_id = db.add_battle_log_from_video(task_id, turn_data)
 
-        video_tasks[task_id]["status"] = "DONE"
-        video_tasks[task_id]["result"] = {"log_id": log_id}
+        state.video_tasks[task_id]["status"] = "DONE"
+        state.video_tasks[task_id]["result"] = {"log_id": log_id}
         print(f"[Task {task_id}] Video analysis finished. Log ID: {log_id}")
 
     except Exception as e:
         print(f"[Task {task_id}] Error during video analysis: {e}")
-        video_tasks[task_id]["status"] = "ERROR"
-        video_tasks[task_id]["result"] = {"error": str(e)}
+        state.video_tasks[task_id]["status"] = "ERROR"
+        state.video_tasks[task_id]["result"] = {"error": str(e)}
 
 @app.route('/api/videos/result/<int:log_id>', methods=['GET'])
 def get_video_result(log_id):
@@ -687,6 +534,8 @@ def get_roi_image_path():
     # リアルタイム解析中の最新画像を利用するのが合理的
     return jsonify({"image_path": "/static/captures/live_capture.png"})
 
+@app.route('/trained_pokemon_management')
+def trained_pokemon_management():
     """育成済みポケモン管理ページを表示する。"""
     return render_template('trained_pokemon_management.html')
 
