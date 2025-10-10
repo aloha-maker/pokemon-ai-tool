@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="ja" data-bs-theme="dark">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -24,36 +25,46 @@
     <!-- Socket.IO Client -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
+
 <body>
     <div class="container-fluid vh-100 p-3 d-flex flex-column" style="overflow: hidden;">
         <header class="d-flex justify-content-between align-items-center mb-3">
             <h1 class="neon-text-purple mb-0">ポケモン対戦補助AIツール</h1>
             <div>
-                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#video-manager-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#video-manager-modal">
                     <i class="bi bi-film"></i> 動画管理
                 </button>
-                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#party-generator-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#party-generator-modal">
                     <i class="bi bi-magic"></i> パーティ自動生成
                 </button>
-                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#dashboard-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#dashboard-modal">
                     <i class="bi bi-graph-up"></i> 分析ダッシュボード
                 </button>
-                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#trained-pokemon-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#trained-pokemon-modal">
                     <i class="bi bi-archive"></i> 育成済みポケモン管理
                 </button>
-                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#item-editor-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#item-editor-modal">
                     <i class="bi bi-gem"></i> 持ち物編集
                 </button>
-                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#party-management-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#party-management-modal">
                     <i class="bi bi-collection"></i> パーティ管理
                 </button>
-                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal" data-bs-target="#calculator-modal">
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#calculator-modal">
                     <i class="bi bi-calculator"></i> 計算機
                 </button>
-                <button class="btn btn-outline-light neon-border" data-bs-toggle="modal" data-bs-target="#simulator-modal">
+                <button class="btn btn-outline-light neon-border" data-bs-toggle="modal"
+                    data-bs-target="#simulator-modal">
                     <i class="bi bi-joystick"></i> シミュレーター
                 </button>
-                <button class="btn btn-outline-light neon-border ms-2" data-bs-toggle="modal" data-bs-target="#roi-editor-modal">
+                <button class="btn btn-outline-light neon-border ms-2" data-bs-toggle="modal"
+                    data-bs-target="#roi-editor-modal">
                     <i class="bi bi-pencil-square"></i> ROI設定
                 </button>
 
@@ -63,587 +74,25 @@
         <main class="row flex-grow-1 gx-4">
             <!-- 左カラム: キャプチャと選出予測 -->
             <section class="col-lg-6 d-flex flex-column">
-                <!-- リアルタイム解析 -->
-                <div id="game-preview" class="glass-card p-3 d-flex flex-column mb-3">
-                    <div class="row g-2 align-items-center mb-3">
-                        <div class="col-auto">
-                            <button id="load-master-data-btn" class="btn btn-sm btn-secondary">
-                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                <i class="button-icon bi bi-database-down"></i>
-                                <span class="button-text">データ読込</span>
-                            </button>
-                        </div>
-                        <div class="col">
-                            <label for="window-select" class="form-label visually-hidden">キャプチャ対象ウィンドウ</label>
-                            <select id="window-select" class="form-select form-select-sm">
-                                <option selected>ウィンドウを選択...</option>
-                            </select>
-                        </div>
-                        <div class="col-auto">
-                            <button id="window-refresh-button" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </button>
-                        </div>
-                        <div class="col-auto">
-                            <button id="toggle-analysis-button" class="btn btn-sm btn-primary neon-border" data-state="stopped">
-                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                <i class="bi bi-play-circle-fill"></i> 解析を開始
-                            </button>
-                        </div>
-                        <div class="col-auto">
-                            <div class="input-group input-group-sm">
-                                <button id="start-camera-btn" class="btn btn-sm btn-info neon-border">
-                                    <i class="bi bi-camera-video-fill"></i> 仮想カメラ読込
-                                </button>
-                                <input type="number" id="camera-index-input" class="form-control" value="0" title="カメラデバイスのインデックス" style="width: 60px;">
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <button id="start-ocr-btn" class="btn btn-sm btn-success neon-border" disabled>
-                                <i class="bi bi-cpu-fill"></i> OCR開始
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- ゲーム画面プレビュー -->
-                    <div class="text-center bg-black ratio ratio-16x9">
-                        <img id="capture-image" src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview" class="img-fluid" alt="ゲーム画面プレビュー">
-                    </div>
-                </div>
-
-                <!-- 選出予測 -->
-                <div class="glass-card p-3 d-flex flex-column flex-grow-1">
-                    
-                    <!-- パーティ入力フォーム -->
-                    <div class="row">
-                        <!-- 自パーティ入力 -->
-                        <div class="col-6">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="mb-0"><i class="bi bi-person-fill"></i> 自パーティ</h6>
-                                <div class="input-group input-group-sm w-auto">
-                                    <select class="form-select form-select-sm" id="my-party-select">
-                                        <option selected value="">登録済みパーティから選ぶ...</option>
-                                    </select>
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
-                                </div>
-                            </div>
-                            <div class="row gx-1" id="my-party-display">
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P1" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン1" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="my-item-icon-1">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="my-item-1">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="my-tera-icon-1">
-                                        <select class="form-select form-select-sm tera-type-select" id="my-tera-type-1"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P2" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン2" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="my-item-icon-2">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="my-item-2">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="my-tera-icon-2">
-                                        <select class="form-select form-select-sm tera-type-select" id="my-tera-type-2"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P3" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン3" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="my-item-icon-3">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="my-item-3">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="my-tera-icon-3">
-                                        <select class="form-select form-select-sm tera-type-select" id="my-tera-type-3"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P4" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン4" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="my-item-icon-4">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="my-item-4">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="my-tera-icon-4">
-                                        <select class="form-select form-select-sm tera-type-select" id="my-tera-type-4"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P5" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン5" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="my-item-icon-5">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="my-item-5">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="my-tera-icon-5">
-                                        <select class="form-select form-select-sm tera-type-select" id="my-tera-type-5"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P6" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン6" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="my-item-icon-6">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="my-item-6">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="my-tera-icon-6">
-                                        <select class="form-select form-select-sm tera-type-select" id="my-tera-type-6"></select>
-                                    </div>
-                                </div>
-                            </div>
-                            <form id="my-party-form" class="d-none">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン1" value="ドラパルト" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン2" value="サーフゴー" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン3" value="キョジオーン" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン4" value="ヘイラッシャ" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン5" value="カイリュー" list="pokemon-datalist">
-                                <input type="text" class="form-control form-control-sm mb-1" placeholder="ポケモン6" value="ハッサム" list="pokemon-datalist">
-                            </form>
-                        </div>
-                        <!-- 相手パーティ入力 -->
-                        <div class="col-6">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="mb-0"><i class="bi bi-person-bounding-box"></i> 相手パーティ</h6>
-                                <div>
-                                    <button id="recognize-opponent-party-btn" class="btn btn-sm btn-info neon-border me-2" disabled>
-                                        <i class="bi bi-camera-video"></i> パーティ取得
-                                    </button>
-                                    <button id="predict-button" class="btn btn-sm btn-primary neon-border me-2">
-                                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                        予測を開始
-                                    </button>
-                                    <button id="save-party-button" class="btn btn-sm btn-success neon-border">
-                                        <i class="bi bi-save"></i> パーティ保存
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="row gx-1" id="opponent-party-display">
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P1" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン1" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-1">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="opponent-item-1">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-1">
-                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-1"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P2" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン2" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-2">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="opponent-item-2">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-2">
-                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-2"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P3" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン3" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-3">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="opponent-item-3">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-3">
-                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-3"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P4" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン4" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-4">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="opponent-item-4">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-4">
-                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-4"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P5" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン5" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-5">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="opponent-item-5">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-5">
-                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-5"></select>
-                                    </div>
-                                </div>
-                                <div class="col-2 position-relative pokemon-slot">
-                                    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
-                                    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
-                                    <div class="position-relative">
-                                        <img src="https://placehold.co/96x96/333/ccc?text=P6" class="img-fluid rounded w-100">
-                                        <div class="hp-bar-container progress" style="height: 20px;">
-                                            <div class="hp-bar progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                            <span class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
-                                        </div>
-                                        <input type="text" class="form-control form-control-sm pokemon-input" placeholder="ポケモン6" list="pokemon-datalist">
-                                    </div>
-                                    <div class="item-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1" alt="持ち物アイコン" id="opponent-item-icon-6">
-                                        <input type="text" class="form-control form-control-sm item-input" placeholder="持ち物" list="item-datalist" id="opponent-item-6">
-                                    </div>
-                                    <div class="tera-type-container d-flex align-items-center mt-1">
-                                        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1" alt="テラスタイプアイコン" id="opponent-tera-icon-6">
-                                        <select class="form-select form-select-sm tera-type-select" id="opponent-tera-type-6"></select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
+                {% include 'realtime_analysis.html' %}
+                {% include 'battle_party.html' %}
             </section>
 
-            <!-- 右カラム: AIアドバイス -->
-            <section class="col-lg-6 d-flex flex-column">
-                <div class="glass-card flex-grow-1 p-1 d-flex flex-column">
-                    <ul class="nav nav-tabs nav-fill" id="ai-advice-tabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="selection-advice-tab" data-bs-toggle="tab" data-bs-target="#selection-advice-pane" type="button" role="tab" aria-controls="selection-advice-pane" aria-selected="true">選出アドバイス</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="battle-advice-tab" data-bs-toggle="tab" data-bs-target="#battle-advice-pane" type="button" role="tab" aria-controls="battle-advice-pane" aria-selected="false">バトル中アドバイス</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content flex-grow-1 p-3" id="ai-advice-tabs-content">
-                        <div class="tab-pane fade show active h-100" id="selection-advice-pane" role="tabpanel" aria-labelledby="selection-advice-tab">
-                            <!-- 予測結果表示エリア -->
-                            <div id="prediction-result-area" class="h-100">
-                                <div class="text-center text-muted pt-5 h-100">
-                                    <p>パーティを入力して「予測を開始」を押してください</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tab-pane fade h-100" id="battle-advice-pane" role="tabpanel" aria-labelledby="battle-advice-tab">
-                            <div class="d-flex flex-column h-100">
-                                <!-- 上半分: AIの行動提案 -->
-                                <div id="suggestion-overlay" class="h-50" style="overflow-y: auto;">
-                                    <div class="text-center text-muted pt-5 h-100">
-                                        <p>「解析を開始」すると、ここにAIの推奨アクションが表示されます。</p>
-                                    </div>
-                                </div>
-
-                                <!-- 下半分: ログ & デバッグ -->
-                                <div class="h-50 d-flex flex-column">
-                                    <!-- リアルタイムバトルログ -->
-                                    <div class="glass-card-inside p-2 mt-2 flex-grow-1" style="display: flex; flex-direction: column; min-height: 0;">
-                                        <h6 class="neon-text-purple mb-2 flex-shrink-0">リアルタイムバトルログ</h6>
-                                        <div id="realtime-log-output" class="font-monospace small flex-grow-1" style="overflow-y: auto;">
-                                            <!-- ログがここに表示される -->
-                                        </div>
-                                    </div>
-
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            {% include 'ai_advice.html' %}
         </main>
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- ROI Editor Modal -->
-    <div class="modal fade" id="roi-editor-modal" tabindex="-1" aria-labelledby="roiEditorModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content glass-card">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title neon-text-blue" id="roiEditorModalLabel"><i class="bi bi-pencil-square"></i> ROIエディタ</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted small">ここでゲーム画面の読み取り範囲を調整します。「解析開始」でプレビュー画像を表示後、下のドロップダウンから編集したい項目を選び、画像の上をドラッグして範囲を指定してください。</p>
-                    <div class="row">
-                        <div class="col-md-9">
-                            <canvas id="roi-canvas" class="border border-primary" style="max-width: 100%;"></canvas>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="roi-selector" class="form-label">編集対象:</label>
-                                <select id="roi-selector" class="form-select">
-                                    <!-- オプションはJSによって動的に読み込まれます -->
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="new-roi-name" class="form-label">新規ROIを追加:</label>
-                                <div class="input-group">
-                                    <input type="text" id="new-roi-name" class="form-control" placeholder="例: my_pokemon_moves">
-                                    <button class="btn btn-outline-secondary" type="button" id="add-roi-btn">追加</button>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="roi-image-upload" class="form-label">背景画像を変更:</label>
-                                <input type="file" id="roi-image-upload" class="form-control" accept="image/*">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">座標 (x, y, w, h):</label>
-                                <div id="roi-coords" class="text-light">N/A</div>
-                            </div>
-                            <button id="save-roi-btn" class="btn btn-primary neon-border w-100">
-                                <i class="bi bi-save"></i> ROI設定を保存
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    {% include 'roi_editor_modal.html' %}
     {% include 'dashboard_modal.html' %}
-
     {% include 'party_generator_modal.html' %}
-
     {% include 'video_manager_modal.html' %}
-
-    <!-- 動画解析結果表示モーダル -->
-    <div class="modal fade" id="video-result-modal" tabindex="-1" aria-labelledby="videoResultLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content glass-card">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title neon-text-blue" id="videoResultLabel"><i class="bi bi-card-text"></i> 解析結果</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="video-result-body">
-                    <!-- JSで結果がここに描画される -->
-                </div>
-            </div>
-        </div>
-    </div>
-
+    {% include 'video_load_modal.html' %}
     {% include 'trained_pokemon_modal.html' %}
-
-    <!-- 育成済みポケモン登録・編集用フォームモーダル (ネストされたモーダル) -->
-    <div class="modal fade" id="pokemon-form-modal" tabindex="-1" aria-labelledby="pokemonFormModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content glass-card-inside">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="pokemonFormModalLabel">ポケモン情報</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="pokemon-form">
-                        <input type="hidden" id="pokemon-id">
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="pokemon-master-id" class="form-label">ポケモン</label>
-                                <select class="form-select" id="pokemon-master-id" required></select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="nickname" class="form-label">ニックネーム</label>
-                                <input type="text" class="form-control" id="nickname">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="level" class="form-label">レベル</label>
-                                <input type="number" class="form-control" id="level" value="50" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="tera-type-id" class="form-label">テラスタイプ</label>
-                                <select class="form-select" id="tera-type-id"></select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="held-item-id" class="form-label">持ち物</label>
-                                <select class="form-select" id="held-item-id"></select>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="ability-id" class="form-label">特性</label>
-                                <select class="form-select" id="ability-id"></select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="nature-id" class="form-label">性格</label>
-                                <select class="form-select" id="nature-id"></select>
-                            </div>
-                        </div>
-
-                        <hr>
-                        <h6>技構成</h6>
-                        <div class="row">
-                            <div class="col-md-6 mb-3"><select class="form-select move-select" id="move1-id"></select></div>
-                            <div class="col-md-6 mb-3"><select class="form-select move-select" id="move2-id"></select></div>
-                            <div class="col-md-6 mb-3"><select class="form-select move-select" id="move3-id"></select></div>
-                            <div class="col-md-6 mb-3"><select class="form-select move-select" id="move4-id"></select></div>
-                        </div>
-
-                        <hr>
-                        <h6>努力値 (EV)</h6>
-                        <div class="row">
-                            <div class="col-sm-4 col-md-2 mb-3"><label for="ev-hp">HP</label><input type="number" class="form-control ev-input" id="ev-hp" value="0" min="0" max="252" step="4"></div>
-                            <div class="col-sm-4 col-md-2 mb-3"><label for="ev-atk">攻撃</label><input type="number" class="form-control ev-input" id="ev-atk" value="0" min="0" max="252" step="4"></div>
-                            <div class="col-sm-4 col-md-2 mb-3"><label for="ev-def">防御</label><input type="number" class="form-control ev-input" id="ev-def" value="0" min="0" max="252" step="4"></div>
-                            <div class="col-sm-4 col-md-2 mb-3"><label for="ev-spa">特攻</label><input type="number" class="form-control ev-input" id="ev-spa" value="0" min="0" max="252" step="4"></div>
-                            <div class="col-sm-4 col-md-2 mb-3"><label for="ev-spd">特防</label><input type="number" class="form-control ev-input" id="ev-spd" value="0" min="0" max="252" step="4"></div>
-                            <div class="col-sm-4 col-md-2 mb-3"><label for="ev-spe">素早</label><input type="number" class="form-control ev-input" id="ev-spe" value="0" min="0" max="252" step="4"></div>
-                        </div>
-                        <div class="text-end"><small>合計: <span id="ev-total">0</span> / 510</small></div>
-
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                    <button type="submit" class="btn btn-primary neon-border" form="pokemon-form">保存</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 持ち物編集モーダル -->
-    <div class="modal fade" id="item-editor-modal" tabindex="-1" aria-labelledby="itemEditorModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content glass-card">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title neon-text-blue" id="itemEditorModalLabel"><i class="bi bi-gem"></i> 持ち物編集</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="item-editor-alert" class="alert" style="display: none;"></div>
-                    <div class="row">
-                        <!-- 左側: 持ち物一覧 -->
-                        <div class="col-md-7">
-                            <h4 class="neon-text-purple mb-3">登録済み持ち物一覧</h4>
-                            <div class="list-group" id="item-list" style="max-height: 50vh; overflow-y: auto;">
-                                <!-- アイテムがここに動的に読み込まれる -->
-                            </div>
-                        </div>
-                        <!-- 右側: 新規登録・編集フォーム -->
-                        <div class="col-md-5">
-                            <div class="glass-card-inside p-3">
-                                <h4 id="item-form-title" class="neon-text-purple mb-3">新規持ち物登録</h4>
-                                <form id="item-form">
-                                    <input type="hidden" id="item-id">
-                                    <div class="mb-3">
-                                        <label for="item-name" class="form-label">持ち物名</label>
-                                        <input type="text" class="form-control" id="item-name" required>
-                                    </div>
-                                    <div class="d-flex justify-content-end">
-                                        <button type="button" class="btn btn-secondary me-2" id="cancel-item-edit-btn" style="display: none;">キャンセル</button>
-                                        <button type="submit" class="btn btn-primary neon-border">保存</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {% include 'trained_pokemon_edit_modal.html' %}
+    {% include 'item_edit_modal.html' %}
 
     <!-- Custom JS -->
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}" defer></script>
@@ -654,4 +103,5 @@
     {% include 'pokemon_details_modal.html' %}
     {% include 'result_modal.html' %}
 </body>
+
 </html>

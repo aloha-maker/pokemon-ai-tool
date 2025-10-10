@@ -1,0 +1,53 @@
+<!-- リアルタイム解析 -->
+<div id="game-preview" class="glass-card p-3 d-flex flex-column mb-3">
+    <div class="row g-2 align-items-center mb-3">
+        <div class="col-auto">
+            <button id="load-master-data-btn" class="btn btn-sm btn-secondary">
+                <span class="spinner-border spinner-border-sm d-none" role="status"
+                    aria-hidden="true"></span>
+                <i class="button-icon bi bi-database-down"></i>
+                <span class="button-text">データ読込</span>
+            </button>
+        </div>
+        <div class="col">
+            <label for="window-select" class="form-label visually-hidden">キャプチャ対象ウィンドウ</label>
+            <select id="window-select" class="form-select form-select-sm">
+                <option selected>ウィンドウを選択...</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button id="window-refresh-button" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+        <div class="col-auto">
+            <button id="toggle-analysis-button" class="btn btn-sm btn-primary neon-border"
+                data-state="stopped">
+                <span class="spinner-border spinner-border-sm d-none" role="status"
+                    aria-hidden="true"></span>
+                <i class="bi bi-play-circle-fill"></i> 解析を開始
+            </button>
+        </div>
+        <div class="col-auto">
+            <div class="input-group input-group-sm">
+                <button id="start-camera-btn" class="btn btn-sm btn-info neon-border">
+                    <i class="bi bi-camera-video-fill"></i> 仮想カメラ読込
+                </button>
+                <input type="number" id="camera-index-input" class="form-control" value="0"
+                    title="カメラデバイスのインデックス" style="width: 60px;">
+            </div>
+        </div>
+        <div class="col-auto">
+            <button id="start-ocr-btn" class="btn btn-sm btn-success neon-border" disabled>
+                <i class="bi bi-cpu-fill"></i> OCR開始
+            </button>
+        </div>
+    </div>
+
+    <!-- ゲーム画面プレビュー -->
+    <div class="text-center bg-black ratio ratio-16x9">
+        <img id="capture-image"
+            src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview"
+            class="img-fluid" alt="ゲーム画面プレビュー">
+    </div>
+</div>
