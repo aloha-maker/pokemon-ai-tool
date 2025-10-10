@@ -21,6 +21,7 @@ from src.routes.api.dashboard import dashboard_bp
 
 # SocketIOハンドラのインポート
 from src.sockets.handlers import register_socket_handlers
+from src.core.ocr import PokemonRecognizer
 
 def create_app():
     """ Flaskアプリケーションを生成して返す (Application Factory パターン) """
@@ -40,6 +41,7 @@ def create_app():
     os.makedirs('videos', exist_ok=True)
 
     # --- 拡張機能の初期化 ---
+    app.pokemon_recognizer = PokemonRecognizer() # ★ 追加
     executor.init_app(app)
     socketio = SocketIO(app)
 
@@ -62,8 +64,7 @@ def create_app():
 
     return app, socketio
 
-app, socketio = create_app()
-
 if __name__ == '__main__':
+    app, socketio = create_app()
     # host='0.0.0.0' で外部からのアクセスを許可
     socketio.run(app, debug=True, host='0.0.0.0', port=5001)

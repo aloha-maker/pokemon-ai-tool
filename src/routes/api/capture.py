@@ -4,17 +4,14 @@ import time
 import cv2
 import pygetwindow
 import json
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from src.core.capture import ScreenCapturer
-from src.core.ocr import GameStateParser, PokemonRecognizer
+from src.core.ocr import GameStateParser
 
 capture_bp = Blueprint('capture_api', __name__, url_prefix='/api')
 
 DEBUG_IMAGE_DIR = '.img'
 ROI_CONFIG_PATH = 'instance/roi_config.json'
-
-# Recognizerはグローバルまたはアプリケーションコンテキストで初期化するのが望ましい
-pokemon_recognizer = PokemonRecognizer()
 
 @capture_bp.route('/capture', methods=['POST'])
 def capture_window():
@@ -131,7 +128,7 @@ def recognize_opponent_party():
                     roi_save_path = os.path.join(output_dir_for_this_run, roi_filename)
                     cv2.imwrite(roi_save_path, roi_image)
 
-                recognition_details = pokemon_recognizer.recognize(roi_image)
+                recognition_details = current_app.pokemon_recognizer.recognize(roi_image)
                 pokemon_name = recognition_details.get("name", "")
             
             recognized_party.append(pokemon_name)
