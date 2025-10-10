@@ -645,12 +645,25 @@ class DatabaseManager:
 
     def get_master_data_by_resource(self, resource: str) -> list[dict]:
         """指定されたリソース（テーブル名）からマスターデータをすべて取得する。"""
-        if resource not in ['items', 'natures', 'abilities', 'moves', 'types']:
+        if resource not in ['items', 'natures', 'abilities', 'moves', 'types', 'pokemons']:
             raise ValueError(f"Invalid resource: {resource}")
         
         cursor = self.get_cursor()
-        # name_jaがないテーブルもあるため、存在チェックはしない
-        cursor.execute(f"SELECT * FROM {resource} ORDER BY name")
+        # pokemonsテーブルはname_jaでソート
+        order_column = 'name_ja' if resource == 'pokemons' else 'name'
+        cursor.execute(f"SELECT * FROM {resource} ORDER BY {order_column}")
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_abilities_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
+        """指定されたポケモンIDが持つ特性をすべて取得する。"""
+        cursor = self.get_cursor()
+        query = """
+            SELECT a.id, a.name, a.name_ja, a.description
+            FROM abilities a
+            JOIN pokemon_abilities pa ON a.id = pa.ability_id
+            WHERE pa.pokemon_id = ?
+        """
+        cursor.execute(query, (pokemon_id,))
         return [dict(row) for row in cursor.fetchall()]
 
     def get_moves_by_type(self, move_type: str, category: str, limit: int = 10) -> list[dict]:
