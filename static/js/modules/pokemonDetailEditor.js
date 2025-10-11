@@ -47,7 +47,8 @@ export class PokemonDetailEditor {
         this.pokemonNameEl = document.getElementById('details-pokemon-name');
         this.abilityInput = document.getElementById('details-ability-input');
         this.abilitiesList = [];
-        this.moveSelects = document.querySelectorAll('.details-move-select');
+        this.moveInputs = document.querySelectorAll('.details-move-input');
+        this.movesList = [];
         this.ppInputs = document.querySelectorAll('.pp-input');
         this.ppBtns = document.querySelectorAll('.pp-btn');
         this.saveBtn = document.getElementById('save-pokemon-details-btn');
@@ -131,15 +132,13 @@ export class PokemonDetailEditor {
         }
         console.log(`Pokemon: ${pokemonName}, ID: ${pokemonId}`);
 
-        // Cache abilities list if not already cached
+        // Cache abilities and moves lists if not already cached
         if (this.abilitiesList.length === 0) {
             this.abilitiesList = await getAllAbilities();
         }
-
-        const moves = await getAllMoves();
-        this.moveSelects.forEach(select => {
-            populateSelect(select.id, moves, '技を選択');
-        });
+        if (this.movesList.length === 0) {
+            this.movesList = await getAllMoves();
+        }
         
         // Load state
         const state = this.partyState[this.currentSlot];
@@ -149,9 +148,12 @@ export class PokemonDetailEditor {
             this.abilityInput.value = ability ? (ability.name_ja || ability.name) : '';
             console.log(`Set ability input to: ${this.abilityInput.value}`);
             
-            this.moveSelects.forEach((select, i) => {
-                if (state.moves[i]) {
-                    select.value = state.moves[i].id || '';
+            this.moveInputs.forEach((input, i) => {
+                if (state.moves[i] && state.moves[i].id) {
+                    const move = this.movesList.find(m => m.id == state.moves[i].id);
+                    input.value = move ? (move.name_ja || move.name) : '';
+                } else {
+                    input.value = '';
                 }
             });
             this.ppInputs.forEach((input, i) => {
@@ -171,8 +173,10 @@ export class PokemonDetailEditor {
         const ability = this.abilitiesList.find(a => (a.name_ja || a.name) === abilityName);
         state.ability_id = ability ? ability.id : null;
 
-        this.moveSelects.forEach((select, i) => {
-            state.moves[i].id = select.value;
+        this.moveInputs.forEach((input, i) => {
+            const moveName = input.value.trim();
+            const move = this.movesList.find(m => (m.name_ja || m.name) === moveName);
+            state.moves[i].id = move ? move.id : null;
             state.moves[i].pp = this.ppInputs[i].value;
         });
 
