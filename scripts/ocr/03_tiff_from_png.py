@@ -74,4 +74,4 @@ if __name__ == "__main__":
     # convert_jpg_to_tif(r"C:\workspace\tesstrain\data\jpn_pokemon-ground-truth\3cb86be6_008400.jpg", r"C:\workspace\tesstrain\data\jpn_pokemon-ground-truth\3cb86be6_008400.tif")
     
     # ディレクトリ内の全ファイルを変換
-    convert_directory(r"C:\pokemon-ai-tool\.traindata\text2img", r"C:\pokemon-ai-tool\.traindata\text2img")
+    convert_directory(r"C:\pokemon-ai-tool\.traindata\jpn_pokemon-ground-truth", r"C:\pokemon-ai-tool\.traindata\jpn_pokemon-ground-truth")

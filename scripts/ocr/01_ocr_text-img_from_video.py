@@ -270,6 +270,9 @@ class OCRProcessor:
 
         # 連続するハイフンを単一のハイフンに
         cleaned_text = re.sub(r"-+", "-", cleaned_text)
+        
+        # 「/」を「！」に変換
+        cleaned_text = cleaned_text.replace("/", "！")
 
         return cleaned_text
 
@@ -313,7 +316,7 @@ class OCRProcessor:
                 print(f"⚠ 保存失敗: {save_path}")
                 return False, max_conf
 
-            # テキストファイルを作成
+            # テキストファイルを作成（確信度情報なし）
             text_file_name = f"{short_hash}_{roi_name}_{frame_idx:06d}.gt.txt"
             text_file_path = win_safe_path(os.path.join(roi_dir, text_file_name))
 
@@ -321,11 +324,11 @@ class OCRProcessor:
             median_conf_int = int(conf_stats["median"])
             avg_conf_int = int(conf_stats["avg"])
 
+            # テキストファイルにはテキストのみ書き込み（確信度情報なし）
             with open(text_file_path, 'w', encoding='utf-8') as f:
-                f.write(
-                    f"{extracted_text}確信度：最大{max_conf_int}／中央値{median_conf_int}／平均{avg_conf_int}"
-                )
+                f.write(extracted_text)
 
+            # コンソールには確信度情報を出力
             print(f"✓ {roi_name}_{frame_idx:06d}: '{extracted_text}' (確信度: {max_conf_int})")
             return True, max_conf
         else:
@@ -459,6 +462,8 @@ def main():
     print(f"✅ 「〜の」形式変換機能: 有効 ({POKEMON_NO_ROIS})")
     print("  ※確信度90以上の対象ROIのみ保存")
     print("  ※ポケモン名ROI優先 → 確信度不足時は他のROIを処理")
+    print("  ※テキストファイルには確信度情報を出力しない")
+    print("  ※「/」を「！」に変換")
 
     while True:
         video_files = glob(os.path.join(INPUT_DIR, "*.mp4"))
