@@ -66,7 +66,8 @@ export async function initFormSelects() {
         'pokemon-master-id': 'pokemons',
         'tera-type-id': 'types',
         'held-item-id': 'items',
-        'nature-id': 'natures'
+        'nature-id': 'natures',
+        'ability-id': 'abilities'
     };
     const moveSelects = document.querySelectorAll('.move-select');
 
@@ -80,7 +81,7 @@ export async function initFormSelects() {
         }
 
         const dataPromises = responses.map(res => res.json());
-        const [pokemons, types, items, natures, moves] = await Promise.all(dataPromises);
+        const [pokemons, types, items, natures, abilities, moves] = await Promise.all(dataPromises);
 
         // オートコンプリート用のdatalistを生成
         if (document.getElementById('pokemon-datalist') === null) {
@@ -104,6 +105,7 @@ export async function initFormSelects() {
         populateSelect('tera-type-id', types, 'テラスタイプを選択');
         populateSelect('held-item-id', items, '持ち物を選択', { dataAttribute: { name: 'itemName', value: 'name' } });
         populateSelect('nature-id', natures, '性格を選択');
+        populateSelect('ability-id', abilities, '特性を選択');
 
         moveSelects.forEach(select => {
             populateSelect(select.id, moves, '技を選択');
@@ -162,13 +164,13 @@ export async function initFormSelects() {
             });
         }
 
-        // ポケモン選択時に特性を動的に読み込むイベントリスナー
-        const pokemonMasterSelect = document.getElementById('pokemon-master-id');
-        if (pokemonMasterSelect) {
-            pokemonMasterSelect.addEventListener('change', (event) => {
-                updateAbilitiesForPokemon(event.target.value);
-            });
-        }
+        // ポケモン選択時に特性を動的に読み込むイベントリスナーは不要になったためコメントアウト
+        // const pokemonMasterSelect = document.getElementById('pokemon-master-id');
+        // if (pokemonMasterSelect) {
+        //     pokemonMasterSelect.addEventListener('change', (event) => {
+        //         updateAbilitiesForPokemon(event.target.value);
+        //     });
+        // }
 
         console.log("フォームの選択肢を初期化しました。");
 

@@ -126,8 +126,9 @@ export class TrainedPokemonManager {
             document.getElementById('level').value = pokemon.level || 50;
             document.getElementById('tera-type-id').value = pokemon.tera_type_id || '';
             document.getElementById('held-item-id').value = pokemon.held_item_id || '';
-            
-            await updateAbilitiesForPokemon(pokemon.pokemon_id);
+
+            // The ability dropdown is now pre-populated with all master abilities.
+            // The dynamic update is no longer needed.
             document.getElementById('ability-id').value = pokemon.ability_id || '';
 
             document.getElementById('nature-id').value = pokemon.nature_id || '';
@@ -143,7 +144,7 @@ export class TrainedPokemonManager {
                 document.getElementById(`move${i}-id`).value = pokemon[`move${i}_id`] || '';
             }
         } else {
-            await updateAbilitiesForPokemon(null);
+            // The ability dropdown is now pre-populated, no need to clear it.
         }
         
         this.updateEvTotal();
