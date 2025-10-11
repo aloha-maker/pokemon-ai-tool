@@ -27,6 +27,12 @@ SKIP_ROIS = {'your_party'} | {f'your_poke{i}' for i in range(1, 7)}
 # ポケモン名ROI
 POKEMON_NAME_ROIS = {'my_pokemon_name', 'opponent_pokemon_name'}
 
+# HP ROI（画像のみ保存、ポケモン名ROIが確信度90以上の場合のみ）
+HP_ROIS = {'my_pokemon_hp', 'opponent_pokemon_hp'}
+
+# 状態異常ROI（画像のみ保存、ポケモン名ROIが確信度90以上の場合のみ）
+AILMENT_ROIS = {'my_ailment', 'your_ailment'}
+
 # その他のROI
 OTHER_ROIS = {
     'live_comment_row1', 'live_comment_row2', 
@@ -303,7 +309,18 @@ class OCRProcessor:
         filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.png"
         save_path = win_safe_path(os.path.join(roi_dir, filename))
 
-        # OCR処理
+        # HP ROIと状態異常ROIの場合はOCR処理せずに画像のみ保存
+        if roi_name in HP_ROIS or roi_name in AILMENT_ROIS:
+            # 画像を保存
+            if not cv2.imwrite(save_path, roi_img):
+                print(f"⚠ 保存失敗: {save_path}")
+                return False, 0
+            
+            roi_type = "HP ROI" if roi_name in HP_ROIS else "状態異常 ROI"
+            print(f"📷 {roi_name}_{frame_idx:06d} ({roi_type} - 画像のみ保存)")
+            return True, 0
+
+        # その他のROIはOCR処理
         has_text, extracted_text, conf_stats = self.detect_text_with_ocr(roi_img, roi_name)
         max_conf = conf_stats["max"]
 
@@ -321,8 +338,6 @@ class OCRProcessor:
             text_file_path = win_safe_path(os.path.join(roi_dir, text_file_name))
 
             max_conf_int = int(conf_stats["max"])
-            median_conf_int = int(conf_stats["median"])
-            avg_conf_int = int(conf_stats["avg"])
 
             # テキストファイルにはテキストのみ書き込み（確信度情報なし）
             with open(text_file_path, 'w', encoding='utf-8') as f:
@@ -335,6 +350,45 @@ class OCRProcessor:
             # 確信度90未満の場合、画像を削除（保存しない）
             print(f"✗ {roi_name}_{frame_idx:06d} (確信度 {max_conf:.1f} < 90 → 保存せず)")
             return False, max_conf
+
+    def save_supplementary_roi_images(self, frame, video_name, frame_idx, short_hash, width, height):
+        """
+        補助ROI（HPと状態異常）の画像を保存する（ポケモン名ROIが確信度90以上の場合のみ呼び出される）
+        """
+        supplementary_save_count = 0
+        
+        # HP ROIと状態異常ROIを保存
+        for roi_name in HP_ROIS.union(AILMENT_ROIS):
+            if roi_name not in roi_dict:
+                continue
+                
+            value = roi_dict[roi_name]
+            if not (isinstance(value, list) and len(value) == 4):
+                continue
+
+            x, y, w, h = value
+            if x + w > width or y + h > height:
+                continue
+
+            roi_img = frame[y:y+h, x:x+w]
+            if roi_img.size == 0:
+                continue
+
+            roi_dir = os.path.join(OUTPUT_DIR, video_name, roi_name)
+            os.makedirs(roi_dir, exist_ok=True)
+            filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.png"
+            save_path = win_safe_path(os.path.join(roi_dir, filename))
+
+            # 補助ROIの画像を保存
+            if not cv2.imwrite(save_path, roi_img):
+                print(f"⚠ 補助ROI保存失敗: {save_path}")
+                continue
+            
+            roi_type = "HP ROI" if roi_name in HP_ROIS else "状態異常 ROI"
+            print(f"📷 {roi_name}_{frame_idx:06d} ({roi_type} - 画像のみ保存)")
+            supplementary_save_count += 1
+        
+        return supplementary_save_count
 
 def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processor):
     video_name = os.path.splitext(os.path.basename(video_path))[0]
@@ -391,11 +445,17 @@ def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processo
                     ocr_success_count += 1
                     processed_pokemon = True
             
-            # ステップ2: ポケモン名ROIの確信度が低い場合、他のROIを処理
+            # ステップ1a: ポケモン名ROIが確信度90以上の場合、補助ROI（HPと状態異常）も保存
+            if pokemon_success:
+                supplementary_save_count = ocr_processor.save_supplementary_roi_images(frame, video_name, frame_idx, short_hash, width, height)
+                save_count += supplementary_save_count
+                print(f"  💚 ポケモン名ROI成功に伴い、補助ROI {supplementary_save_count}枚を保存")
+            
+            # ステップ2: ポケモン名ROIの確信度が低い場合、他のROIを処理（補助ROIは処理しない）
             if not pokemon_success:
-                print(f"  🔄 ポケモン名ROI確信度不足、他のROIを処理")
+                print(f"  🔄 ポケモン名ROI確信度不足、他のROIを処理（補助ROIは処理しない）")
                 
-                for roi_name in OTHER_ROIS:
+                for roi_name in OTHER_ROIS:  # 補助ROIは含めない
                     if (roi_name not in roi_dict or 
                         roi_name in SKIP_ROIS or 
                         roi_name in OCR_EXEMPT_ROIS):
@@ -438,6 +498,8 @@ def main():
     print(f"  OCR対象外ROI: {OCR_EXEMPT_ROIS}")
     print(f"  スキップ対象ROI: {SKIP_ROIS}")
     print(f"  ポケモン名ROI: {POKEMON_NAME_ROIS}")
+    print(f"  HP ROI (ポケモン名成功時のみ画像保存): {HP_ROIS}")
+    print(f"  状態異常 ROI (ポケモン名成功時のみ画像保存): {AILMENT_ROIS}")
     print(f"  その他ROI: {OTHER_ROIS}")
     print(f"  特性名補正対象: {ABILITY_NAME_ROIS}")
     print(f"  「〜の」形式変換対象: {POKEMON_NO_ROIS}")
@@ -460,8 +522,11 @@ def main():
         print("⚠ 特性名補正機能: 無効")
 
     print(f"✅ 「〜の」形式変換機能: 有効 ({POKEMON_NO_ROIS})")
+    print(f"✅ HP ROI画像保存機能: 有効 ({HP_ROIS})")
+    print(f"✅ 状態異常 ROI画像保存機能: 有効 ({AILMENT_ROIS})")
     print("  ※確信度90以上の対象ROIのみ保存")
     print("  ※ポケモン名ROI優先 → 確信度不足時は他のROIを処理")
+    print("  ※補助ROI（HP・状態異常）はポケモン名ROI成功時のみ保存")
     print("  ※テキストファイルには確信度情報を出力しない")
     print("  ※「/」を「！」に変換")
 
