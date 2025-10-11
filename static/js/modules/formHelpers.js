@@ -84,22 +84,50 @@ export async function initFormSelects() {
         const [pokemons, types, items, natures, abilities, moves] = await Promise.all(dataPromises);
 
         // オートコンプリート用のdatalistを生成
-        if (document.getElementById('pokemon-datalist') === null) {
-            const pokemonDatalist = document.createElement('datalist');
+        let pokemonDatalist = document.getElementById('pokemon-datalist');
+        if (pokemonDatalist === null) {
+            pokemonDatalist = document.createElement('datalist');
             pokemonDatalist.id = 'pokemon-datalist';
-            const pokemonNames = new Set();
-            pokemons.forEach(pokemon => {
-                const name = pokemon.name_ja || pokemon.name;
-                if (name) pokemonNames.add(name);
-            });
-
-            pokemonNames.forEach(name => {
-                const option = document.createElement('option');
-                option.value = name;
-                pokemonDatalist.appendChild(option);
-            });
             document.body.appendChild(pokemonDatalist);
         }
+
+        // 既存の選択肢をクリア
+        pokemonDatalist.innerHTML = '';
+
+        const pokemonNames = new Set();
+        pokemons.forEach(pokemon => {
+            const name = pokemon.name_ja || pokemon.name;
+            if (name) pokemonNames.add(name);
+        });
+
+        pokemonNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            pokemonDatalist.appendChild(option);
+        });
+
+        // アイテム用のdatalistを生成
+        let itemDatalist = document.getElementById('item-datalist');
+        if (itemDatalist === null) {
+            itemDatalist = document.createElement('datalist');
+            itemDatalist.id = 'item-datalist';
+            document.body.appendChild(itemDatalist);
+        }
+
+        // 既存の選択肢をクリア
+        itemDatalist.innerHTML = '';
+
+        const itemNames = new Set();
+        items.forEach(item => {
+            const name = item.name_ja || item.name;
+            if (name) itemNames.add(name);
+        });
+
+        itemNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            itemDatalist.appendChild(option);
+        });
 
         populateSelect('pokemon-master-id', pokemons, 'ポケモンを選択');
         populateSelect('tera-type-id', types, 'テラスタイプを選択');
