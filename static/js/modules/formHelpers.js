@@ -129,6 +129,25 @@ export async function initFormSelects() {
             itemDatalist.appendChild(option);
         });
 
+        // 特性用のdatalistを生成
+        let abilityDatalist = document.getElementById('ability-datalist');
+        if (abilityDatalist === null) {
+            abilityDatalist = document.createElement('datalist');
+            abilityDatalist.id = 'ability-datalist';
+            document.body.appendChild(abilityDatalist);
+        }
+        abilityDatalist.innerHTML = '';
+        const abilityNames = new Set();
+        abilities.forEach(ability => {
+            const name = ability.name_ja || ability.name;
+            if (name) abilityNames.add(name);
+        });
+        abilityNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            abilityDatalist.appendChild(option);
+        });
+
         populateSelect('pokemon-master-id', pokemons, 'ポケモンを選択');
         populateSelect('tera-type-id', types, 'テラスタイプを選択');
         populateSelect('held-item-id', items, '持ち物を選択', { dataAttribute: { name: 'itemName', value: 'name' } });

@@ -45,7 +45,8 @@ export class PokemonDetailEditor {
         this.pokemonSlots = document.querySelectorAll('.pokemon-slot');
         this.modalElement = document.getElementById('pokemon-details-modal');
         this.pokemonNameEl = document.getElementById('details-pokemon-name');
-        this.abilitySelect = document.getElementById('details-ability-select');
+        this.abilityInput = document.getElementById('details-ability-input');
+        this.abilitiesList = [];
         this.moveSelects = document.querySelectorAll('.details-move-select');
         this.ppInputs = document.querySelectorAll('.pp-input');
         this.ppBtns = document.querySelectorAll('.pp-btn');
@@ -130,10 +131,10 @@ export class PokemonDetailEditor {
         }
         console.log(`Pokemon: ${pokemonName}, ID: ${pokemonId}`);
 
-        // Populate abilities and moves
-        const abilities = await getAllAbilities();
-        console.log('Fetched abilities:', abilities);
-        populateSelect('details-ability-select', abilities, '特性を選択');
+        // Cache abilities list if not already cached
+        if (this.abilitiesList.length === 0) {
+            this.abilitiesList = await getAllAbilities();
+        }
 
         const moves = await getAllMoves();
         this.moveSelects.forEach(select => {
@@ -144,8 +145,9 @@ export class PokemonDetailEditor {
         const state = this.partyState[this.currentSlot];
         console.log('Loading state for slot', this.currentSlot, state);
         if (state) {
-            this.abilitySelect.value = state.ability_id || '';
-            console.log(`Set ability dropdown to: ${this.abilitySelect.value}`);
+            const ability = this.abilitiesList.find(a => a.id == state.ability_id);
+            this.abilityInput.value = ability ? (ability.name_ja || ability.name) : '';
+            console.log(`Set ability input to: ${this.abilityInput.value}`);
             
             this.moveSelects.forEach((select, i) => {
                 if (state.moves[i]) {
@@ -164,7 +166,11 @@ export class PokemonDetailEditor {
 
     saveDetails() {
         const state = this.partyState[this.currentSlot];
-        state.ability_id = this.abilitySelect.value;
+        
+        const abilityName = this.abilityInput.value.trim();
+        const ability = this.abilitiesList.find(a => (a.name_ja || a.name) === abilityName);
+        state.ability_id = ability ? ability.id : null;
+
         this.moveSelects.forEach((select, i) => {
             state.moves[i].id = select.value;
             state.moves[i].pp = this.ppInputs[i].value;
