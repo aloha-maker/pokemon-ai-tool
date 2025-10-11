@@ -10,3 +10,4 @@ Pillow
 Flask
 Flask-SocketIO
 SQLAlchemy
+janome
