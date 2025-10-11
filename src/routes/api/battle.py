@@ -62,7 +62,7 @@ def save_battle_result_with_log():
     try:
         with DatabaseManager() as db:
             battle_id = db.save_battle_result_with_log(my_party_id, opponent_party, result, raw_events)
-        return jsonify({"message": "対戦結果とログを保存しました。", "battle_id": battle_id}), 201
+        return jsonify({"message": "対戦結果とログを保存しました。", "log_id": battle_id}), 201
     except Exception as e:
         import traceback
         traceback.print_exc()
