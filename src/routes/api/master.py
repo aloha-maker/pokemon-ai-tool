@@ -33,6 +33,10 @@ def get_natures():
 def get_moves():
     return get_master_data('moves')
 
+@master_bp.route('/api/master/abilities', methods=['GET'])
+def get_abilities():
+    return get_master_data('abilities')
+
 @master_bp.route('/api/pokemon/<int:pokemon_id>/abilities', methods=['GET'])
 def get_pokemon_abilities(pokemon_id):
     try:
