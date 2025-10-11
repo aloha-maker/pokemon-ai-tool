@@ -13,8 +13,8 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="pokemon-master-id" class="form-label">ポケモン</label>
-                            <select class="form-select" id="pokemon-master-id" required></select>
+                            <label for="pokemon-master-input" class="form-label">ポケモン</label>
+                            <input type="text" class="form-control" id="pokemon-master-input" list="pokemon-datalist" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="nickname" class="form-label">ニックネーム</label>
@@ -32,15 +32,15 @@
                             <select class="form-select" id="tera-type-id"></select>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label for="held-item-id" class="form-label">持ち物</label>
-                            <select class="form-select" id="held-item-id"></select>
+                            <label for="held-item-input" class="form-label">持ち物</label>
+                            <input type="text" class="form-control" id="held-item-input" list="item-datalist">
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="ability-id" class="form-label">特性</label>
-                            <select class="form-select" id="ability-id"></select>
+                            <label for="ability-input" class="form-label">特性</label>
+                            <input type="text" class="form-control" id="ability-input" list="ability-datalist">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="nature-id" class="form-label">性格</label>
@@ -51,10 +51,10 @@
                     <hr>
                     <h6>技構成</h6>
                     <div class="row">
-                        <div class="col-md-6 mb-3"><select class="form-select move-select" id="move1-id"></select></div>
-                        <div class="col-md-6 mb-3"><select class="form-select move-select" id="move2-id"></select></div>
-                        <div class="col-md-6 mb-3"><select class="form-select move-select" id="move3-id"></select></div>
-                        <div class="col-md-6 mb-3"><select class="form-select move-select" id="move4-id"></select></div>
+                        <div class="col-md-6 mb-3"><input type="text" class="form-control move-input" id="move1-input" list="move-datalist"></div>
+                        <div class="col-md-6 mb-3"><input type="text" class="form-control move-input" id="move2-input" list="move-datalist"></div>
+                        <div class="col-md-6 mb-3"><input type="text" class="form-control move-input" id="move3-input" list="move-datalist"></div>
+                        <div class="col-md-6 mb-3"><input type="text" class="form-control move-input" id="move4-input" list="move-datalist"></div>
                     </div>
 
                     <hr>

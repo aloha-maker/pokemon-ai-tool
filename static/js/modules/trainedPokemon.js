@@ -12,8 +12,37 @@ export class TrainedPokemonManager {
         this.showAddBtn = document.getElementById('show-add-pokemon-modal');
         this.evTotalEl = document.getElementById('ev-total');
         
+        this.pokemonList = [];
+        this.itemList = [];
+        this.movesList = [];
+        this.abilityList = [];
+
         if (this.modal) {
             this.init();
+        }
+    }
+
+    async _cacheMasterData() {
+        try {
+            if (this.pokemonList.length === 0) {
+                const response = await fetch('/api/master/pokemons');
+                this.pokemonList = await response.json();
+            }
+            if (this.itemList.length === 0) {
+                const response = await fetch('/api/master/items');
+                this.itemList = await response.json();
+            }
+            if (this.movesList.length === 0) {
+                const response = await fetch('/api/master/moves');
+                this.movesList = await response.json();
+            }
+            if (this.abilityList.length === 0) {
+                const response = await fetch('/api/master/abilities');
+                this.abilityList = await response.json();
+            }
+        } catch (e) {
+            console.error("Failed to cache master data", e);
+            alert('マスターデータの読み込みに失敗しました。');
         }
     }
 
@@ -112,8 +141,9 @@ export class TrainedPokemonManager {
     async showPokemonForm(pokemon = null) {
         this.form.reset();
         document.getElementById('pokemon-id').value = '';
+        await this._cacheMasterData();
 
-        const fields = ['pokemon-master-id', 'nickname', 'tera-type-id', 'held-item-id', 'ability-id', 'nature-id', 'move1-id', 'move2-id', 'move3-id', 'move4-id', 'ev-hp', 'ev-atk', 'ev-def', 'ev-spa', 'ev-spd', 'ev-spe'];
+        const fields = ['pokemon-master-input', 'nickname', 'tera-type-id', 'held-item-input', 'ability-input', 'nature-id', 'move1-input', 'move2-input', 'move3-input', 'move4-input', 'ev-hp', 'ev-atk', 'ev-def', 'ev-spa', 'ev-spd', 'ev-spe'];
         fields.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
@@ -121,15 +151,19 @@ export class TrainedPokemonManager {
 
         if (pokemon) {
             document.getElementById('pokemon-id').value = pokemon.id || '';
-            document.getElementById('pokemon-master-id').value = pokemon.pokemon_id || '';
+            
+            const pokemonInfo = this.pokemonList.find(p => p.id == pokemon.pokemon_id);
+            document.getElementById('pokemon-master-input').value = pokemonInfo ? pokemonInfo.name_ja : '';
+
             document.getElementById('nickname').value = pokemon.nickname || '';
             document.getElementById('level').value = pokemon.level || 50;
             document.getElementById('tera-type-id').value = pokemon.tera_type_id || '';
-            document.getElementById('held-item-id').value = pokemon.held_item_id || '';
 
-            // The ability dropdown is now pre-populated with all master abilities.
-            // The dynamic update is no longer needed.
-            document.getElementById('ability-id').value = pokemon.ability_id || '';
+            const itemInfo = this.itemList.find(i => i.id == pokemon.held_item_id);
+            document.getElementById('held-item-input').value = itemInfo ? itemInfo.name_ja : '';
+
+            const abilityInfo = this.abilityList.find(a => a.id == pokemon.ability_id);
+            document.getElementById('ability-input').value = abilityInfo ? abilityInfo.name_ja : '';
 
             document.getElementById('nature-id').value = pokemon.nature_id || '';
             
@@ -141,10 +175,9 @@ export class TrainedPokemonManager {
             document.getElementById('ev-spe').value = pokemon.ev_spe || 0;
 
             for (let i = 1; i <= 4; i++) {
-                document.getElementById(`move${i}-id`).value = pokemon[`move${i}_id`] || '';
+                const moveInfo = this.movesList.find(m => m.id == pokemon[`move${i}_id`]);
+                document.getElementById(`move${i}-input`).value = moveInfo ? moveInfo.name_ja : '';
             }
-        } else {
-            // The ability dropdown is now pre-populated, no need to clear it.
         }
         
         this.updateEvTotal();
@@ -154,18 +187,24 @@ export class TrainedPokemonManager {
     async handleFormSubmit(event) {
         event.preventDefault();
         const id = document.getElementById('pokemon-id').value;
+
+        const getPokemonId = (name) => this.pokemonList.find(p => p.name_ja === name)?.id || null;
+        const getItemId = (name) => this.itemList.find(i => i.name_ja === name)?.id || null;
+        const getMoveId = (name) => this.movesList.find(m => m.name_ja === name)?.id || null;
+        const getAbilityId = (name) => this.abilityList.find(a => a.name_ja === name)?.id || null;
+
         const formData = {
-            pokemon_id: document.getElementById('pokemon-master-id').value,
-            nickname: document.getElementById('nickname').value,
+            pokemon_id: getPokemonId(document.getElementById('pokemon-master-input').value.trim()),
+            nickname: document.getElementById('nickname').value.trim(),
             level: document.getElementById('level').value,
             tera_type_id: document.getElementById('tera-type-id').value,
-            held_item_id: document.getElementById('held-item-id').value,
-            ability_id: document.getElementById('ability-id').value,
+            held_item_id: getItemId(document.getElementById('held-item-input').value.trim()),
+            ability_id: getAbilityId(document.getElementById('ability-input').value.trim()),
             nature_id: document.getElementById('nature-id').value,
-            move1_id: document.getElementById('move1-id').value,
-            move2_id: document.getElementById('move2-id').value,
-            move3_id: document.getElementById('move3-id').value,
-            move4_id: document.getElementById('move4-id').value,
+            move1_id: getMoveId(document.getElementById('move1-input').value.trim()),
+            move2_id: getMoveId(document.getElementById('move2-input').value.trim()),
+            move3_id: getMoveId(document.getElementById('move3-input').value.trim()),
+            move4_id: getMoveId(document.getElementById('move4-input').value.trim()),
             ev_hp: document.getElementById('ev-hp').value,
             ev_atk: document.getElementById('ev-atk').value,
             ev_def: document.getElementById('ev-def').value,
