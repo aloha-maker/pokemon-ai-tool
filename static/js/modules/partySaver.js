@@ -45,10 +45,14 @@ export class PartySaver {
         const opponentParty = Array.from(opponentPartyInputs)
             .map(input => input.value.trim())
             .filter(name => name !== '');
+        
+        const battleIdDisplay = document.getElementById('battle-id-display');
+        const battleId = battleIdDisplay ? battleIdDisplay.value : null;
 
         return {
             my_party_id: myPartyId,
-            opponent_party: opponentParty
+            opponent_party: opponentParty,
+            battle_id: battleId
         };
     }
 

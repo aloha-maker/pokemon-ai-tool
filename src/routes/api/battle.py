@@ -57,14 +57,17 @@ def save_battle_result_with_log():
     opponent_party = data.get('opponent_party')
     result = data.get('result')
     raw_events = data.get('raw_events', []) # ログデータ
+    battle_id = data.get('battle_id') # バトルIDをリクエストから取得
 
-    if not all([my_party_id, opponent_party, result]) or result not in ['win', 'lose']:
-        return jsonify({"error": "パーティ情報または勝敗結果が不正です。"}), 400
+    # battle_idも必須項目とする
+    if not all([my_party_id, opponent_party, result, battle_id]) or result not in ['win', 'lose']:
+        return jsonify({"error": "パーティ情報、勝敗結果、またはバトルIDが不正です。"}), 400
 
     try:
         with DatabaseManager() as db:
-            battle_id = db.save_battle_result_with_log(my_party_id, opponent_party, result, raw_events)
-        return jsonify({"message": "対戦結果とログを保存しました。", "log_id": battle_id}), 201
+            # battle_idをDB保存メソッドに渡す
+            log_id = db.save_battle_result_with_log(battle_id, my_party_id, opponent_party, result, raw_events)
+        return jsonify({"message": "対戦結果とログを保存しました。", "log_id": log_id}), 201
     except Exception as e:
         import traceback
         traceback.print_exc()

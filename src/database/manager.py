@@ -283,23 +283,34 @@ class DatabaseManager:
             self.conn.rollback()
             raise e
 
-    def save_battle_result_with_log(self, my_party_id: int, opponent_party: list[str], result: str, raw_events: list[dict]) -> int:
+    def save_battle_result_with_log(self, battle_id: str, my_party_id: int, opponent_party: list[str], result: str, raw_events: list[dict]) -> str:
         """
         正規化されたテーブル構成で対戦結果とリアルタイムOCRログを保存する。
+        提供された battle_id を使用して battles テーブルにレコードを作成または更新する。
         """
         if result not in ['win', 'lose']:
             raise ValueError("result must be either 'win' or 'lose'")
+        if not battle_id or not battle_id.startswith("BATTLE-"):
+            raise ValueError("Invalid battle_id format")
 
         cursor = self.get_cursor()
         try:
-            # 1. battles テーブルに対戦記録を作成
+            # 1. battles テーブルに対戦記録を作成または更新
+            # 冪等性を保つため、INSERT OR IGNOREでレコードを確保し、UPDATEで内容を更新する
             cursor.execute(
-                "INSERT INTO battles (result, battle_format) VALUES (?, ?)",
-                (result, 'シングル')
+                "INSERT OR IGNORE INTO battles (battle_id, result, battle_format) VALUES (?, ?, ?)",
+                (battle_id, result, 'シングル')
             )
-            battle_id = cursor.lastrowid
+            cursor.execute(
+                "UPDATE battles SET result = ?, battle_format = ? WHERE battle_id = ?",
+                (result, 'シングル', battle_id)
+            )
 
-            # 2. 自分のパーティを parties_log に記録
+            # 2. 既存の関連ログを削除 (冪等性を保つため)
+            cursor.execute("DELETE FROM parties_log WHERE battle_id = ?", (battle_id,))
+            cursor.execute("DELETE FROM raw_battle_events WHERE battle_id = ?", (battle_id,))
+
+            # 3. 自分のパーティを parties_log に記録
             my_pokemon_names = self.get_party_pokemon_names(my_party_id)
             my_party_log_data = []
             for name in my_pokemon_names:
@@ -310,7 +321,7 @@ class DatabaseManager:
                 my_party_log_data
             )
 
-            # 3. 相手のパーティを pokemons_log と parties_log に記録
+            # 4. 相手のパーティを pokemons_log と parties_log に記録
             opponent_party_log_data = []
             for name in opponent_party:
                 cursor.execute(
@@ -332,7 +343,7 @@ class DatabaseManager:
                 opponent_party_log_data
             )
 
-            # 4. raw_battle_events テーブルにリアルタイムログを記録
+            # 5. raw_battle_events テーブルにリアルタイムログを記録
             if raw_events:
                 event_log_data = [
                     (battle_id, event['sequence'], event['roi_name'], event['ocr_text'])
