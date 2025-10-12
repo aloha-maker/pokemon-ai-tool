@@ -41,16 +41,29 @@ export class PartySaver {
         const myPartySelect = document.getElementById('my-party-select');
         const myPartyId = myPartySelect.value;
 
-        const opponentPartyInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
-        const opponentParty = Array.from(opponentPartyInputs)
-            .map(input => input.value.trim())
-            .filter(name => name !== '');
+        const opponentPartySlots = document.querySelectorAll('#opponent-party-display .pokemon-slot');
+        const opponentParty = Array.from(opponentPartySlots).map(slot => {
+            const name = slot.querySelector('.pokemon-input').value.trim();
+            const isSelected = !slot.querySelector('.starter-icon').classList.contains('d-none') ||
+                               slot.querySelector('img').classList.contains('pokemon-selected');
+            return { name, is_selected: isSelected };
+        }).filter(p => p.name !== '');
+
+        // 自パーティの情報も同様に取得
+        const myPartySlots = document.querySelectorAll('#my-party-display .pokemon-slot');
+        const myParty = Array.from(myPartySlots).map(slot => {
+            const name = slot.querySelector('.pokemon-input').value.trim();
+            const isSelected = !slot.querySelector('.starter-icon').classList.contains('d-none') ||
+                               slot.querySelector('img').classList.contains('pokemon-selected');
+            return { name, is_selected: isSelected };
+        }).filter(p => p.name !== '');
         
         const battleIdDisplay = document.getElementById('battle-id-display');
         const battleId = battleIdDisplay ? battleIdDisplay.value : null;
 
         return {
             my_party_id: myPartyId,
+            my_party: myParty, // 自パーティの選出情報
             opponent_party: opponentParty,
             battle_id: battleId
         };

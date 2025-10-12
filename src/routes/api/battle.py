@@ -54,6 +54,7 @@ def save_battle_result_with_log():
     """対戦結果とリアルタイムOCRログをDBに保存する"""
     data = request.json
     my_party_id = data.get('my_party_id')
+    my_party = data.get('my_party', [])
     opponent_party = data.get('opponent_party')
     result = data.get('result')
     raw_events = data.get('raw_events', []) # ログデータ
@@ -65,8 +66,8 @@ def save_battle_result_with_log():
 
     try:
         with DatabaseManager() as db:
-            # battle_idをDB保存メソッドに渡す
-            log_id = db.save_battle_result_with_log(battle_id, my_party_id, opponent_party, result, raw_events)
+            # battle_idとmy_partyをDB保存メソッドに渡す
+            log_id = db.save_battle_result_with_log(battle_id, my_party_id, my_party, opponent_party, result, raw_events)
         return jsonify({"message": "対戦結果とログを保存しました。", "log_id": log_id}), 201
     except Exception as e:
         import traceback

@@ -283,7 +283,7 @@ class DatabaseManager:
             self.conn.rollback()
             raise e
 
-    def save_battle_result_with_log(self, battle_id: str, my_party_id: int, opponent_party: list[str], result: str, raw_events: list[dict]) -> str:
+    def save_battle_result_with_log(self, battle_id: str, my_party_id: int, my_party: list[dict], opponent_party: list[dict], result: str, raw_events: list[dict]) -> str:
         """
         正規化されたテーブル構成で対戦結果とリアルタイムOCRログを保存する。
         提供された battle_id を使用して battles テーブルにレコードを作成または更新する。
@@ -296,7 +296,6 @@ class DatabaseManager:
         cursor = self.get_cursor()
         try:
             # 1. battles テーブルに対戦記録を作成または更新
-            # 冪等性を保つため、INSERT OR IGNOREでレコードを確保し、UPDATEで内容を更新する
             cursor.execute(
                 "INSERT OR IGNORE INTO battles (battle_id, result, battle_format) VALUES (?, ?, ?)",
                 (battle_id, result, 'シングル')
@@ -311,37 +310,44 @@ class DatabaseManager:
             cursor.execute("DELETE FROM raw_battle_events WHERE battle_id = ?", (battle_id,))
 
             # 3. 自分のパーティを parties_log に記録
-            my_pokemon_names = self.get_party_pokemon_names(my_party_id)
             my_party_log_data = []
-            for name in my_pokemon_names:
-                my_party_log_data.append((battle_id, None, name, 0, 0))
+            for pokemon in my_party:
+                name = pokemon.get('name')
+                is_selected = 1 if pokemon.get('is_selected') else 0
+                if name:
+                    my_party_log_data.append((battle_id, None, name, 0, is_selected))
             
-            cursor.executemany(
-                "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
-                my_party_log_data
-            )
+            if my_party_log_data:
+                cursor.executemany(
+                    "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
+                    my_party_log_data
+                )
 
             # 4. 相手のパーティを pokemons_log と parties_log に記録
             opponent_party_log_data = []
-            for name in opponent_party:
-                cursor.execute(
-                    "SELECT pokemon_id FROM pokemons_log WHERE pokemon_name = ? AND nickname IS NULL AND moves IS NULL AND terastal_type IS NULL AND item IS NULL AND ability IS NULL", 
-                    (name,)
-                )
-                row = cursor.fetchone()
-                
-                if row:
-                    pokemon_id = row['pokemon_id']
-                else:
-                    cursor.execute("INSERT INTO pokemons_log (pokemon_name) VALUES (?)", (name,))
-                    pokemon_id = cursor.lastrowid
-                
-                opponent_party_log_data.append((battle_id, pokemon_id, name, 1, 0))
+            for pokemon in opponent_party:
+                name = pokemon.get('name')
+                is_selected = 1 if pokemon.get('is_selected') else 0
+                if name:
+                    cursor.execute(
+                        "SELECT pokemon_id FROM pokemons_log WHERE pokemon_name = ? AND nickname IS NULL AND moves IS NULL AND terastal_type IS NULL AND item IS NULL AND ability IS NULL", 
+                        (name,)
+                    )
+                    row = cursor.fetchone()
+                    
+                    if row:
+                        pokemon_id = row['pokemon_id']
+                    else:
+                        cursor.execute("INSERT INTO pokemons_log (pokemon_name) VALUES (?)", (name,))
+                        pokemon_id = cursor.lastrowid
+                    
+                    opponent_party_log_data.append((battle_id, pokemon_id, name, 1, is_selected))
 
-            cursor.executemany(
-                "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
-                opponent_party_log_data
-            )
+            if opponent_party_log_data:
+                cursor.executemany(
+                    "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
+                    opponent_party_log_data
+                )
 
             # 5. raw_battle_events テーブルにリアルタイムログを記録
             if raw_events:
