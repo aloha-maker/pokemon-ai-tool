@@ -28,8 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
     new Calculator();
     new Simulator();
     new ItemEditor();
-    new PokemonDetailEditor();
-    new PartySaver(realtimeAnalysis);
+    const pokemonDetailEditor = new PokemonDetailEditor();
+    new PartySaver(realtimeAnalysis, pokemonDetailEditor);
     
     // フォーム選択肢の初期化はボタンクリック時に行う
     // initFormSelects();

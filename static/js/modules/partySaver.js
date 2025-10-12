@@ -1,6 +1,7 @@
 export class PartySaver {
-    constructor(realtimeAnalysis) {
+    constructor(realtimeAnalysis, pokemonDetailEditor) {
         this.realtimeAnalysis = realtimeAnalysis; // インスタンスを保持
+        this.pokemonDetailEditor = pokemonDetailEditor; // インスタンスを保持
         this.savePartyBtn = document.getElementById('save-party-button');
         this.resultModalEl = document.getElementById('result-modal');
         this.resultModal = this.resultModalEl ? new bootstrap.Modal(this.resultModalEl) : null;
@@ -40,19 +41,39 @@ export class PartySaver {
     gatherBattleData() {
         const myPartySelect = document.getElementById('my-party-select');
         const myPartyId = myPartySelect.value;
+        const detailedStates = this.pokemonDetailEditor.getState();
 
-        const processParty = (containerSelector) => {
+        const processParty = (containerSelector, partyIndexOffset) => {
             const slots = document.querySelectorAll(`${containerSelector} .pokemon-slot`);
-            return Array.from(slots).map(slot => {
+            return Array.from(slots).map((slot, index) => {
+                const slotIndex = partyIndexOffset + index;
+                const detailedState = detailedStates[slotIndex];
+
                 const name = slot.querySelector('.pokemon-input').value.trim();
                 const isStarter = !slot.querySelector('.starter-icon').classList.contains('d-none');
                 const isSelected = isStarter || slot.querySelector('img').classList.contains('pokemon-selected');
-                return { name, is_selected: isSelected, is_starter: isStarter };
+                
+                const item = slot.querySelector('.item-input').value.trim();
+                const teraTypeSelect = slot.querySelector('.tera-type-select');
+                const teraTypeId = teraTypeSelect.value;
+
+                const abilityId = detailedState ? detailedState.ability_id : null;
+                const moveIds = detailedState ? detailedState.moves.map(m => m.id).filter(id => id !== null) : [];
+
+                return {
+                    name,
+                    is_selected: isSelected,
+                    is_starter: isStarter,
+                    item,
+                    terastal_type_id: teraTypeId,
+                    ability_id: abilityId,
+                    moves: moveIds
+                };
             }).filter(p => p.name !== '');
         };
 
-        const myParty = processParty('#my-party-display');
-        const opponentParty = processParty('#opponent-party-display');
+        const myParty = processParty('#my-party-display', 0);
+        const opponentParty = processParty('#opponent-party-display', 6);
         
         const battleIdDisplay = document.getElementById('battle-id-display');
         const battleId = battleIdDisplay ? battleIdDisplay.value : null;

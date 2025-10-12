@@ -184,4 +184,8 @@ export class PokemonDetailEditor {
         
         this.modal.hide();
     }
+
+    getState() {
+        return this.partyState;
+    }
 }
