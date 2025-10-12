@@ -81,6 +81,16 @@ export class PartySaver {
             if (response.ok) {
                 this.showAlert(`対戦結果 (ID: ${responseData.log_id}) を保存しました。`, 'success');
                 console.log('Success:', responseData);
+
+                // バトルID表示をリセット
+                const battleIdDisplay = document.getElementById('battle-id-display');
+                if (battleIdDisplay) {
+                    battleIdDisplay.value = '';
+                }
+                // パーティ保存ボタンを非活性化
+                if (this.savePartyBtn) {
+                    this.savePartyBtn.disabled = true;
+                }
             } else {
                 throw new Error(responseData.error || '不明なエラーが発生しました。');
             }
