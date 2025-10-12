@@ -8,6 +8,7 @@ from config import (
     TESSERACT_PATH
 )
 from utils import win_safe_path
+from aliment_ocv import identify_ailment_from_cropped_image
 
 
 class OCRProcessor:
@@ -21,6 +22,9 @@ class OCRProcessor:
 
         # Tesseract設定
         pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+        
+        # 状態異常アイコンフォルダのパス
+        self.ailment_icons_dir = r'C:\pokemon-ai-tool\static\ailment_icons'
 
     # ==========================
     # 画像前処理
@@ -131,16 +135,6 @@ class OCRProcessor:
     # ==========================
     @staticmethod
     def clean_text(text):
-        """空白削除・記号統一など"""
-        cleaned = re.sub(r"\s+", "", text)
-        cleaned = re.sub(r"-+", "-", cleaned)
-        cleaned = cleaned.replace("/", "！")
-        return cleaned
-    # ==========================
-    # テキストクリーニング
-    # ==========================
-    @staticmethod
-    def clean_text(text):
         """空白削除・記号統一・誤字修正"""
         # 空白削除
         cleaned = re.sub(r"\s+", "", text)
@@ -150,7 +144,7 @@ class OCRProcessor:
         cleaned = cleaned.replace("/", "！")
 
         # 誤字修正パターン
-        # 八→ハ/バ/パ
+        # 八→ハ/パ/バ
         cleaned = re.sub(r'八', 'ハ', cleaned)
 
         # 丸数字→通常数字
@@ -178,7 +172,7 @@ class OCRProcessor:
         return has_text, text, conf
 
     # ==========================
-    # ROIごとのOCR処理＋保存
+    # ROIごとのOCR処理+保存
     # ==========================
     def process_roi_with_confidence_check(self, frame, roi_name, value,
                                           width, height, video_name,
@@ -205,7 +199,7 @@ class OCRProcessor:
             return False, 0
 
         # =============================
-        # HPバー処理（HP_ROIS）
+        # HPバー処理(HP_ROIS)
         # =============================
         if roi_name in HP_ROIS:
             try:
@@ -221,14 +215,33 @@ class OCRProcessor:
                 return False, 0
 
         # =============================
-        # 状態異常ROI（画像のみ保存）
+        # 状態異常ROI(画像+状態異常判別)
         # =============================
         if roi_name in AILMENT_ROIS:
-            print(f"📷 {roi_name}_{frame_idx:06d} (状態異常 ROI - 画像のみ保存)")
-            return True, 0
+            try:
+                ailment_result = identify_ailment_from_cropped_image(
+                    save_path,
+                    self.ailment_icons_dir,
+                    threshold=0.8
+                )
+                
+                text_file_name = f"{short_hash}_{roi_name}_{frame_idx:06d}.gt.txt"
+                text_file_path = win_safe_path(os.path.join(roi_dir, text_file_name))
+                
+                # 状態異常が検出された場合は状態異常名、なければ「なし」を出力
+                ailment_text = ailment_result if ailment_result else "なし"
+                
+                with open(text_file_path, 'w', encoding='utf-8') as f:
+                    f.write(ailment_text)
+                
+                print(f"🔴 {roi_name}_{frame_idx:06d}: 状態異常 '{ailment_text}' を出力")
+                return True, 0
+            except Exception as e:
+                print(f"⚠ 状態異常処理エラー: {e}")
+                return False, 0
 
         # =============================
-        # OCR処理（通常ROI）
+        # OCR処理(通常ROI)
         # =============================
         has_text, text, conf = self.detect_text_with_ocr(roi_img, roi_name)
         max_conf = conf["max"]
@@ -241,7 +254,7 @@ class OCRProcessor:
             with open(text_path, "w", encoding="utf-8") as f:
                 f.write(text)
 
-            print(f"✓ {roi_name}_{frame_idx:06d}: '{text}' (確信度: {int(max_conf)})")
+            print(f"✔ {roi_name}_{frame_idx:06d}: '{text}' (確信度: {int(max_conf)})")
             return True, max_conf
         else:
             print(f"✗ {roi_name}_{frame_idx:06d} (確信度 {max_conf:.1f} < 90 → 保存せず)")
@@ -254,9 +267,10 @@ class OCRProcessor:
     def save_supplementary_roi_images(self, frame, video_name,
                                     frame_idx, short_hash, width, height):
         """
-        補助ROI（HPと状態異常）の画像を保存する
+        補助ROI(HPと状態異常)の画像を保存する
         HPバーの場合は数値を推定してテキストファイルも出力
-        （ポケモン名ROIが確信度90以上で成功した場合のみ呼び出される）
+        状態異常の場合は判別結果をテキストファイルに出力
+        (ポケモン名ROIが確信度90以上で成功した場合のみ呼び出される)
         """
         from hp_ocv import get_hp_percentage  # HPバー解析を利用
 
@@ -300,11 +314,28 @@ class OCRProcessor:
                 except Exception as e:
                     print(f"⚠ HPバー処理エラー ({roi_name}): {e}")
 
-            else:
-                # 状態異常ROI（画像のみ）
-                print(f"📷 {roi_name}_{frame_idx:06d} (状態異常 ROI - 画像のみ保存)")
+            # --- 状態異常ROIの場合 ---
+            elif roi_name in AILMENT_ROIS:
+                try:
+                    ailment_result = identify_ailment_from_cropped_image(
+                        save_path,
+                        self.ailment_icons_dir,
+                        threshold=0.8
+                    )
+                    
+                    text_filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.gt.txt"
+                    text_path = win_safe_path(os.path.join(roi_dir, text_filename))
+                    
+                    # 状態異常が検出された場合は状態異常名、なければ「なし」を出力
+                    ailment_text = ailment_result if ailment_result else "なし"
+                    
+                    with open(text_path, "w", encoding="utf-8") as f:
+                        f.write(ailment_text)
+                    
+                    print(f"🔴 {roi_name}_{frame_idx:06d}: 状態異常 '{ailment_text}' を出力")
+                except Exception as e:
+                    print(f"⚠ 状態異常処理エラー ({roi_name}): {e}")
 
             supplementary_save_count += 1
 
         return supplementary_save_count
-
