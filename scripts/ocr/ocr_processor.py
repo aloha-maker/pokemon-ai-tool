@@ -225,19 +225,27 @@ class OCRProcessor:
                     threshold=0.8
                 )
                 
+                # 状態異常が検出されなかった場合は画像とテキストを削除して終了
+                if not ailment_result:
+                    if os.path.exists(save_path):
+                        os.remove(save_path)
+                    print(f"⚪ {roi_name}_{frame_idx:06d}: 状態異常なし (保存せず)")
+                    return False, 0
+                
+                # 状態異常が検出された場合のみテキストファイルを出力
                 text_file_name = f"{short_hash}_{roi_name}_{frame_idx:06d}.gt.txt"
                 text_file_path = win_safe_path(os.path.join(roi_dir, text_file_name))
                 
-                # 状態異常が検出された場合は状態異常名、なければ「なし」を出力
-                ailment_text = ailment_result if ailment_result else "なし"
-                
                 with open(text_file_path, 'w', encoding='utf-8') as f:
-                    f.write(ailment_text)
+                    f.write(ailment_result)
                 
-                print(f"🔴 {roi_name}_{frame_idx:06d}: 状態異常 '{ailment_text}' を出力")
+                print(f"🔴 {roi_name}_{frame_idx:06d}: 状態異常 '{ailment_result}' を出力")
                 return True, 0
             except Exception as e:
                 print(f"⚠ 状態異常処理エラー: {e}")
+                # エラー時は画像も削除
+                if os.path.exists(save_path):
+                    os.remove(save_path)
                 return False, 0
 
         # =============================
@@ -323,18 +331,27 @@ class OCRProcessor:
                         threshold=0.8
                     )
                     
+                    # 状態異常が検出されなかった場合は画像を削除
+                    if not ailment_result:
+                        if os.path.exists(save_path):
+                            os.remove(save_path)
+                        print(f"⚪ {roi_name}_{frame_idx:06d}: 状態異常なし (保存せず)")
+                        continue
+                    
+                    # 状態異常が検出された場合のみテキストファイルを出力
                     text_filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.gt.txt"
                     text_path = win_safe_path(os.path.join(roi_dir, text_filename))
                     
-                    # 状態異常が検出された場合は状態異常名、なければ「なし」を出力
-                    ailment_text = ailment_result if ailment_result else "なし"
-                    
                     with open(text_path, "w", encoding="utf-8") as f:
-                        f.write(ailment_text)
+                        f.write(ailment_result)
                     
-                    print(f"🔴 {roi_name}_{frame_idx:06d}: 状態異常 '{ailment_text}' を出力")
+                    print(f"🔴 {roi_name}_{frame_idx:06d}: 状態異常 '{ailment_result}' を出力")
                 except Exception as e:
                     print(f"⚠ 状態異常処理エラー ({roi_name}): {e}")
+                    # エラー時は画像も削除
+                    if os.path.exists(save_path):
+                        os.remove(save_path)
+                    continue
 
             supplementary_save_count += 1
 
