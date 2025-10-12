@@ -349,7 +349,17 @@ class DatabaseManager:
                     opponent_party_log_data
                 )
 
-            # 5. raw_battle_events テーブルにリアルタイムログを記録
+            # 5. 先発ポケモンをbattlesテーブルに記録
+            my_starter = next((p['name'] for p in my_party if p.get('is_starter')), None)
+            opponent_starter = next((p['name'] for p in opponent_party if p.get('is_starter')), None)
+
+            if my_starter or opponent_starter:
+                cursor.execute(
+                    "UPDATE battles SET my_first_pokemon = ?, opponent_first_pokemon = ? WHERE battle_id = ?",
+                    (my_starter, opponent_starter, battle_id)
+                )
+
+            # 6. raw_battle_events テーブルにリアルタイムログを記録
             if raw_events:
                 event_log_data = [
                     (battle_id, event['sequence'], event['roi_name'], event['ocr_text'])
