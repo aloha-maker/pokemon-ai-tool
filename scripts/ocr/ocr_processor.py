@@ -184,6 +184,8 @@ class OCRProcessor:
                                           width, height, video_name,
                                           frame_idx, short_hash):
         """ROI領域をOCR処理し、条件に応じて保存"""
+        from hp_ocv import get_hp_percentage  # HPバー処理追加
+
         x, y, w, h = value
         if x + w > width or y + h > height:
             return False, 0
@@ -197,28 +199,43 @@ class OCRProcessor:
         filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.png"
         save_path = win_safe_path(os.path.join(roi_dir, filename))
 
-        # HP / 状態異常は画像のみ保存
-        if roi_name in HP_ROIS or roi_name in AILMENT_ROIS:
-            if not cv2.imwrite(save_path, roi_img):
-                print(f"⚠ 保存失敗: {save_path}")
+        # ROI画像保存
+        if not cv2.imwrite(save_path, roi_img):
+            print(f"⚠ 保存失敗: {save_path}")
+            return False, 0
+
+        # =============================
+        # HPバー処理（HP_ROIS）
+        # =============================
+        if roi_name in HP_ROIS:
+            try:
+                hp_percent = get_hp_percentage(save_path)
+                text_file_name = f"{short_hash}_{roi_name}_{frame_idx:06d}.gt.txt"
+                text_file_path = win_safe_path(os.path.join(roi_dir, text_file_name))
+                with open(text_file_path, 'w', encoding='utf-8') as f:
+                    f.write(f"{hp_percent:.2f}")
+                print(f"📊 {roi_name}_{frame_idx:06d}: HP {hp_percent:.2f}% を出力")
+                return True, 0
+            except Exception as e:
+                print(f"⚠ HPバー処理エラー: {e}")
                 return False, 0
-            roi_type = "HP ROI" if roi_name in HP_ROIS else "状態異常 ROI"
-            print(f"📷 {roi_name}_{frame_idx:06d} ({roi_type} - 画像のみ保存)")
+
+        # =============================
+        # 状態異常ROI（画像のみ保存）
+        # =============================
+        if roi_name in AILMENT_ROIS:
+            print(f"📷 {roi_name}_{frame_idx:06d} (状態異常 ROI - 画像のみ保存)")
             return True, 0
 
-        # OCR実行
+        # =============================
+        # OCR処理（通常ROI）
+        # =============================
         has_text, text, conf = self.detect_text_with_ocr(roi_img, roi_name)
         max_conf = conf["max"]
 
         if has_text:
             text = self.apply_name_correction(text, roi_name)
 
-            # 画像保存
-            if not cv2.imwrite(save_path, roi_img):
-                print(f"⚠ 保存失敗: {save_path}")
-                return False, max_conf
-
-            # 対応テキストファイルを作成
             text_filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.gt.txt"
             text_path = win_safe_path(os.path.join(roi_dir, text_filename))
             with open(text_path, "w", encoding="utf-8") as f:
@@ -230,13 +247,21 @@ class OCRProcessor:
             print(f"✗ {roi_name}_{frame_idx:06d} (確信度 {max_conf:.1f} < 90 → 保存せず)")
             return False, max_conf
 
+
     # ==========================
     # HP・状態異常補助ROI保存
     # ==========================
     def save_supplementary_roi_images(self, frame, video_name,
-                                      frame_idx, short_hash, width, height):
-        """ポケモン名ROI成功時に補助ROI（HP・状態異常）を保存"""
-        save_count = 0
+                                    frame_idx, short_hash, width, height):
+        """
+        補助ROI（HPと状態異常）の画像を保存する
+        HPバーの場合は数値を推定してテキストファイルも出力
+        （ポケモン名ROIが確信度90以上で成功した場合のみ呼び出される）
+        """
+        from hp_ocv import get_hp_percentage  # HPバー解析を利用
+
+        supplementary_save_count = 0
+
         for roi_name in HP_ROIS.union(AILMENT_ROIS):
             if roi_name not in ROI_DICT:
                 continue
@@ -258,12 +283,28 @@ class OCRProcessor:
             filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.png"
             save_path = win_safe_path(os.path.join(roi_dir, filename))
 
+            # --- 画像保存 ---
             if not cv2.imwrite(save_path, roi_img):
                 print(f"⚠ 補助ROI保存失敗: {save_path}")
                 continue
 
-            roi_type = "HP ROI" if roi_name in HP_ROIS else "状態異常 ROI"
-            print(f"📷 {roi_name}_{frame_idx:06d} ({roi_type} - 画像のみ保存)")
-            save_count += 1
+            # --- HPバーの場合 ---
+            if roi_name in HP_ROIS:
+                try:
+                    hp_percent = get_hp_percentage(save_path)
+                    text_filename = f"{short_hash}_{roi_name}_{frame_idx:06d}.gt.txt"
+                    text_path = win_safe_path(os.path.join(roi_dir, text_filename))
+                    with open(text_path, "w", encoding="utf-8") as f:
+                        f.write(f"{hp_percent:.2f}")
+                    print(f"📊 {roi_name}_{frame_idx:06d}: HP {hp_percent:.2f}% を出力")
+                except Exception as e:
+                    print(f"⚠ HPバー処理エラー ({roi_name}): {e}")
 
-        return save_count
+            else:
+                # 状態異常ROI（画像のみ）
+                print(f"📷 {roi_name}_{frame_idx:06d} (状態異常 ROI - 画像のみ保存)")
+
+            supplementary_save_count += 1
+
+        return supplementary_save_count
+
