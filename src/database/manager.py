@@ -474,6 +474,16 @@ class DatabaseManager:
             pokemon_data['type1'] = pokemon_master_data['type1']
             pokemon_data['type2'] = pokemon_master_data['type2']
 
+        # 持ち物名を取得
+        if pokemon_data.get('held_item_id'):
+            cursor.execute(
+                "SELECT name_ja FROM items WHERE id = ?",
+                (pokemon_data['held_item_id'],)
+            )
+            item_row = cursor.fetchone()
+            if item_row:
+                pokemon_data['item_name'] = item_row['name_ja']
+
         # 技情報を取得
         move_ids = [
             pokemon_data.get('move1_id'),

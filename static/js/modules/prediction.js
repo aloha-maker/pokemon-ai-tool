@@ -120,10 +120,11 @@ export class PredictionManager {
                         }
                     }
                     
-                    const itemSelect = slot.querySelector('.item-select');
-                    if (itemSelect) {
-                        itemSelect.value = member.held_item_id || '';
-                        itemSelect.dispatchEvent(new Event('change')); // To update icon
+                    const itemInput = slot.querySelector('.item-input');
+                    if (itemInput) {
+                        itemInput.value = member.item_name || '';
+                        // アイコン更新のためにchangeイベントを発火
+                        itemInput.dispatchEvent(new Event('change'));
                     }
 
                     const teraSelect = slot.querySelector('.tera-type-select');
@@ -177,6 +178,29 @@ export class PredictionManager {
                 // 初期値がある場合に備えて、イベントを発火
                 if (pokemonInput.value) {
                     updateIcon();
+                }
+            }
+
+            // 持ち物入力イベントでアイコンを更新
+            const itemInput = slot.querySelector('.item-input');
+            const itemIcon = slot.querySelector('.item-icon');
+            if (itemInput && itemIcon) {
+                const updateItemIcon = () => {
+                    const itemName = itemInput.value.trim();
+                    if (itemName) {
+                        itemIcon.src = `/static/item_icons/${itemName}.png`;
+                        itemIcon.onerror = () => {
+                            itemIcon.src = `https://placehold.co/24x24/333/ccc?text=?`;
+                            itemIcon.onerror = null;
+                        };
+                    } else {
+                        itemIcon.src = `https://placehold.co/24x24/333/ccc?text=?`;
+                    }
+                };
+                itemInput.addEventListener('change', updateItemIcon);
+                // 初期値がある場合に備えてイベントを発火
+                if (itemInput.value) {
+                    updateItemIcon();
                 }
             }
 
