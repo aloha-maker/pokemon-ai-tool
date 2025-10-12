@@ -12,7 +12,7 @@ ROI_FILE = r'C:\pokemon-ai-tool\instance\roi_config.json'
 EXTRACT_PER_SECOND = 1  # 1秒に3枚抽出
 
 # 読み取るROIをここで指定（空の場合は全ROIを処理）
-TARGET_ROIS = ['terastal','opponent_name','select','start','stay','stay_text','win_lose']
+TARGET_ROIS = ['stay_text']
 
 def win_safe_path(path):
     if os.name == 'nt':

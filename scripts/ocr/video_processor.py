@@ -7,9 +7,50 @@ from glob import glob
 from config import (
     INPUT_DIR, OUTPUT_DIR, PROCESSED_DIR, ROI_DICT,
     POKEMON_NAME_ROIS, OTHER_ROIS, HP_ROIS, AILMENT_ROIS,
-    SKIP_ROIS, OCR_EXEMPT_ROIS, EXTRACT_PER_SECOND
+    SKIP_ROIS, OCR_EXEMPT_ROIS, EXTRACT_PER_SECOND,
+    STAY_ROIS, SELECT_ROIS, BATTLE_CHOOSE_ROIS, BATTLE_ACT_ROIS,
+    STAY_TEXT_IMAGE, START_IMAGE, SELECT_IMAGES_DIR, WIN_LOSE_IMAGES_DIR
 )
 from utils import win_safe_path
+
+
+class PhaseManager:
+    """フェーズ管理クラス"""
+    def __init__(self):
+        self.current_phase = "stay"  # stay, select, battle
+        self.battle_sub_phase = "choose"  # choose, act
+        self.processed_flags = {
+            'stay_text': False,
+            'select': False,
+            'opponent_name': False,
+            'start': False,
+            'my_pokemon_name': False,
+            'my_pokemon_hp': False,
+            'my_ailment': False,
+            'opponent_pokemon_name': False,
+            'opponent_pokemon_hp': False,
+            'your_ailment': False
+        }
+    
+    def reset_battle_flags(self):
+        """バトルフェーズのフラグをリセット"""
+        self.processed_flags['my_pokemon_name'] = False
+        self.processed_flags['my_pokemon_hp'] = False
+        self.processed_flags['my_ailment'] = False
+        self.processed_flags['opponent_pokemon_name'] = False
+        self.processed_flags['opponent_pokemon_hp'] = False
+        self.processed_flags['your_ailment'] = False
+    
+    def should_process_roi(self, roi_name):
+        """ROIを処理すべきか判定"""
+        if roi_name in self.processed_flags:
+            return not self.processed_flags[roi_name]
+        return True
+    
+    def mark_processed(self, roi_name):
+        """ROI処理済みマーク"""
+        if roi_name in self.processed_flags:
+            self.processed_flags[roi_name] = True
 
 
 def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processor):
@@ -18,6 +59,9 @@ def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processo
     """
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     print(f"\n▶ 動画処理開始: {video_name}")
+
+    # フェーズ管理の初期化
+    phase_manager = PhaseManager()
 
     # 動画読み込み
     cap = cv2.VideoCapture(video_path)
@@ -53,74 +97,19 @@ def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processo
 
         # 指定間隔でフレームを処理
         if frame_idx % frame_interval == 0:
-            print(f"  📊 フレーム {frame_idx}: 処理開始")
+            print(f"  📊 フレーム {frame_idx}: フェーズ={phase_manager.current_phase}.{phase_manager.battle_sub_phase}")
 
-            processed_pokemon = False
-            pokemon_success = False
+            # フェーズ判定を実行
+            phase_manager = ocr_processor.detect_phase(frame, phase_manager, width, height)
 
-            # ==============================
-            # ステップ1: ポケモン名ROIを優先処理
-            # ==============================
-            for roi_name in POKEMON_NAME_ROIS:
-                if roi_name not in ROI_DICT or roi_name in SKIP_ROIS:
-                    continue
-
-                value = ROI_DICT[roi_name]
-                if not (isinstance(value, list) and len(value) == 4):
-                    continue
-
-                success, max_conf = ocr_processor.process_roi_with_confidence_check(
-                    frame, roi_name, value, width, height, video_name, frame_idx, short_hash
-                )
-
-                if success:
-                    pokemon_success = True
-                    save_count += 1
-                    ocr_success_count += 1
-                    processed_pokemon = True
-
-            # ==============================
-            # ステップ1a: 成功時は補助ROI（HP・状態異常）も保存
-            # ==============================
-            if pokemon_success:
-                supplementary_count = ocr_processor.save_supplementary_roi_images(
-                    frame, video_name, frame_idx, short_hash, width, height
-                )
-                save_count += supplementary_count
-                print(f"  💚 ポケモン名ROI成功 → 補助ROI {supplementary_count}枚を保存")
-
-            # ==============================
-            # ステップ2: ポケモン名ROI失敗時、その他ROIを処理
-            # ==============================
-            if not pokemon_success:
-                print(f"  🔄 ポケモン名ROI確信度不足 → 他ROI処理（補助ROI除外）")
-
-                for roi_name in OTHER_ROIS:
-                    if (
-                        roi_name not in ROI_DICT or
-                        roi_name in SKIP_ROIS or
-                        roi_name in OCR_EXEMPT_ROIS
-                    ):
-                        continue
-
-                    value = ROI_DICT[roi_name]
-                    if not (isinstance(value, list) and len(value) == 4):
-                        continue
-
-                    success, max_conf = ocr_processor.process_roi_with_confidence_check(
-                        frame, roi_name, value, width, height, video_name, frame_idx, short_hash
-                    )
-
-                    if success:
-                        save_count += 1
-                        ocr_success_count += 1
-                        processed_pokemon = True
-
-            # ==============================
-            # ステップ3: 有効ROIがなかった場合
-            # ==============================
-            if not processed_pokemon:
-                print(f"  ⏭️ フレーム {frame_idx}: 有効なROIなし（スキップ）")
+            # フェーズに応じたROI処理
+            processed_count = ocr_processor.process_phase_rois(
+                frame, phase_manager, video_name, frame_idx, short_hash, width, height
+            )
+            
+            save_count += processed_count
+            if processed_count > 0:
+                ocr_success_count += 1
 
         frame_idx += 1
 

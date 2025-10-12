@@ -16,14 +16,9 @@ def main():
     ability_corrector = AbilityNameCorrector(ABILITY_MASTER_PATH)
     ocr_processor = OCRProcessor(pokemon_corrector, ability_corrector)
 
-    while True:
-        video_files = glob(os.path.join(INPUT_DIR, "*.mp4"))
-        if not video_files:
-            print("\n🎉 全ての動画処理が完了しました。")
-            break
-
-        for video_file in video_files:
-            process_video(video_file, pokemon_corrector, ability_corrector, ocr_processor)
+    video_files = glob(os.path.join(INPUT_DIR, "*.mp4"))
+    for video_file in video_files:
+        process_video(video_file, pokemon_corrector, ability_corrector, ocr_processor)
 
 if __name__ == "__main__":
     main()
