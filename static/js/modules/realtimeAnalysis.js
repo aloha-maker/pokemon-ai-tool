@@ -14,6 +14,8 @@ export class RealtimeAnalysis {
         this.logOutput = document.getElementById('realtime-log-output'); // 追加
         this.startCameraBtn = document.getElementById('start-camera-btn');
         this.startOcrBtn = document.getElementById('start-ocr-btn');
+        this.startBattleBtn = document.getElementById('start-battle-btn');
+        this.battleIdDisplay = document.getElementById('battle-id-display');
         this.logBuffer = [];
         this.sequence = 0;
         
@@ -32,6 +34,7 @@ export class RealtimeAnalysis {
         this.recognizePartyBtn?.addEventListener('click', () => this.handleRecognizeParty());
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
         this.startOcrBtn?.addEventListener('click', () => this.handleStartOcr());
+        this.startBattleBtn?.addEventListener('click', () => this.handleStartBattle());
     }
 
     initSocketListeners() {
@@ -201,6 +204,29 @@ export class RealtimeAnalysis {
     handleStartOcr() {
         if (this.currentState === 'running_camera') {
             this.socket.emit('start_ocr', {});
+        }
+    }
+
+    async handleStartBattle() {
+        try {
+            const response = await fetch('/api/battle/new_id');
+            if (!response.ok) {
+                throw new Error('サーバーからバトルIDを取得できませんでした。');
+            }
+            const data = await response.json();
+            if (data.battle_id) {
+                if (this.battleIdDisplay) {
+                    this.battleIdDisplay.value = data.battle_id;
+                }
+                console.log(`Fetched Battle ID: ${data.battle_id}`);
+            } else {
+                throw new Error('レスポンスにバトルIDが含まれていません。');
+            }
+        } catch (error) {
+            console.error('バトルIDの取得に失敗しました:', error);
+            if (this.battleIdDisplay) {
+                this.battleIdDisplay.value = 'エラー';
+            }
         }
     }
 

@@ -157,6 +157,19 @@ class DatabaseManager:
             "win_rate": round(win_rate, 1)
         }
 
+    def get_latest_battle_id_for_today(self, date_str: str) -> str | None:
+        """
+        指定された日付の最新のバトルIDを取得する (例: BATTLE-20231027-005)
+        """
+        cursor = self.get_cursor()
+        pattern = f'BATTLE-{date_str}-%'
+        cursor.execute(
+            "SELECT battle_id FROM battles WHERE battle_id LIKE ? ORDER BY battle_id DESC LIMIT 1",
+            (pattern,)
+        )
+        row = cursor.fetchone()
+        return row['battle_id'] if row else None
+
     def add_battle_log(self, log_data: dict) -> int:
         """
         対戦履歴を `battle_logs` テーブルに追加する。

@@ -1,6 +1,8 @@
 # src/routes/api/battle.py
 from flask import Blueprint, request, jsonify
 from src.database.manager import DatabaseManager
+import datetime
+import random
 
 battle_bp = Blueprint('battle_api', __name__, url_prefix='/api')
 
@@ -85,3 +87,37 @@ def prepare_battle():
         return jsonify({"message": "対戦パーティを保存しました。", "log_id": log_id}), 201
     except Exception as e:
         return jsonify({"error": f"データベースへの保存中にエラーが発生しました: {str(e)}"}), 500
+
+
+@battle_bp.route('/battle/new_id', methods=['GET'])
+def get_new_battle_id():
+    """新しい連番のバトルIDを生成して返す"""
+    try:
+        with DatabaseManager() as db:
+            now = datetime.datetime.now()
+            date_str = now.strftime('%Y%m%d')
+            
+            latest_id = db.get_latest_battle_id_for_today(date_str)
+            
+            if latest_id:
+                # IDからシーケンス番号を抽出
+                try:
+                    last_seq = int(latest_id.split('-')[-1])
+                    new_seq = last_seq + 1
+                except (ValueError, IndexError):
+                    # フォーマットが不正な場合は1から始める
+                    new_seq = 1
+            else:
+                # 今日最初のID
+                new_seq = 1
+            
+            # 4桁のゼロ埋め
+            seq_str = f'{new_seq:04}'
+            
+            battle_id = f'BATTLE-{date_str}-{seq_str}'
+            return jsonify({"battle_id": battle_id})
+            
+    except Exception as e:
+        # 本番環境では、より詳細なエラーロギングが望ましい
+        print(f"Error in get_new_battle_id: {e}")
+        return jsonify({"error": "Failed to generate new battle ID."}), 500
