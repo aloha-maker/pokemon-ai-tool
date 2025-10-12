@@ -309,13 +309,16 @@ class DatabaseManager:
             cursor.execute("DELETE FROM parties_log WHERE battle_id = ?", (battle_id,))
             cursor.execute("DELETE FROM raw_battle_events WHERE battle_id = ?", (battle_id,))
 
-            # 3. 自分のパーティを parties_log に記録
+            # 3. 自分のパーティを pokemons_log と parties_log に記録
             my_party_log_data = []
             for pokemon in my_party:
                 name = pokemon.get('name')
                 is_selected = 1 if pokemon.get('is_selected') else 0
                 if name:
-                    my_party_log_data.append((battle_id, None, name, 0, is_selected))
+                    # pokemons_logに常に新しいレコードとして挿入
+                    cursor.execute("INSERT INTO pokemons_log (pokemon_name) VALUES (?)", (name,))
+                    pokemon_id = cursor.lastrowid
+                    my_party_log_data.append((battle_id, pokemon_id, name, 0, is_selected))
             
             if my_party_log_data:
                 cursor.executemany(
@@ -329,18 +332,9 @@ class DatabaseManager:
                 name = pokemon.get('name')
                 is_selected = 1 if pokemon.get('is_selected') else 0
                 if name:
-                    cursor.execute(
-                        "SELECT pokemon_id FROM pokemons_log WHERE pokemon_name = ? AND nickname IS NULL AND moves IS NULL AND terastal_type IS NULL AND item IS NULL AND ability IS NULL", 
-                        (name,)
-                    )
-                    row = cursor.fetchone()
-                    
-                    if row:
-                        pokemon_id = row['pokemon_id']
-                    else:
-                        cursor.execute("INSERT INTO pokemons_log (pokemon_name) VALUES (?)", (name,))
-                        pokemon_id = cursor.lastrowid
-                    
+                    # pokemons_logに常に新しいレコードとして挿入
+                    cursor.execute("INSERT INTO pokemons_log (pokemon_name) VALUES (?)", (name,))
+                    pokemon_id = cursor.lastrowid
                     opponent_party_log_data.append((battle_id, pokemon_id, name, 1, is_selected))
 
             if opponent_party_log_data:
