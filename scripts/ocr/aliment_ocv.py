@@ -1,5 +1,6 @@
 import cv2
 import os
+import json
 
 def identify_ailment_from_cropped_image(cropped_image_path, icons_dir, threshold=0.8):
     """
@@ -11,10 +12,20 @@ def identify_ailment_from_cropped_image(cropped_image_path, icons_dir, threshold
         threshold (float): 一致していると判断するための信頼度の閾値 (0.0から1.0)。
 
     Returns:
-        str: 検出された状態異常の名前（例: 'どく'）。
+        str: 検出された状態異常の日本語名（例: 'どく'）。
              閾値を超えるアイコンが見つからない場合は None を返す。
     """
-    # --- 1. 判別対象の画像とアイコンリストを準備 ---
+    # --- 1. 状態異常名の翻訳データを読み込み ---
+    aliment_json_path = r'C:\pokemon-ai-tool\instance\aliments.json'
+    try:
+        with open(aliment_json_path, 'r', encoding='utf-8') as f:
+            aliment_data = json.load(f)
+        aliment_mapping = {item['en']: item['ja'] for item in aliment_data['状態異常一覧']}
+    except Exception as e:
+        print(f"[エラー] 状態異常データの読み込みに失敗しました: {e}")
+        return None
+    
+    # --- 2. 判別対象の画像とアイコンリストを準備 ---
     if not os.path.exists(cropped_image_path):
         print(f"[エラー] 判別対象の画像が見つかりません: {cropped_image_path}")
         return None
@@ -35,7 +46,7 @@ def identify_ailment_from_cropped_image(cropped_image_path, icons_dir, threshold
         print(f"[エラー] アイコンフォルダが見つかりません: {icons_dir}")
         return None
 
-    # --- 2. 全てのアイコン候補と比較し、最も一致するものを探す ---
+    # --- 3. 全てのアイコン候補と比較し、最も一致するものを探す ---
     best_match = {
         'name': None,
         'score': -1.0,  # マッチ度の初期値
@@ -72,12 +83,14 @@ def identify_ailment_from_cropped_image(cropped_image_path, icons_dir, threshold
             best_match['name'] = ailment_name
             best_match['score'] = max_val
 
-    # --- 3. 最終的な判定と結果の返却 ---
+    # --- 4. 最終的な判定と結果の返却 ---
     # 最もスコアが高かったものが、設定した閾値を超えているか確認
     if best_match['score'] >= threshold:
+        # 英語名を日本語名に変換
+        japanese_name = aliment_mapping.get(best_match['name'], best_match['name'])
         # デバッグ用にログを出力
-        print(f"[情報] 最も一致するアイコン: '{best_match['name']}' (信頼度: {best_match['score']:.2%})")
-        return best_match['name']
+        print(f"[情報] 最も一致するアイコン: '{japanese_name}' (信頼度: {best_match['score']:.2%})")
+        return japanese_name
     else:
         print(f"[情報] 閾値を超える状態異常は見つかりませんでした。(最高信頼度: {best_match['score']:.2%})")
         return None
