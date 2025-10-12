@@ -1,3 +1,4 @@
+# video_processor.py（更新版）
 import os
 import cv2
 import hashlib
@@ -12,45 +13,7 @@ from config import (
     STAY_TEXT_IMAGE, START_IMAGE, SELECT_IMAGES_DIR, WIN_LOSE_IMAGES_DIR
 )
 from utils import win_safe_path
-
-
-class PhaseManager:
-    """フェーズ管理クラス"""
-    def __init__(self):
-        self.current_phase = "stay"  # stay, select, battle
-        self.battle_sub_phase = "choose"  # choose, act
-        self.processed_flags = {
-            'stay_text': False,
-            'select': False,
-            'opponent_name': False,
-            'start': False,
-            'my_pokemon_name': False,
-            'my_pokemon_hp': False,
-            'my_ailment': False,
-            'opponent_pokemon_name': False,
-            'opponent_pokemon_hp': False,
-            'your_ailment': False
-        }
-    
-    def reset_battle_flags(self):
-        """バトルフェーズのフラグをリセット"""
-        self.processed_flags['my_pokemon_name'] = False
-        self.processed_flags['my_pokemon_hp'] = False
-        self.processed_flags['my_ailment'] = False
-        self.processed_flags['opponent_pokemon_name'] = False
-        self.processed_flags['opponent_pokemon_hp'] = False
-        self.processed_flags['your_ailment'] = False
-    
-    def should_process_roi(self, roi_name):
-        """ROIを処理すべきか判定"""
-        if roi_name in self.processed_flags:
-            return not self.processed_flags[roi_name]
-        return True
-    
-    def mark_processed(self, roi_name):
-        """ROI処理済みマーク"""
-        if roi_name in self.processed_flags:
-            self.processed_flags[roi_name] = True
+from phase_manager import PhaseManager
 
 
 def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processor):
@@ -59,9 +22,6 @@ def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processo
     """
     video_name = os.path.splitext(os.path.basename(video_path))[0]
     print(f"\n▶ 動画処理開始: {video_name}")
-
-    # フェーズ管理の初期化
-    phase_manager = PhaseManager()
 
     # 動画読み込み
     cap = cv2.VideoCapture(video_path)
@@ -81,9 +41,8 @@ def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processo
     ocr_success_count = 0
     short_hash = hashlib.md5(video_name.encode()).hexdigest()[:8]
 
-    # 名前履歴をリセット
-    ocr_processor.last_my_pokemon_name = ""
-    ocr_processor.last_opponent_pokemon_name = ""
+    # 新しい動画用に状態をリセット
+    ocr_processor.reset_for_new_video()
 
     # 出力ディレクトリ作成
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -97,14 +56,23 @@ def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processo
 
         # 指定間隔でフレームを処理
         if frame_idx % frame_interval == 0:
-            print(f"  📊 フレーム {frame_idx}: フェーズ={phase_manager.current_phase}.{phase_manager.battle_sub_phase}")
+            # 現在のフェーズ情報を取得（ログ表示用）
+            current_phase_info = ocr_processor.get_current_phase_info()
+            current_phase = current_phase_info['current_phase']
+            battle_sub_phase = current_phase_info.get('battle_sub_phase', '')
+            
+            phase_display = current_phase
+            if battle_sub_phase:
+                phase_display += f".{battle_sub_phase}"
+                
+            print(f"  📊 フレーム {frame_idx}: フェーズ={phase_display}")
 
-            # フェーズ判定を実行
-            phase_manager = ocr_processor.detect_phase(frame, phase_manager, width, height)
+            # フェーズ判定を実行（act→choose遷移対応版）
+            phase_manager = ocr_processor.detect_phase(frame, width, height)
 
             # フェーズに応じたROI処理
             processed_count = ocr_processor.process_phase_rois(
-                frame, phase_manager, video_name, frame_idx, short_hash, width, height
+                frame, video_name, frame_idx, short_hash, width, height
             )
             
             save_count += processed_count
