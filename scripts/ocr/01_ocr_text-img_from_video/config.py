@@ -24,7 +24,7 @@ ABILITY_NAME_ROIS = {'my_tokusei_row2', 'your_tokusei_row2'}
 POKEMON_NO_ROIS = {'my_tokusei_row1', 'your_tokusei_row1'}
 
 # フェーズ別ROI設定（STAY_ROISからstay_textを削除）
-SELECT_ROIS = ['select', 'opponent_name', 'battle_id', 'start'] 
+SELECT_ROIS = ['select', 'opponent_name', 'battle_id']
 BATTLE_CHOOSE_ROIS = ['my_pokemon_name', 'my_pokemon_hp', 'my_ailment', 
                       'opponent_pokemon_name', 'opponent_pokemon_hp', 'your_ailment']
 BATTLE_ACT_ROIS = ['live_comment_row1', 'live_comment_row2', 'my_tokusei_row1', 
