@@ -26,3 +26,4 @@ videos/
 static/captures/
 static/pokemon_icons/
 .traindata
+tests/

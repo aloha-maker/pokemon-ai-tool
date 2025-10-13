@@ -1,7 +1,6 @@
 # image_roi_processor.py
 import os
 from base_roi_processor import BaseROIProcessor
-from image_matcher import ImageMatcher
 
 class ImageROIProcessor(BaseROIProcessor):
     def __init__(self, output_dir, image_matcher):
@@ -32,10 +31,10 @@ class ImageROIProcessor(BaseROIProcessor):
         
         return success, 1.0
     
-    def process_select_image_roi(self, frame, roi_name, video_name, frame_idx, short_hash, width, height, expected_text, template_dir, threshold=0.8):
+    def process_select_image_roi(self, frame, roi_name, video_name, frame_idx, short_hash, width, height, expected_text, template_path, threshold=0.8):
         """select画像ROI処理（複数画像、閾値ログ出力付き）"""
-        match_result, max_val, best_match_file = self.image_matcher.match_multiple_images(
-            frame, roi_name, template_dir, width, height, threshold
+        match_result, max_val, best_match_file = self.image_matcher.match_single_image(
+            frame, roi_name, template_path, width, height, threshold
         )
         
         if not match_result:
