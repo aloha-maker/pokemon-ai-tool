@@ -42,6 +42,44 @@ class NameCorrector:
             previous_row = current_row
         return previous_row[-1]
 
+    def find_closest_name_in_list(self, text, candidate_list):
+        """
+        候補リストから最も近い名前を検索
+        """
+        if not text or not candidate_list:
+            return text
+        
+        # 完全一致チェック
+        if text in candidate_list:
+            return text
+        
+        # 類似度ベースで検索
+        best_match = text
+        best_similarity = 0
+        
+        for candidate in candidate_list:
+            similarity = self.calculate_similarity(text, candidate)
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_match = candidate
+        
+        print(f"  📊 候補リストから検索: '{text}' → '{best_match}' (類似度: {best_similarity:.2f})")
+        return best_match
+
+    def calculate_similarity(self, text1, text2):
+        """
+        2つの文字列の類似度を計算（0.0〜1.0）
+        既存の類似度計算メソッドがあればそれを使用
+        """
+        # 既存の類似度計算ロジックを使用
+        # もし別のメソッド名で実装されている場合は適宜変更
+        if hasattr(self, '_calculate_similarity'):
+            return self._calculate_similarity(text1, text2)
+        else:
+            # 簡易的な類似度計算（レーベンシュタイン距離ベース）
+            from difflib import SequenceMatcher
+            return SequenceMatcher(None, text1, text2).ratio()
+
 class PokemonNameCorrector(NameCorrector):
     def __init__(self, pokemon_master_path):
         super().__init__(pokemon_master_path, 'name_ja')

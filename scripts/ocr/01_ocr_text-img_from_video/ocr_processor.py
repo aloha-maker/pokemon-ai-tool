@@ -31,6 +31,7 @@ class OCRProcessor:
         # 直前のポケモン名を保持（act→choose遷移用）
         self.last_my_pokemon_name = ""
         self.last_opponent_pokemon_name = ""
+        self.current_battle_id = ""  # 追加
     
     def detect_phase(self, frame, width, height):
         """現在のフェーズを判定（select ROIの詳細ログ出力付き）"""
@@ -135,7 +136,7 @@ class OCRProcessor:
         return 0
     
     def _process_select_rois(self, frame, video_name, frame_idx, short_hash, width, height):
-        """selectフェーズの処理"""
+        """selectフェーズの処理（battle_idを追加）"""
         processed_count = 0
         for roi_name in SELECT_ROIS:
             if not self.phase_manager.should_process_roi(roi_name):
@@ -145,7 +146,7 @@ class OCRProcessor:
                 # select ROIは「対戦相手が見つかりました！」テキストで保存
                 success, max_val = self.image_processor.process_image_roi(
                     frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                    "対戦相手が見つかりました！", SELECT_IMAGES_PATH, 0.8  # テキスト変更
+                    "対戦相手が見つかりました！", SELECT_IMAGES_PATH, 0.8
                 )
                 if success:
                     self.phase_manager.mark_processed(roi_name)
@@ -160,17 +161,12 @@ class OCRProcessor:
                 if success:
                     self.phase_manager.mark_processed(roi_name)
                     processed_count += 1
-            
-            elif roi_name == 'start':
-                success, max_val = self.image_processor.process_image_roi(
-                    frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                    "対戦開始", START_IMAGE, 0.8
-                )
-                if success:
-                    self.phase_manager.mark_processed(roi_name)
-                    processed_count += 1
-                else:
-                    print(f"  ⏭️ start ROI処理スキップ: マッチングスコア不足 ({max_val:.3f} < 0.8)")
+                    
+                    # battle_idが読み取れた場合は設定
+                    if roi_name == 'battle_id' and text:
+                        self.current_battle_id = text
+                        self.ocr_processor.set_battle_id(text)  # OCRプロセッサーに設定
+                        print(f"🎯 バトルID設定: {text}")
         
         return processed_count
     

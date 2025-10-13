@@ -1,10 +1,10 @@
-# ocr_roi_processor.py
 import os
 import cv2
 import re
 import pytesseract
 from base_roi_processor import BaseROIProcessor
-from config import CUSTOM_CONFIG, POKEMON_NAME_ROIS, ABILITY_NAME_ROIS, POKEMON_NO_ROIS
+from config import CUSTOM_CONFIG, POKEMON_NAME_ROIS, ABILITY_NAME_ROIS, POKEMON_NO_ROIS, TESSDATA_PREFIX
+from db_access import DatabaseManager
 
 class OCRROIProcessor(BaseROIProcessor):
     def __init__(self, output_dir, pokemon_corrector, ability_corrector):
@@ -15,7 +15,72 @@ class OCRROIProcessor(BaseROIProcessor):
         # 直前のポケモン名を保持
         self.last_my_pokemon_name = ""
         self.last_opponent_pokemon_name = ""
+        
+        # 現在のバトルIDとポケモンリスト
+        self.current_battle_id = ""
+        self.available_pokemon_names = []  # バトルIDに紐づく全ポケモン名
     
+    def set_battle_id(self, battle_id):
+        """バトルIDを設定し、対応するポケモン名リストを取得"""
+        self.current_battle_id = battle_id
+        self.available_pokemon_names = []
+        
+        if battle_id:
+            try:
+                with DatabaseManager() as db:
+                    result = db.get_pokemon_names_by_battle_id(battle_id)
+                    if result:
+                        # 自分のポケモンと相手のポケモンを結合
+                        self.available_pokemon_names = (
+                            result["my_pokemons"] + result["opponent_pokemons"]
+                        )
+                        print(f"🔍 バトルID '{battle_id}' のポケモンリスト: {self.available_pokemon_names}")
+                    else:
+                        print(f"⚠ バトルID '{battle_id}' に対応するポケモンが見つかりません")
+            except Exception as e:
+                print(f"⚠ バトルID '{battle_id}' のポケモンリスト取得エラー: {e}")
+    
+    def apply_name_correction(self, text, roi_name):
+        """OCR後の文字列をマスターデータに基づいて補正（バトルIDで絞り込み）"""
+        if roi_name in POKEMON_NAME_ROIS:
+            original_text = text
+            
+            # バトルIDが設定されている場合は、そのバトルのポケモン名から検索
+            if self.current_battle_id and self.available_pokemon_names:
+                # name_correctorのメソッドを呼び出す（メソッド名は実装による）
+                if hasattr(self.pokemon_corrector, 'find_closest_name_in_list'):
+                    corrected_text = self.pokemon_corrector.find_closest_name_in_list(
+                        text, self.available_pokemon_names
+                    )
+                else:
+                    # フォールバック: 全ポケモンから検索
+                    corrected_text = self.pokemon_corrector.find_closest_name(text)
+            else:
+                # バトルID未設定の場合は全ポケモンから検索
+                corrected_text = self.pokemon_corrector.find_closest_name(text)
+            
+            if original_text != corrected_text:
+                print(f"  🟢 ポケモン名補正: '{original_text}' → '{corrected_text}' (バトルID: {self.current_battle_id})")
+
+            if roi_name == 'my_pokemon_name':
+                self.last_my_pokemon_name = corrected_text
+            elif roi_name == 'opponent_pokemon_name':
+                self.last_opponent_pokemon_name = corrected_text
+            return corrected_text
+
+        elif roi_name in ABILITY_NAME_ROIS:
+            original_text = text
+            corrected_text = self.ability_corrector.find_closest_name(text)
+            if original_text != corrected_text:
+                print(f"  🔵 特性名補正: '{original_text}' → '{corrected_text}'")
+            return corrected_text
+
+        elif roi_name in POKEMON_NO_ROIS:
+            return self._convert_to_pokemon_no_format(text, roi_name)
+
+        return text
+    
+    # 既存のメソッドは変更なし
     def process_ocr_roi(self, frame, roi_name, video_name, frame_idx, short_hash, width, height):
         """OCR ROIの処理"""
         roi_img = self.extract_roi_image(frame, roi_name, width, height)
@@ -107,32 +172,6 @@ class OCRROIProcessor(BaseROIProcessor):
         cleaned = cleaned.replace('ぐりだした！', 'くりだした！')
 
         return cleaned
-    
-    def apply_name_correction(self, text, roi_name):
-        """OCR後の文字列をマスターデータに基づいて補正"""
-        if roi_name in POKEMON_NAME_ROIS:
-            original_text = text
-            corrected_text = self.pokemon_corrector.find_closest_name(text)
-            if original_text != corrected_text:
-                print(f"  🟢 ポケモン名補正: '{original_text}' → '{corrected_text}'")
-
-            if roi_name == 'my_pokemon_name':
-                self.last_my_pokemon_name = corrected_text
-            elif roi_name == 'opponent_pokemon_name':
-                self.last_opponent_pokemon_name = corrected_text
-            return corrected_text
-
-        elif roi_name in ABILITY_NAME_ROIS:
-            original_text = text
-            corrected_text = self.ability_corrector.find_closest_name(text)
-            if original_text != corrected_text:
-                print(f"  🔵 特性名補正: '{original_text}' → '{corrected_text}'")
-            return corrected_text
-
-        elif roi_name in POKEMON_NO_ROIS:
-            return self._convert_to_pokemon_no_format(text, roi_name)
-
-        return text
     
     def _convert_to_pokemon_no_format(self, text, roi_name):
         """「ポケモン名+の」形式への変換"""
