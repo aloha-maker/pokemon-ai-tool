@@ -117,9 +117,43 @@ export class PartySaver {
                     await this.realtimeAnalysis.fetchAndSetNewBattleId();
                 }
 
-                // パーティ保存ボタンを非活性化
-                if (this.savePartyBtn) {
-                    this.savePartyBtn.disabled = true;
+                // 相手パーティの入力情報をクリア
+                document.querySelectorAll('#opponent-party-display .pokemon-slot').forEach(slot => {
+                    // ポケモン名
+                    slot.querySelector('.pokemon-input').value = '';
+
+                    // 持ち物
+                    const itemInput = slot.querySelector('.item-input');
+                    if (itemInput) {
+                        itemInput.value = '';
+                        itemInput.dispatchEvent(new Event('input')); // アイコン更新のため
+                    }
+
+                    // テラスタイプ
+                    const teraSelect = slot.querySelector('.tera-type-select');
+                    if (teraSelect) {
+                        teraSelect.selectedIndex = 0;
+                        teraSelect.dispatchEvent(new Event('change')); // アイコン更新のため
+                    }
+                });
+
+                // 自分と相手のパーティの選出フラグ（星と青枠）をクリア
+                document.querySelectorAll('#my-party-display .pokemon-slot, #opponent-party-display .pokemon-slot').forEach(slot => {
+                    // スターターアイコン（星）を非表示に
+                    const starterIcon = slot.querySelector('.starter-icon');
+                    if (starterIcon) {
+                        starterIcon.classList.add('d-none');
+                    }
+                    // 選出ポケモン（青枠）を解除
+                    const pokemonImage = slot.querySelector('.pokemon-image');
+                    if (pokemonImage) {
+                        pokemonImage.classList.remove('pokemon-selected');
+                    }
+                });
+
+                // 相手パーティの詳細情報（特性・技）をクリア
+                if (this.pokemonDetailEditor) {
+                    this.pokemonDetailEditor.clearOpponentDetails();
                 }
             } else {
                 throw new Error(responseData.error || '不明なエラーが発生しました。');

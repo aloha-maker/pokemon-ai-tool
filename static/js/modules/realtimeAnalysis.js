@@ -35,6 +35,20 @@ export class RealtimeAnalysis {
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
         this.startOcrBtn?.addEventListener('click', () => this.handleStartOcr());
         this.startBattleBtn?.addEventListener('click', () => this.handleStartBattle());
+
+        // バトルIDの有無に応じてパーティ保存ボタンの状態を更新
+        if (this.battleIdDisplay) {
+            const savePartyBtn = document.getElementById('save-party-button');
+            if (savePartyBtn) {
+                // 初期状態を設定
+                savePartyBtn.disabled = !this.battleIdDisplay.value;
+
+                // inputイベントを監視してボタンの状態を更新
+                this.battleIdDisplay.addEventListener('input', () => {
+                    savePartyBtn.disabled = !this.battleIdDisplay.value;
+                });
+            }
+        }
     }
 
     initSocketListeners() {
@@ -209,11 +223,6 @@ export class RealtimeAnalysis {
 
     async handleStartBattle() {
         await this.fetchAndSetNewBattleId();
-        // パーティ保存ボタンを活性化
-        const savePartyBtn = document.getElementById('save-party-button');
-        if (savePartyBtn) {
-            savePartyBtn.disabled = false;
-        }
     }
 
     async fetchAndSetNewBattleId() {
@@ -226,6 +235,7 @@ export class RealtimeAnalysis {
             if (data.battle_id) {
                 if (this.battleIdDisplay) {
                     this.battleIdDisplay.value = data.battle_id;
+                    this.battleIdDisplay.dispatchEvent(new Event('input'));
                 }
                 console.log(`Fetched Battle ID: ${data.battle_id}`);
             } else {
@@ -235,6 +245,7 @@ export class RealtimeAnalysis {
             console.error('バトルIDの取得に失敗しました:', error);
             if (this.battleIdDisplay) {
                 this.battleIdDisplay.value = 'エラー';
+                this.battleIdDisplay.dispatchEvent(new Event('input'));
             }
         }
     }

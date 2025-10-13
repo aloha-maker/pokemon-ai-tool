@@ -188,4 +188,20 @@ export class PokemonDetailEditor {
     getState() {
         return this.partyState;
     }
+
+    clearOpponentDetails() {
+        // Opponent party is from index 6 to 11
+        for (let i = 6; i < 12; i++) {
+            this.partyState[i] = {
+                ability_id: null,
+                moves: [
+                    { id: null, pp: null },
+                    { id: null, pp: null },
+                    { id: null, pp: null },
+                    { id: null, pp: null },
+                ]
+            };
+        }
+        console.log('Opponent pokemon details cleared.');
+    }
 }
