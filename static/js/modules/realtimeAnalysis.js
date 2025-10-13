@@ -208,6 +208,15 @@ export class RealtimeAnalysis {
     }
 
     async handleStartBattle() {
+        await this.fetchAndSetNewBattleId();
+        // パーティ保存ボタンを活性化
+        const savePartyBtn = document.getElementById('save-party-button');
+        if (savePartyBtn) {
+            savePartyBtn.disabled = false;
+        }
+    }
+
+    async fetchAndSetNewBattleId() {
         try {
             const response = await fetch('/api/battle/new_id');
             if (!response.ok) {
@@ -217,11 +226,6 @@ export class RealtimeAnalysis {
             if (data.battle_id) {
                 if (this.battleIdDisplay) {
                     this.battleIdDisplay.value = data.battle_id;
-                }
-                // パーティ保存ボタンを活性化
-                const savePartyBtn = document.getElementById('save-party-button');
-                if (savePartyBtn) {
-                    savePartyBtn.disabled = false;
                 }
                 console.log(`Fetched Battle ID: ${data.battle_id}`);
             } else {

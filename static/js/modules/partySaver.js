@@ -112,11 +112,11 @@ export class PartySaver {
                 this.showAlert(`対戦結果 (ID: ${responseData.log_id}) を保存しました。`, 'success');
                 console.log('Success:', responseData);
 
-                // バトルID表示をリセット
-                const battleIdDisplay = document.getElementById('battle-id-display');
-                if (battleIdDisplay) {
-                    battleIdDisplay.value = '';
+                // 新しいバトルIDを採番して表示
+                if (this.realtimeAnalysis) {
+                    await this.realtimeAnalysis.fetchAndSetNewBattleId();
                 }
+
                 // パーティ保存ボタンを非活性化
                 if (this.savePartyBtn) {
                     this.savePartyBtn.disabled = true;
