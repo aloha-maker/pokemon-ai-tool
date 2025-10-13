@@ -1,4 +1,3 @@
-# ocr_processor.py（リファクタリング後）
 import os
 import pytesseract
 from phase_manager import PhaseManager
@@ -9,8 +8,8 @@ from special_roi_processor import SpecialROIProcessor
 from config import (
     OUTPUT_DIR, HP_ROIS, AILMENT_ROIS, POKEMON_NAME_ROIS,
     ABILITY_NAME_ROIS, POKEMON_NO_ROIS, ROI_DICT, CUSTOM_CONFIG,
-    TESSERACT_PATH, STAY_ROIS, SELECT_ROIS, BATTLE_CHOOSE_ROIS, BATTLE_ACT_ROIS,
-    STAY_TEXT_IMAGE, START_IMAGE, SELECT_IMAGES_DIR, WIN_LOSE_IMAGES_DIR,
+    TESSERACT_PATH, SELECT_ROIS, BATTLE_CHOOSE_ROIS, BATTLE_ACT_ROIS,
+    START_IMAGE, SELECT_IMAGES_PATH, WIN_LOSE_IMAGES_DIR,
     TERA_ICONS_DIR, TERA_ME_ICONS_DIR, AILMENT_ICONS_DIR
 )
 
@@ -34,56 +33,69 @@ class OCRProcessor:
         self.last_opponent_pokemon_name = ""
     
     def detect_phase(self, frame, width, height):
-        """現在のフェーズを判定（act→choose遷移追加）"""
-        # stayフェーズ: stay_textの検出
+        """現在のフェーズを判定（select ROIの詳細ログ出力付き）"""
+        # stayフェーズ: select ROIの検出
         if self.phase_manager.current_phase == "stay":
-            match_result, max_val = self.image_matcher.match_single_image(
-                frame, 'stay_text', STAY_TEXT_IMAGE, width, height
+            print(f"  🔍 stayフェーズ: select ROIを検出中...")
+            match_result, max_val = self.image_matcher.match_single_image(  # match_single_imageに変更
+                frame, 'select', SELECT_IMAGES_PATH, width, height  # SELECT_IMAGES_PATHに変更
             )
             if match_result:
                 self.phase_manager.set_phase("select")
-                print(f"  🔄 フェーズ変更: stay → select (stay_text 閾値: {max_val:.3f})")
+                print(f"  🔄 フェーズ変更: stay → select (select ROI 閾値: {max_val:.3f})")
+            else:
+                print(f"  ⏭️ stayフェーズ継続: select ROI 検出失敗 (スコア: {max_val:.3f})")
         
         # selectフェーズ: startの検出
         elif self.phase_manager.current_phase == "select":
+            print(f"  🔍 selectフェーズ: start画像を検出中...")
             match_result, max_val = self.image_matcher.match_single_image(
                 frame, 'start', START_IMAGE, width, height
             )
             if match_result:
                 self.phase_manager.set_phase("battle", "choose")
                 print(f"  🔄 フェーズ変更: select → battle.choose (start 閾値: {max_val:.3f})")
+            else:
+                print(f"  ⏭️ selectフェーズ継続: start画像 検出失敗 (スコア: {max_val:.3f})")
         
         # battleフェーズ: サブフェーズ判定
         elif self.phase_manager.current_phase == "battle":
             # chooseフェーズ: my_pokemon_nameの検出
             if self.phase_manager.battle_sub_phase == "choose":
+                print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
                 has_text, text, conf = self.ocr_processor.process_ocr_roi(
                     frame, 'my_pokemon_name', "", 0, "", width, height
                 )
                 if has_text and text:
                     # 新しいポケモン名を記録
                     self.last_my_pokemon_name = text
+                    print(f"  📝 自分のポケモン名: '{text}' (信頼度: 最大{conf['max']:.1f})")
                 
                 if not has_text:
                     self.phase_manager.set_phase("battle", "act")
                     self.phase_manager.reset_battle_flags()
                     print(f"  🔄 バトルサブフェーズ変更: choose → act (my_pokemon_name OCR信頼度: {conf['max']:.1f})")
+                else:
+                    print(f"  ⏭️ battle.chooseフェーズ継続: ポケモン名検出中")
             
             # actフェーズ: win_loseの検出でstayに戻る または 新しいポケモンでchooseに戻る
             elif self.phase_manager.battle_sub_phase == "act":
                 # win_loseの検出でstayに戻る（既存）
-                match_result, max_val, _ = self.image_matcher.match_multiple_images(
+                print(f"  🔍 battle.actフェーズ: 勝敗画面を検出中...")
+                match_result, max_val, best_file = self.image_matcher.match_multiple_images(
                     frame, 'win_lose', WIN_LOSE_IMAGES_DIR, width, height
                 )
                 if match_result:
                     self.phase_manager.set_phase("stay")
-                    print(f"  🔄 フェーズ変更: battle.act → stay (win_lose 閾値: {max_val:.3f})")
+                    print(f"  🔄 フェーズ変更: battle.act → stay (win_lose 閾値: {max_val:.3f}, ファイル: {best_file})")
                 
                 # 新しい条件: 新しいポケモンが登場したらchooseに戻る（追加）
                 elif self._is_new_pokemon_appeared(frame, width, height):
                     self.phase_manager.set_phase("battle", "choose")
                     self.phase_manager.reset_battle_flags()
                     print(f"  🔄 バトルサブフェーズ変更: act → choose (新しいポケモン登場)")
+                else:
+                    print(f"  ⏭️ battle.actフェーズ継続: 勝敗画面未検出 (最高スコア: {max_val:.3f})")
         
         return self.phase_manager
     
@@ -117,22 +129,10 @@ class OCRProcessor:
         return processed_count
     
     def _process_stay_rois(self, frame, video_name, frame_idx, short_hash, width, height):
-        """stayフェーズの処理"""
-        processed_count = 0
-        for roi_name in STAY_ROIS:
-            if not self.phase_manager.should_process_roi(roi_name):
-                continue
-            
-            if roi_name == 'stay_text':
-                success, _ = self.image_processor.process_image_roi(
-                    frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                    "対戦相手がみつかりました！", STAY_TEXT_IMAGE, 0.8
-                )
-                if success:
-                    self.phase_manager.mark_processed(roi_name)
-                    processed_count += 1
-        
-        return processed_count
+        """stayフェーズの処理（STAY_ROIS削除に伴い空実装）"""
+        # stayフェーズでは特別なROI処理は行わない
+        # select ROIの検出はdetect_phaseで行う
+        return 0
     
     def _process_select_rois(self, frame, video_name, frame_idx, short_hash, width, height):
         """selectフェーズの処理"""
@@ -142,13 +142,15 @@ class OCRProcessor:
                 continue
             
             if roi_name == 'select':
-                success, _ = self.image_processor.process_select_image_roi(
+                success, max_val = self.image_processor.process_image_roi(  # process_image_roiに変更
                     frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                    "選出中", SELECT_IMAGES_DIR, 0.8
+                    "選出中", SELECT_IMAGES_PATH, 0.8  # SELECT_IMAGES_PATHに変更
                 )
                 if success:
                     self.phase_manager.mark_processed(roi_name)
                     processed_count += 1
+                else:
+                    print(f"  ⏭️ select ROI処理スキップ: マッチングスコア不足 ({max_val:.3f} < 0.8)")
             
             elif roi_name == 'opponent_name':
                 success, text, conf = self.ocr_processor.process_ocr_roi(
@@ -159,13 +161,15 @@ class OCRProcessor:
                     processed_count += 1
             
             elif roi_name == 'start':
-                success, _ = self.image_processor.process_image_roi(
+                success, max_val = self.image_processor.process_image_roi(
                     frame, roi_name, video_name, frame_idx, short_hash, width, height,
                     "対戦開始", START_IMAGE, 0.8
                 )
                 if success:
                     self.phase_manager.mark_processed(roi_name)
                     processed_count += 1
+                else:
+                    print(f"  ⏭️ start ROI処理スキップ: マッチングスコア不足 ({max_val:.3f} < 0.8)")
         
         return processed_count
     

@@ -23,8 +23,7 @@ OTHER_ROIS = {'live_comment_row1', 'live_comment_row2',
 ABILITY_NAME_ROIS = {'my_tokusei_row2', 'your_tokusei_row2'}
 POKEMON_NO_ROIS = {'my_tokusei_row1', 'your_tokusei_row1'}
 
-# フェーズ別ROI設定
-STAY_ROIS = ['stay_text']
+# フェーズ別ROI設定（STAY_ROISからstay_textを削除）
 SELECT_ROIS = ['select', 'opponent_name', 'start']
 BATTLE_CHOOSE_ROIS = ['my_pokemon_name', 'my_pokemon_hp', 'my_ailment', 
                       'opponent_pokemon_name', 'opponent_pokemon_hp', 'your_ailment']
@@ -32,10 +31,9 @@ BATTLE_ACT_ROIS = ['live_comment_row1', 'live_comment_row2', 'my_tokusei_row1',
                    'my_tokusei_row2', 'terastal', 'terastal_me', 'your_tokusei_row1', 
                    'your_tokusei_row2', 'win_lose']
 
-# 画像マッチング用パス
-STAY_TEXT_IMAGE = r'C:\pokemon-ai-tool\static\others\stay_text.png'
+# 画像マッチング用パス（STAY_TEXT_IMAGEを削除）
 START_IMAGE = r'C:\pokemon-ai-tool\static\others\start.png'
-SELECT_IMAGES_DIR = r'C:\pokemon-ai-tool\static\others\select'
+SELECT_IMAGES_PATH = r'C:\pokemon-ai-tool\static\others\select.png'
 WIN_LOSE_IMAGES_DIR = r'C:\pokemon-ai-tool\static\others\win_lose'
 TERA_ICONS_DIR = r'C:\pokemon-ai-tool\static\Terastal_icons'
 TERA_ME_ICONS_DIR = r'C:\pokemon-ai-tool\static\Terastal_icons\me'
