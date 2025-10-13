@@ -129,6 +129,53 @@ export async function initFormSelects() {
             itemDatalist.appendChild(option);
         });
 
+        // ポケモン入力時にアイコンと種族値を更新する
+        const pokemonInputs = document.querySelectorAll('.pokemon-input');
+        if (pokemonInputs.length > 0 && pokemons) {
+            const pokemonMap = new Map(pokemons.map(p => [p.name_ja, p]));
+
+            pokemonInputs.forEach(input => {
+                const updatePokemonInfo = (event) => {
+                    const inputEl = event.target;
+                    const pokemonName = inputEl.value;
+                    const pokemon = pokemonMap.get(pokemonName);
+                    const slot = inputEl.closest('.pokemon-slot');
+                    
+                    if (!slot) return;
+
+                    const imageEl = slot.querySelector('.pokemon-image');
+                    const speedStatEl = slot.querySelector('.speed-stat-value');
+
+                    if (pokemon) {
+                        // ポケモンアイコンを更新
+                        if (imageEl) {
+                            imageEl.src = `/static/pokemon_icons/${pokemon.name}.png`;
+                            imageEl.alt = pokemon.name_ja;
+                        }
+                        // すばやさ種族値を更新
+                        if (speedStatEl) {
+                            speedStatEl.textContent = `S: ${pokemon.speed}`;
+                            speedStatEl.classList.remove('text-muted');
+                        }
+                    } else {
+                        // ポケモンが見つからない場合はリセット
+                        if (imageEl) {
+                            const slotIndex = slot.dataset.slotIndex || '?';
+                            imageEl.src = `https://placehold.co/96x96/333/ccc?text=P${slotIndex}`;
+                            imageEl.alt = '';
+                        }
+                        if (speedStatEl) {
+                            speedStatEl.textContent = 'S: --';
+                            speedStatEl.classList.add('text-muted');
+                        }
+                    }
+                };
+
+                input.addEventListener('input', updatePokemonInfo);
+                input.addEventListener('change', updatePokemonInfo);
+            });
+        }
+
         // 特性用のdatalistを生成
         let abilityDatalist = document.getElementById('ability-datalist');
         if (abilityDatalist === null) {
