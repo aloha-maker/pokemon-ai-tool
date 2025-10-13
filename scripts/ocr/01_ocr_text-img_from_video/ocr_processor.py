@@ -37,8 +37,8 @@ class OCRProcessor:
         # stayフェーズ: select ROIの検出
         if self.phase_manager.current_phase == "stay":
             print(f"  🔍 stayフェーズ: select ROIを検出中...")
-            match_result, max_val = self.image_matcher.match_single_image(  # match_single_imageに変更
-                frame, 'select', SELECT_IMAGES_PATH, width, height  # SELECT_IMAGES_PATHに変更
+            match_result, max_val = self.image_matcher.match_single_image(
+                frame, 'select', SELECT_IMAGES_PATH, width, height
             )
             if match_result:
                 self.phase_manager.set_phase("select")
@@ -142,9 +142,10 @@ class OCRProcessor:
                 continue
             
             if roi_name == 'select':
-                success, max_val = self.image_processor.process_image_roi(  # process_image_roiに変更
+                # select ROIは「対戦相手が見つかりました！」テキストで保存
+                success, max_val = self.image_processor.process_image_roi(
                     frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                    "選出中", SELECT_IMAGES_PATH, 0.8  # SELECT_IMAGES_PATHに変更
+                    "対戦相手が見つかりました！", SELECT_IMAGES_PATH, 0.8  # テキスト変更
                 )
                 if success:
                     self.phase_manager.mark_processed(roi_name)
