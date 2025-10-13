@@ -3,14 +3,25 @@
 {% block title %}ポケモン対戦補助AIツール{% endblock %}
 
 {% block content %}
-<main class="row flex-grow-1 gx-4">
-    <!-- 左カラム -->
-    <section class="col-lg-6 d-flex flex-column">
-        {% include 'components/sections/game_preview.html' %}
-        {% include 'components/sections/party_input.html' %}
-    </section>
-
-    {% include 'components/sections/ai_advice.html' %}
+<main class="d-flex flex-column flex-grow-1">
+    <!-- 上段 -->
+    <div class="row gx-4">
+        <div class="col-lg-6">
+            {% include 'components/sections/game_preview.html' %}
+        </div>
+        <div class="col-lg-6">
+            {% include 'components/sections/ai_advice.html' %}
+        </div>
+    </div>
+    <!-- 下段 -->
+    <div class="row gx-4 mt-4 flex-grow-1">
+        <div class="col-lg-6 d-flex">
+            {% include 'components/sections/realtime_log.html' %}
+        </div>
+        <div class="col-lg-6 d-flex">
+            {% include 'components/sections/party_input.html' %}
+        </div>
+    </div>
 </main>
 {% endblock %}
 
