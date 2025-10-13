@@ -230,6 +230,36 @@ export async function initFormSelects() {
             });
         }
 
+        // Add event listener for item inputs to update icon
+        const itemInputs = document.querySelectorAll('.item-input');
+        if (itemInputs.length > 0 && items) {
+            const itemMap = new Map(items.map(item => [item.name_ja, item.name]));
+
+            itemInputs.forEach(input => {
+                const updateItemIcon = (event) => {
+                    const inputEl = event.target;
+                    const inputValue = inputEl.value;
+                    const iconElement = inputEl.parentElement.querySelector('.item-icon');
+                    const englishName = itemMap.get(inputValue);
+
+                    if (iconElement) {
+                        if (englishName) {
+                            // アイコンのファイル名は name カラムの値 (e.g., light_ball)
+                            iconElement.src = `/static/item_icons/${englishName}.png`;
+                            iconElement.alt = inputValue;
+                        } else {
+                            // 一致するものがなければプレースホルダーに戻す
+                            iconElement.src = 'https://placehold.co/24x24/333/ccc?text=?';
+                            iconElement.alt = '持ち物アイコン';
+                        }
+                    }
+                };
+                // 入力時とフォーカスが外れた時の両方でイベントを発火させる
+                input.addEventListener('input', updateItemIcon);
+                input.addEventListener('change', updateItemIcon);
+            });
+        }
+
         // ポケモン選択時に特性を動的に読み込むイベントリスナーは不要になったためコメントアウト
         // const pokemonMasterSelect = document.getElementById('pokemon-master-id');
         // if (pokemonMasterSelect) {
