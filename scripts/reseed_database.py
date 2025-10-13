@@ -62,7 +62,7 @@ def seed_data(conn):
         seed_from_csv(NATURES_CSV_PATH, "natures", ["id", "name", "name_ja", "increased_stat", "decreased_stat"])
         seed_from_csv(ITEMS_CSV_PATH, "items", ["id", "name", "name_ja"])
 
-        seed_from_csv(MOVES_CSV_PATH, "moves", ["id", "name", "name_ja", "type", "category", "power", "accuracy"])
+        seed_from_csv(MOVES_CSV_PATH, "moves", ["id", "name", "name_ja", "type", "category", "power", "accuracy", "pp"])
 
         conn.commit()
         print("データベースへのコミットが完了しました。")

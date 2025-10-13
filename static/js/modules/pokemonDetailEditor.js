@@ -1,5 +1,12 @@
 import { populateSelect } from './formHelpers.js';
 
+function calculateMaxPP(basePP) {
+    const pp = Number(basePP);
+    if (isNaN(pp)) return 0;
+    if (pp === 1) return 1;
+    return Math.floor(pp * 1.6);
+}
+
 // This can be cached to avoid re-fetching
 let pokemonMasterList = [];
 async function getPokemonIdByName(name) {
@@ -78,6 +85,20 @@ export class PokemonDetailEditor {
             }
         });
 
+        this.moveInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const moveName = e.target.value;
+                const move = this.movesList.find(m => (m.name_ja || m.name) === moveName);
+                const ppInput = this.ppInputs[index];
+
+                if (move && ppInput) {
+                    // 技が見つかれば、その技の最大PPをPP入力欄に設定
+                    const maxPP = calculateMaxPP(move.pp);
+                    ppInput.value = maxPP;
+                }
+            });
+        });
+
         this.ppBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const action = e.currentTarget.dataset.action;
@@ -149,16 +170,28 @@ export class PokemonDetailEditor {
             console.log(`Set ability input to: ${this.abilityInput.value}`);
             
             this.moveInputs.forEach((input, i) => {
+                const ppInput = this.ppInputs[i];
+                let move = null;
+
+                // 技名を設定
                 if (state.moves[i] && state.moves[i].id) {
-                    const move = this.movesList.find(m => m.id == state.moves[i].id);
+                    move = this.movesList.find(m => m.id == state.moves[i].id);
                     input.value = move ? (move.name_ja || move.name) : '';
                 } else {
                     input.value = '';
                 }
-            });
-            this.ppInputs.forEach((input, i) => {
-                if (state.moves[i]) {
-                    input.value = state.moves[i].pp ?? '8'; 
+
+                // PPを設定
+                if (state.moves[i] && state.moves[i].pp !== null && state.moves[i].pp !== undefined) {
+                    // 1. 保存済みのPPがあればそれを最優先
+                    ppInput.value = state.moves[i].pp;
+                } else if (move) {
+                    // 2. 保存済みPPがなく、技がセットされているなら、技マスタの最大PPをセット
+                    const maxPP = calculateMaxPP(move.pp);
+                    ppInput.value = maxPP;
+                } else {
+                    // 3. 技もセットされていなければ、デフォルト値（元の実装に合わせて8）
+                    ppInput.value = '8';
                 }
             });
         }

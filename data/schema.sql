@@ -30,7 +30,8 @@ CREATE TABLE moves (
     type TEXT NOT NULL,
     category TEXT NOT NULL,
     power INTEGER,
-    accuracy INTEGER
+    accuracy INTEGER,
+    pp INTEGER
 );
 
 -- タイプマスタ
