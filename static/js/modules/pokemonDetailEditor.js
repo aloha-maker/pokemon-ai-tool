@@ -118,6 +118,27 @@ export class PokemonDetailEditor {
         document.addEventListener('partyLoaded', (e) => {
             this.updateStateFromLoadedParty(e.detail);
         });
+
+        this.modalElement.addEventListener('hide.bs.modal', () => {
+            this.resetAbilitiesDatalist();
+        });
+    }
+
+    async resetAbilitiesDatalist() {
+        const abilityDatalist = document.getElementById('ability-datalist');
+        if (!abilityDatalist) return;
+
+        // 全特性リストがキャッシュされていなければ取得
+        if (this.abilitiesList.length === 0) {
+            this.abilitiesList = await getAllAbilities();
+        }
+
+        abilityDatalist.innerHTML = '';
+        this.abilitiesList.forEach(ability => {
+            const option = document.createElement('option');
+            option.value = ability.name_ja || ability.name;
+            abilityDatalist.appendChild(option);
+        });
     }
 
     updateStateFromLoadedParty(members) {
@@ -152,6 +173,27 @@ export class PokemonDetailEditor {
             return;
         }
         console.log(`Pokemon: ${pokemonName}, ID: ${pokemonId}`);
+
+        // このポケモンの特性リストを取得してdatalistを更新
+        const abilityDatalist = document.getElementById('ability-datalist'); // グローバルなdatalistを参照
+        if (abilityDatalist) {
+            try {
+                const response = await fetch(`/api/pokemon/${pokemonId}/abilities`);
+                if (!response.ok) throw new Error('特性リストの取得に失敗しました。');
+                const abilities = await response.json();
+                
+                abilityDatalist.innerHTML = ''; // 中身をクリア
+                abilities.forEach(ability => {
+                    const option = document.createElement('option');
+                    option.value = ability.name_ja || ability.name;
+                    abilityDatalist.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Error fetching pokemon-specific abilities:', error);
+                abilityDatalist.innerHTML = ''; // エラー時は空にする
+            }
+        }
 
         // Cache abilities and moves lists if not already cached
         if (this.abilitiesList.length === 0) {

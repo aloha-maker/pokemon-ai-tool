@@ -60,6 +60,16 @@ export class TrainedPokemonManager {
         document.querySelectorAll('.ev-input').forEach(input => {
             input.addEventListener('change', () => this.updateEvTotal());
         });
+
+        const pokemonMasterInput = document.getElementById('pokemon-master-input');
+        if (pokemonMasterInput) {
+            pokemonMasterInput.addEventListener('change', () => this.updateAbilitiesDatalist());
+        }
+
+        const formModalEl = document.getElementById('pokemon-form-modal');
+        if (formModalEl) {
+            formModalEl.addEventListener('hide.bs.modal', () => this.resetAbilitiesDatalist());
+        }
     }
 
     async loadTrainedPokemons() {
@@ -182,6 +192,55 @@ export class TrainedPokemonManager {
         
         this.updateEvTotal();
         this.formModal.show();
+
+        // フォーム表示後に、現在のポケモンに基づいてdatalistを更新
+        this.updateAbilitiesDatalist();
+    }
+
+    async updateAbilitiesDatalist() {
+        const pokemonName = document.getElementById('pokemon-master-input').value.trim();
+        const abilityDatalist = document.getElementById('ability-datalist');
+        if (!abilityDatalist) return;
+
+        await this._cacheMasterData();
+
+        const pokemon = this.pokemonList.find(p => p.name_ja === pokemonName);
+
+        abilityDatalist.innerHTML = '';
+        let abilitiesToShow = [];
+
+        if (pokemon && pokemon.id) {
+            try {
+                const response = await fetch(`/api/pokemon/${pokemon.id}/abilities`);
+                if (!response.ok) throw new Error('特性リストの取得に失敗しました。');
+                abilitiesToShow = await response.json();
+            } catch (error) {
+                console.error('Error fetching pokemon-specific abilities:', error);
+                abilitiesToShow = this.abilityList;
+            }
+        } else {
+            abilitiesToShow = this.abilityList;
+        }
+
+        abilitiesToShow.forEach(ability => {
+            const option = document.createElement('option');
+            option.value = ability.name_ja || ability.name;
+            abilityDatalist.appendChild(option);
+        });
+    }
+
+    async resetAbilitiesDatalist() {
+        const abilityDatalist = document.getElementById('ability-datalist');
+        if (!abilityDatalist) return;
+
+        await this._cacheMasterData();
+
+        abilityDatalist.innerHTML = '';
+        this.abilityList.forEach(ability => {
+            const option = document.createElement('option');
+            option.value = ability.name_ja || ability.name;
+            abilityDatalist.appendChild(option);
+        });
     }
 
     async handleFormSubmit(event) {

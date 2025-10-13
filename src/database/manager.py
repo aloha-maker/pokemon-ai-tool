@@ -719,7 +719,7 @@ class DatabaseManager:
         """指定されたポケモンIDが持つ特性をすべて取得する。"""
         cursor = self.get_cursor()
         query = """
-            SELECT a.id, a.name, a.name_ja, a.description
+            SELECT a.id, a.name, a.name_ja
             FROM abilities a
             JOIN pokemon_abilities pa ON a.id = pa.ability_id
             WHERE pa.pokemon_id = ?
