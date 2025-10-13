@@ -106,14 +106,14 @@ class OCRProcessor:
         return self.phase_manager
 
     def _is_new_pokemon_appeared(self, frame, width, height):
-        """新しいポケモンが登場したか判定"""
+        """新しいポケモンが登場したか判定（シンプル版）"""
         has_text, new_name, conf = self.ocr_processor.process_ocr_roi(
             frame, 'my_pokemon_name', "", 0, "", width, height
         )
         
-        # 有効なテキストがあり、前回と異なるポケモン名の場合
-        if has_text and new_name and new_name.strip() and new_name != self.last_my_pokemon_name:
-            print(f"  🆕 新しいポケモン登場: {self.last_my_pokemon_name} → {new_name}")
+        # シンプル化: my_pokemon_nameが読み取れた場合のみTrue
+        if has_text and new_name and new_name.strip():
+            print(f"  🆕 新しいポケモン登場: '{new_name}'")
             self.last_my_pokemon_name = new_name
             return True
         
