@@ -149,3 +149,10 @@ body {
     filter: brightness(1.5); /* 輝度を1.5倍に（値は調整可能） */
     transition: transform 0.2s ease-out, filter 0.2s ease-out; /* スムーズなアニメーション */
 }
+
+/* Custom style for a wider ROI editor modal */
+@media (min-width: 1200px) {
+    .roi-modal-large {
+        max-width: 1700px; /* Default is 1140px for modal-xl */
+    }
+}
