@@ -169,7 +169,7 @@ class OCRProcessor:
                         print(f"🎯 バトルID設定: {text}")
         
         return processed_count
-    
+        
     def _process_battle_choose_rois(self, frame, video_name, frame_idx, short_hash, width, height):
         """battle chooseフェーズの処理"""
         processed_count = 0
@@ -181,9 +181,12 @@ class OCRProcessor:
                 success, text, conf = self.ocr_processor.process_ocr_roi(
                     frame, roi_name, video_name, frame_idx, short_hash, width, height
                 )
+                # 成功した場合のみ処理済みとしてマーク（閾値未満の場合はsuccess=False）
                 if success:
                     self.phase_manager.mark_processed(roi_name)
                     processed_count += 1
+                else:
+                    print(f"  ⏭️ {roi_name} 処理スキップ: 類似度閾値未達")
             
             elif roi_name in ['my_pokemon_hp', 'opponent_pokemon_hp']:
                 success = self.special_processor.process_hp_roi(
