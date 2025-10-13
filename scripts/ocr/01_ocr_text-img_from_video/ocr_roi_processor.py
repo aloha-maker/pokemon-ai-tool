@@ -39,33 +39,40 @@ class OCRROIProcessor(BaseROIProcessor):
                         print(f"⚠ バトルID '{battle_id}' に対応するポケモンが見つかりません")
             except Exception as e:
                 print(f"⚠ バトルID '{battle_id}' のポケモンリスト取得エラー: {e}")
-    
+
     def apply_name_correction(self, text, roi_name):
-        """OCR後の文字列をマスターデータに基づいて補正（類似度0.6以上のみ適用、閾値未満はNoneを返す）"""
+        """OCR後の文字列をマスターデータに基づいて補正（類似度0.6以上のみ適用）"""
         if roi_name in POKEMON_NAME_ROIS:
             original_text = text
             
             # バトルIDが設定されている場合は、そのバトルのポケモン名から検索
             if self.current_battle_id and self.available_pokemon_names:
-                # name_correctorのメソッドを呼び出す（閾値0.6を指定）
                 if hasattr(self.pokemon_corrector, 'find_closest_name_in_list'):
                     corrected_text = self.pokemon_corrector.find_closest_name_in_list(
                         text, self.available_pokemon_names, threshold=0.6
                     )
                 else:
-                    # フォールバック: 全ポケモンから検索（閾値0.6を指定）
                     corrected_text = self.pokemon_corrector.find_closest_name(text, threshold=0.6)
             else:
-                # バトルID未設定の場合は全ポケモンから検索（閾値0.6を指定）
                 corrected_text = self.pokemon_corrector.find_closest_name(text, threshold=0.6)
             
-            # 閾値チェック：補正後のテキストが元のテキストと同じ場合は閾値未満と判断
+            # 修正: 完全一致の場合は常に許可
+            if corrected_text == text and text in self.pokemon_corrector.name_list:
+                # 完全一致の場合はそのまま通過
+                print(f"  ✅ 完全一致: '{text}' - 補正不要")
+                if roi_name == 'my_pokemon_name':
+                    self.last_my_pokemon_name = corrected_text
+                elif roi_name == 'opponent_pokemon_name':
+                    self.last_opponent_pokemon_name = corrected_text
+                return corrected_text
+            
+            # 修正: 閾値チェック（完全一致でない場合のみ）
             if corrected_text == text:
                 print(f"  ❌ ポケモン名補正スキップ: '{original_text}' (類似度 < 0.6)")
-                return None  # 閾値未満の場合はNoneを返す
-            
+                return None
+
             if original_text != corrected_text:
-                print(f"  🟢 ポケモン名補正: '{original_text}' → '{corrected_text}' (バトルID: {self.current_battle_id})")
+                print(f"  🟢 ポケモン名補正: '{original_text}' → '{corrected_text}'")
 
             if roi_name == 'my_pokemon_name':
                 self.last_my_pokemon_name = corrected_text
@@ -75,17 +82,21 @@ class OCRROIProcessor(BaseROIProcessor):
 
         elif roi_name in ABILITY_NAME_ROIS:
             original_text = text
-            # 特性名も同様に閾値適用
             if hasattr(self.ability_corrector, 'find_closest_name'):
                 corrected_text = self.ability_corrector.find_closest_name(text, threshold=0.6)
             else:
                 corrected_text = self.ability_corrector.find_closest_name(text)
             
-            # 閾値チェック：補正後のテキストが元のテキストと同じ場合は閾値未満と判断
+            # 修正: 完全一致の場合は常に許可
+            if corrected_text == text and text in self.ability_corrector.name_list:
+                print(f"  ✅ 完全一致: '{text}' - 補正不要")
+                return corrected_text
+            
+            # 修正: 閾値チェック（完全一致でない場合のみ）
             if corrected_text == text:
                 print(f"  ❌ 特性名補正スキップ: '{original_text}' (類似度 < 0.6)")
-                return None  # 閾値未満の場合はNoneを返す
-            
+                return None
+
             if original_text != corrected_text:
                 print(f"  🔵 特性名補正: '{original_text}' → '{corrected_text}'")
             return corrected_text
@@ -94,7 +105,7 @@ class OCRROIProcessor(BaseROIProcessor):
             return self._convert_to_pokemon_no_format(text, roi_name)
 
         return text
-    
+
     def process_ocr_roi(self, frame, roi_name, video_name, frame_idx, short_hash, width, height):
         """OCR ROIの処理"""
         roi_img = self.extract_roi_image(frame, roi_name, width, height)
