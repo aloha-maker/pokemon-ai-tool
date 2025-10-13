@@ -67,34 +67,35 @@ class SpecialROIProcessor(BaseROIProcessor):
             if os.path.exists(image_path):
                 os.remove(image_path)
             return False
-    
+        
     def process_tera_roi(self, frame, roi_name, video_name, frame_idx, short_hash, width, height, icons_dir, default_text=None, threshold=0.8):
-        """テラスタルROI処理（閾値ログ出力付き）"""
+        """テラスタルROI処理（マッチング失敗時は画像保存しない）"""
         roi_img = self.extract_roi_image(frame, roi_name, width, height)
         if roi_img is None:
             return False, 0.0
         
-        # 画像保存
-        image_path = self.save_roi_image(roi_img, roi_name, video_name, frame_idx, short_hash)
-        if not image_path:
-            return False, 0.0
-        
         # テラスタル判別
         try:
-            tera_result = identify_tera_from_cropped_image(image_path, icons_dir, threshold=threshold)
+            tera_result = identify_tera_from_cropped_image(roi_img, icons_dir, threshold=threshold)
             
             if not tera_result and default_text:
                 # デフォルトテキストを使用
                 tera_result = default_text
             
             if tera_result:
-                self.save_roi_text(roi_name, video_name, frame_idx, short_hash, tera_result)
-                
-                print(f"💎 {roi_name}_{frame_idx:06d}: テラスタル '{tera_result}' (閾値: {threshold})")
-                return True, 1.0
+                # マッチング成功時のみ画像とテキストを保存
+                image_path = self.save_roi_image(roi_img, roi_name, video_name, frame_idx, short_hash)
+                if image_path:
+                    self.save_roi_text(roi_name, video_name, frame_idx, short_hash, tera_result)
+                    print(f"💎 {roi_name}_{frame_idx:06d}: テラスタル '{tera_result}' (閾値: {threshold})")
+                    return True, 1.0
+                else:
+                    return False, 0.0
             else:
+                # マッチング失敗時は何も保存しない
                 print(f"⚪ {roi_name}_{frame_idx:06d}: テラスタルなし (閾値: {threshold})")
                 return False, 0.0
+                
         except Exception as e:
             print(f"⚠ テラスタル処理エラー: {e}")
             return False, 0.0

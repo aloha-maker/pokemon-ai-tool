@@ -229,7 +229,7 @@ class OCRProcessor:
             elif roi_name == 'terastal':
                 success, _ = self.special_processor.process_tera_roi(
                     frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                    TERA_ICONS_DIR, None, 0.8
+                    TERA_ICONS_DIR, None, 0.7
                 )
                 if success:
                     processed_count += 1
