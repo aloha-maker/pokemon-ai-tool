@@ -41,4 +41,4 @@ def update_roi_config():
 def get_roi_image_path():
     # ROI編集に使用する画像のパスを返す
     # リアルタイム解析中の最新画像を利用するのが合理的
-    return jsonify({"image_path": "/static/captures/live_capture.png"})
+    return jsonify({"image_path": "/test/battle_basic.png"})

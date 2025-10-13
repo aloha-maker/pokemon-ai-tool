@@ -153,7 +153,7 @@ class OCRProcessor:
                 else:
                     print(f"  ⏭️ select ROI処理スキップ: マッチングスコア不足 ({max_val:.3f} < 0.8)")
             
-            elif roi_name == 'opponent_name':
+            elif roi_name in ['opponent_name', 'battle_id']:
                 success, text, conf = self.ocr_processor.process_ocr_roi(
                     frame, roi_name, video_name, frame_idx, short_hash, width, height
                 )
