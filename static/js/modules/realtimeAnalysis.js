@@ -25,6 +25,7 @@ export class RealtimeAnalysis {
     }
 
     init() {
+        this.setUIState('stopped');
         this.updateWindowList();
         this.initSocketListeners();
         
@@ -158,11 +159,13 @@ export class RealtimeAnalysis {
         const btn = this.toggleAnalysisButton;
         const cameraBtn = this.startCameraBtn;
         const ocrBtn = this.startOcrBtn;
+        const battleBtn = this.startBattleBtn;
 
         // デフォルト状態
         btn.disabled = false;
         cameraBtn.disabled = false;
-        ocrBtn.disabled = true;
+        ocrBtn?.disabled = true;
+        battleBtn.disabled = true;
         this.windowSelect.disabled = false;
         this.windowRefreshButton.disabled = false;
         this.recognizePartyBtn.disabled = true;
@@ -190,7 +193,8 @@ export class RealtimeAnalysis {
             cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
             cameraBtn.classList.add('btn-danger');
             btn.disabled = true;
-            ocrBtn.disabled = false;
+            ocrBtn?.disabled = false;
+            battleBtn.disabled = false;
             this.windowSelect.disabled = true;
             this.windowRefreshButton.disabled = true;
             this.recognizePartyBtn.disabled = false;
@@ -198,7 +202,8 @@ export class RealtimeAnalysis {
             cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
             cameraBtn.classList.add('btn-danger');
             btn.disabled = true;
-            ocrBtn.disabled = true; // OCR実行中は無効
+            ocrBtn?.disabled = true; // OCR実行中は無効
+            battleBtn.disabled = true;
             this.windowSelect.disabled = true;
             this.windowRefreshButton.disabled = true;
             this.recognizePartyBtn.disabled = false;
@@ -222,6 +227,9 @@ export class RealtimeAnalysis {
     }
 
     async handleStartBattle() {
+        // OCR開始処理を呼び出す
+        this.handleStartOcr();
+        // 新しいバトルIDを取得・設定する
         await this.fetchAndSetNewBattleId();
     }
 
