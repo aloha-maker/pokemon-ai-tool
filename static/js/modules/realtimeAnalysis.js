@@ -13,7 +13,6 @@ export class RealtimeAnalysis {
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
         this.logOutput = document.getElementById('realtime-log-output'); // 追加
         this.startCameraBtn = document.getElementById('start-camera-btn');
-        this.startOcrBtn = document.getElementById('start-ocr-btn');
         this.startBattleBtn = document.getElementById('start-battle-btn');
         this.battleIdDisplay = document.getElementById('battle-id-display');
         this.logBuffer = [];
@@ -34,7 +33,6 @@ export class RealtimeAnalysis {
         this.suggestionRefreshButton?.addEventListener('click', () => this.socket.emit('get_suggestion', {}));
         this.recognizePartyBtn?.addEventListener('click', () => this.handleRecognizeParty());
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
-        this.startOcrBtn?.addEventListener('click', () => this.handleStartOcr());
         this.startBattleBtn?.addEventListener('click', () => this.handleStartBattle());
 
         // バトルIDの有無に応じてパーティ保存ボタンの状態を更新
@@ -158,13 +156,11 @@ export class RealtimeAnalysis {
         this.currentState = state;
         const btn = this.toggleAnalysisButton;
         const cameraBtn = this.startCameraBtn;
-        const ocrBtn = this.startOcrBtn;
         const battleBtn = this.startBattleBtn;
 
         // デフォルト状態
         btn.disabled = false;
         cameraBtn.disabled = false;
-        ocrBtn?.disabled = true;
         battleBtn.disabled = true;
         this.windowSelect.disabled = false;
         this.windowRefreshButton.disabled = false;
@@ -193,7 +189,6 @@ export class RealtimeAnalysis {
             cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
             cameraBtn.classList.add('btn-danger');
             btn.disabled = true;
-            ocrBtn?.disabled = false;
             battleBtn.disabled = false;
             this.windowSelect.disabled = true;
             this.windowRefreshButton.disabled = true;
@@ -202,7 +197,6 @@ export class RealtimeAnalysis {
             cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
             cameraBtn.classList.add('btn-danger');
             btn.disabled = true;
-            ocrBtn?.disabled = true; // OCR実行中は無効
             battleBtn.disabled = true;
             this.windowSelect.disabled = true;
             this.windowRefreshButton.disabled = true;

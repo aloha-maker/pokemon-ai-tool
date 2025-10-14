@@ -18,6 +18,7 @@ from src.routes.api.roi import roi_bp
 from src.routes.api.master import master_bp
 from src.routes.api.trained_pokemon import trained_pokemon_bp
 from src.routes.api.dashboard import dashboard_bp
+from src.routes.api.database import database_bp
 
 # SocketIOハンドラのインポート
 from src.sockets.handlers import register_socket_handlers
@@ -58,6 +59,7 @@ def create_app():
     app.register_blueprint(master_bp)
     app.register_blueprint(trained_pokemon_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(database_bp)
 
     # --- SocketIOハンドラの登録 ---
     register_socket_handlers(socketio)

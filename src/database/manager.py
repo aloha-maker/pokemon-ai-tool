@@ -715,6 +715,49 @@ class DatabaseManager:
         cursor.execute(f"SELECT * FROM {resource} ORDER BY {order_column}")
         return [dict(row) for row in cursor.fetchall()]
 
+    def get_all_tables(self) -> list[str]:
+        """データベース内のすべてのテーブル名を取得する。"""
+        cursor = self.get_cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+        return [row['name'] for row in cursor.fetchall()]
+
+    def search_table(self, table_name: str, keyword: str = '', limit: int = 50, offset: int = 0) -> dict:
+        """
+        指定されたテーブルを検索し、結果と総数を返す。
+        """
+        # テーブル名のホワイトリストチェック
+        cursor = self.get_cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        allowed_tables = [row['name'] for row in cursor.fetchall()]
+        if table_name not in allowed_tables:
+            raise ValueError(f"Invalid table name: {table_name}")
+
+        # カラム名を取得
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        columns = [row['name'] for row in cursor.fetchall()]
+
+        # WHERE句を構築
+        where_clauses = []
+        params = []
+        if keyword:
+            for column in columns:
+                where_clauses.append(f"CAST({column} AS TEXT) LIKE ?")
+                params.append(f"%{keyword}%")
+        
+        where_sql = f"WHERE {' OR '.join(where_clauses)}" if where_clauses else ""
+
+        # 総件数を取得するクエリ
+        count_query = f"SELECT COUNT(*) as total FROM {table_name} {where_sql}"
+        cursor.execute(count_query, params)
+        total_records = cursor.fetchone()['total']
+
+        # データを取得するクエリ
+        data_query = f"SELECT * FROM {table_name} {where_sql} LIMIT ? OFFSET ?"
+        cursor.execute(data_query, params + [limit, offset])
+        results = [dict(row) for row in cursor.fetchall()]
+
+        return {"total": total_records, "records": results, "columns": columns}
+
     def get_abilities_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
         """指定されたポケモンIDが持つ特性をすべて取得する。"""
         cursor = self.get_cursor()

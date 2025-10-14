@@ -14,6 +14,7 @@ import { ItemEditor } from './modules/itemEditor.js';
 import { PokemonDetailEditor } from './modules/pokemonDetailEditor.js';
 import { PartySaver } from './modules/partySaver.js';
 import { initFormSelects } from './modules/formHelpers.js';
+import { DatabaseViewer } from './modules/databaseViewer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // 各機能モジュールの初期化
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     new ItemEditor();
     const pokemonDetailEditor = new PokemonDetailEditor();
     new PartySaver(realtimeAnalysis, pokemonDetailEditor);
+    new DatabaseViewer();
     
     // フォーム選択肢の初期化はボタンクリック時に行う
     // initFormSelects();
