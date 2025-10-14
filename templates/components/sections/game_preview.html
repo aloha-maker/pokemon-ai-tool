@@ -43,6 +43,24 @@
             </button>
         </div>
         <div class="col-auto">
+            <div class="input-group input-group-sm">
+                <select class="form-select form-select-sm" id="my-party-select" style="width: 150px;">
+                    <option selected value="">登録済みパーティから選ぶ...</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
+            </div>
+        </div>
+        <div class="col-auto">
+            <button id="recognize-opponent-party-btn" class="btn btn-sm btn-info neon-border" disabled>
+                <i class="bi bi-camera-video"></i> パーティ取得
+            </button>
+        </div>
+        <div class="col-auto">
+            <button id="save-party-button" class="btn btn-sm btn-success neon-border" disabled>
+                <i class="bi bi-save"></i> パーティ保存
+            </button>
+        </div>
+        <div class="col-auto">
             <button id="start-battle-btn" class="btn btn-sm btn-danger neon-border">
                 <i class="bi bi-joystick"></i> バトル開始
             </button>

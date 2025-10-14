@@ -7,13 +7,7 @@
         <div class="col-6">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h5 class="mb-0"><i class="bi bi-person-fill"></i> 自パーティ</h6>
-                    <div class="input-group input-group-sm w-auto">
-                        <select class="form-select form-select-sm" id="my-party-select">
-                            <option selected value="">登録済みパーティから選ぶ...</option>
-                        </select>
-                        <button class="btn btn-sm btn-outline-secondary" type="button"
-                            id="load-my-party-btn">読み込み</button>
-                    </div>
+
             </div>
             <div class="row gx-1" id="my-party-display">
                 {% for i in range(1, 7) %}
@@ -28,13 +22,6 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h5 class="mb-0"><i class="bi bi-person-bounding-box"></i> 相手パーティ</h6>
                     <div>
-                        <button id="recognize-opponent-party-btn"
-                            class="btn btn-sm btn-info neon-border me-2" disabled>
-                            <i class="bi bi-camera-video"></i> パーティ取得
-                        </button>
-                        <button id="save-party-button" class="btn btn-sm btn-success neon-border" disabled>
-                            <i class="bi bi-save"></i> パーティ保存
-                        </button>
                     </div>
             </div>
             <div class="row gx-1" id="opponent-party-display">
