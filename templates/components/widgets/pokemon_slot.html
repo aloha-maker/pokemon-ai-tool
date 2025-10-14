@@ -14,20 +14,20 @@
         <input type="text" class="form-control form-control-sm pokemon-input"
             placeholder="ポケモン{{ slot_index }}" list="pokemon-datalist">
     </div>
-    <div class="item-container d-flex align-items-center mt-1">
-        <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon me-1"
-            alt="持ち物アイコン" id="{{ party_type }}-item-icon-{{ slot_index }}">
-        <input type="text" class="form-control form-control-sm item-input"
-            placeholder="持ち物" list="item-datalist" id="{{ party_type }}-item-{{ slot_index }}">
-    </div>
-    <div class="tera-type-container d-flex align-items-center mt-1">
-        <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon me-1"
-            alt="テラスタイプアイコン" id="{{ party_type }}-tera-icon-{{ slot_index }}">
-        <select class="form-select form-select-sm tera-type-select"
-            id="{{ party_type }}-tera-type-{{ slot_index }}"></select>
-    </div>
-    <div class="speed-stat-container d-flex align-items-center mt-1">
-        <i class="bi bi-speedometer2 me-1" title="すばやさ種族値"></i>
-        <span class="speed-stat-value small text-muted">S: --</span>
+    <div class="d-flex justify-content-start align-items-center mt-1">
+        <div class="item-container d-flex align-items-center me-1">
+            <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon"
+                alt="持ち物アイコン" id="{{ party_type }}-item-icon-{{ slot_index }}">
+            <span class="item-name small text-muted" id="{{ party_type }}-item-name-{{ slot_index }}" hidden>持ち物</span>
+        </div>
+        <div class="tera-type-container d-flex align-items-center me-1">
+            <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon"
+                alt="テラスタイプアイコン" id="{{ party_type }}-tera-icon-{{ slot_index }}">
+            <span class="tera-type-name small text-muted" id="{{ party_type }}-tera-name-{{ slot_index }}" hidden>テラスタイプ</span>
+        </div>
+        <div class="speed-stat-container d-flex align-items-center">
+            <i class="bi bi-speedometer2 me-1" title="すばやさ種族値"></i>
+            <span class="speed-stat-value small text-muted">S: --</span>
+        </div>
     </div>
 </div>
