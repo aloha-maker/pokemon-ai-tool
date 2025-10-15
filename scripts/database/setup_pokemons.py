@@ -2,41 +2,32 @@ import sqlite3
 import pandas as pd
 import os
 import sys
-import re
 
 # 親ディレクトリをsys.pathに追加して、commonをインポート可能にする
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
-from common import DB_PATH, POKEMONS_CSV_PATH, MASTER_DATA_DIR, SCHEMA_PATH
+from common import DB_PATH, POKEMONS_CSV_PATH, MASTER_DATA_DIR, SCHEMA_DIR
 
 SPECIAL_CSV_PATH = os.path.join(MASTER_DATA_DIR, "pokemon_special_ja.csv")
-
-def get_create_table_sql(schema_content, table_name):
-    """スキーマSQLから指定されたテーブルのCREATE文を抽出する"""
-    # CREATE TABLE table_name (...) ; という形式のSQL文を抽出する正規表現
-    pattern = re.compile(f"CREATE TABLE\s+(?:IF NOT EXISTS\s+)?{table_name}\s*\(.*\);", re.DOTALL | re.IGNORECASE)
-    match = pattern.search(schema_content)
-    if match:
-        return match.group(0)
-    return None
 
 def setup_pokemons():
     """
     pokemonsテーブルを再作成し、データを投入する (DROP, CREATE, INSERT)
     """
     table_name = "pokemons"
+    schema_path = os.path.join(SCHEMA_DIR, f"{table_name}.sql")
     print(f"--- A案: '{table_name}' テーブルのセットアップ開始 ---")
 
     # --- ファイル存在チェック ---
-    for path in [POKEMONS_CSV_PATH, SPECIAL_CSV_PATH, DB_PATH, SCHEMA_PATH]:
+    for path in [POKEMONS_CSV_PATH, SPECIAL_CSV_PATH, DB_PATH, schema_path]:
         if not os.path.exists(path):
             print(f"エラー: 必要なファイルが見つかりません: {path}")
             return
 
     conn = None
     try:
-        # --- 1. データ準備 (seed_pokemons.pyと同じ) ---
+        # --- 1. データ準備 ---
         print("CSVファイルを読み込んでデータを準備しています...")
         special_df = pd.read_csv(SPECIAL_CSV_PATH)
         special_map = special_df.set_index('id').to_dict('index')
@@ -65,13 +56,9 @@ def setup_pokemons():
         data_to_insert = [tuple(row) for row in final_df.itertuples(index=False)]
 
         # --- 2. CREATE文の準備 ---
-        print("スキーマからCREATE文を読み込んでいます...")
-        with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
-            schema_sql = f.read()
-        
-        create_sql = get_create_table_sql(schema_sql, table_name)
-        if not create_sql:
-            raise Exception(f"'{SCHEMA_PATH}' から '{table_name}' のCREATE文が見つかりませんでした。")
+        print(f"スキーマファイル '{schema_path}' を読み込んでいます...")
+        with open(schema_path, 'r', encoding='utf-8') as f:
+            create_sql = f.read()
 
         # --- 3. データベース処理 ---
         conn = sqlite3.connect(DB_PATH)
