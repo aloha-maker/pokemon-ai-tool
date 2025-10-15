@@ -1,50 +1,43 @@
 import sqlite3
-import csv
+import pandas as pd
 import os
 import sys
-import re
 
 # 親ディレクトリをsys.pathに追加して、commonをインポート可能にする
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 
-from common import DB_PATH, ABILITIES_CSV_PATH, SCHEMA_PATH
-
-def get_create_table_sql(schema_content, table_name):
-    """スキーマSQLから指定されたテーブルのCREATE文を抽出する"""
-    pattern = re.compile(f"CREATE TABLE\s+(?:IF NOT EXISTS\s+)?{table_name}\s*\(.*?\);", re.DOTALL | re.IGNORECASE)
-    match = pattern.search(schema_content)
-    if match:
-        return match.group(0)
-    return None
+from common import DB_PATH, ABILITIES_CSV_PATH, SCHEMA_DIR
 
 def setup_abilities():
     """
     abilitiesテーブルを再作成し、データを投入する (DROP, CREATE, INSERT)
     """
     table_name = "abilities"
-    csv_path = ABILITIES_CSV_PATH
-    db_columns = ["id", "name", "name_ja"]
-    print(f"--- A案: '{table_name}' テーブルのセットアップ開始 ---")
+    schema_path = os.path.join(SCHEMA_DIR, f"{table_name}.sql")
+    print(f"--- '{table_name}' テーブルのセットアップ開始 ---")
 
     # --- ファイル存在チェック ---
-    for path in [csv_path, DB_PATH, SCHEMA_PATH]:
+    for path in [ABILITIES_CSV_PATH, DB_PATH, schema_path]:
         if not os.path.exists(path):
             print(f"エラー: 必要なファイルが見つかりません: {path}")
             return
 
     conn = None
     try:
-        # --- 1. CREATE文の準備 ---
-        print("スキーマからCREATE文を読み込んでいます...")
-        with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
-            schema_sql = f.read()
+        # --- 1. データ準備 ---
+        print("CSVファイルを読み込んでデータを準備しています...")
+        abilities_df = pd.read_csv(ABILITIES_CSV_PATH)
         
-        create_sql = get_create_table_sql(schema_sql, table_name)
-        if not create_sql:
-            raise Exception(f"'{SCHEMA_PATH}' から '{table_name}' のCREATE文が見つかりませんでした。")
+        db_columns = ["id", "name", "name_ja"]
+        data_to_insert = [tuple(row) for row in abilities_df[db_columns].itertuples(index=False)]
 
-        # --- 2. データベース処理 ---
+        # --- 2. CREATE文の準備 ---
+        print(f"スキーマファイル '{schema_path}' を読み込んでいます...")
+        with open(schema_path, 'r', encoding='utf-8') as f:
+            create_sql = f.read()
+
+        # --- 3. データベース処理 ---
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
@@ -55,17 +48,11 @@ def setup_abilities():
         cursor.execute("PRAGMA foreign_keys=ON;")
         print("テーブルの再作成が完了しました。")
 
-        # --- 3. データ投入 ---
         print(f"'{table_name}' テーブルにデータを投入しています...")
-        with open(csv_path, 'r', encoding='utf-8') as f:
-            reader = csv.reader(f)
-            next(reader)  # ヘッダーをスキップ
-            
-            placeholders = ', '.join('?' * len(db_columns))
-            insert_sql = f"INSERT INTO {table_name} ({ ', '.join(db_columns)}) VALUES ({placeholders})"
-            
-            cursor.executemany(insert_sql, reader)
-
+        placeholders = ', '.join('?' * len(db_columns))
+        insert_sql = f"INSERT INTO {table_name} ({ ', '.join(db_columns)}) VALUES ({placeholders})"
+        cursor.executemany(insert_sql, data_to_insert)
+        
         conn.commit()
         print(f"{cursor.rowcount} 件のデータが '{table_name}' テーブルに投入されました。")
 
