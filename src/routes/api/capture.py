@@ -6,7 +6,7 @@ import pygetwindow
 import json
 from flask import Blueprint, request, jsonify, current_app
 from src.core.capture import ScreenCapturer
-from src.core.ocr import GameStateParser
+from src.core.ocr.ocr_processor import OCRProcessor
 
 capture_bp = Blueprint('capture_api', __name__, url_prefix='/api')
 
@@ -61,7 +61,7 @@ def ocr_test():
         if img is None:
             return jsonify({"error": f"Failed to read image from '{image_path}'"}), 500
 
-        parser = GameStateParser()
+        parser = OCRProcessor()
         game_state = parser.parse_frame(img)
 
         return jsonify({

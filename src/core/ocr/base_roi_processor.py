@@ -1,8 +1,8 @@
 # base_roi_processor.py
 import os
 import cv2
-from utils import win_safe_path
-from config import OUTPUT_DIR
+from .utils import win_safe_path
+from .config import OUTPUT_DIR,ROI_DICT
 
 class BaseROIProcessor:
     def __init__(self, output_dir=OUTPUT_DIR):
@@ -10,7 +10,6 @@ class BaseROIProcessor:
     
     def extract_roi_image(self, frame, roi_name, width, height):
         """フレームからROI領域を抽出"""
-        from config import ROI_DICT
         
         if roi_name not in ROI_DICT:
             return None

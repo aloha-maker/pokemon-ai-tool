@@ -1,6 +1,6 @@
 import os
-from base_roi_processor import BaseROIProcessor
-from image_matcher import ImageMatcher
+from .base_roi_processor import BaseROIProcessor
+from .image_matcher import ImageMatcher
 
 class ImageROIProcessor(BaseROIProcessor):
     def __init__(self, output_dir, image_matcher):

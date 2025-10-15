@@ -158,7 +158,7 @@ def seed_data(conn):
 
         seed_from_csv(POKEMONS_CSV_PATH, "pokemons", ["id", "name", "name_ja", "type1", "type2", "hp", "attack", "defense", "sp_attack", "sp_defense", "speed"])
         seed_from_csv(MOVES_CSV_PATH, "moves", ["id", "name", "name_ja", "type", "category", "power", "accuracy"])
-        seed_from_csv(TYPES_CSV_path, "types", ["id", "name", "name_ja"])
+        seed_from_csv(TYPES_CSV_PATH, "types", ["id", "name", "name_ja"])
         seed_from_csv(ABILITIES_CSV_PATH, "abilities", ["id", "name", "name_ja"])
         seed_from_csv(NATURES_CSV_PATH, "natures", ["id", "name", "name_ja", "increased_stat", "decreased_stat"])
         seed_from_csv(ITEMS_CSV_PATH, "items", ["id", "name", "name_ja"])

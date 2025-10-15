@@ -1,6 +1,6 @@
 import cv2
 from core.capture import ScreenCapturer
-from core.ocr import GameStateParser
+from src.core.ocr.ocr_processor import OCRProcessor
 from ai.predictor import ActionAIModel
 import time
 import pprint
@@ -9,7 +9,7 @@ TARGET_WINDOW_TITLE = "ChatGPT Image 2025年9月13日 11_52_02.png"
 
 def main():
     capturer = ScreenCapturer(TARGET_WINDOW_TITLE)
-    parser = GameStateParser()
+    parser = OCRProcessor()
     model = ActionAIModel() # AIモデルをインスタンス化
 
     print(f"'{TARGET_WINDOW_TITLE}' のキャプチャと解析を開始します。")

@@ -5,15 +5,15 @@ import hashlib
 import shutil
 from glob import glob
 
-from config import (
+from .config import (
     INPUT_DIR, OUTPUT_DIR, PROCESSED_DIR, ROI_DICT,
     POKEMON_NAME_ROIS, OTHER_ROIS, HP_ROIS, AILMENT_ROIS,
     SKIP_ROIS, OCR_EXEMPT_ROIS, EXTRACT_PER_SECOND,
     SELECT_ROIS, BATTLE_CHOOSE_ROIS, BATTLE_ACT_ROIS,
     START_IMAGE, SELECT_IMAGES_PATH, WIN_LOSE_IMAGES_DIR
 )
-from utils import win_safe_path
-from phase_manager import PhaseManager
+from .utils import win_safe_path
+from .phase_manager import PhaseManager
 
 
 def process_video(video_path, pokemon_corrector, ability_corrector, ocr_processor):

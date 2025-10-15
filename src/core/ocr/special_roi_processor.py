@@ -1,10 +1,10 @@
 # special_roi_processor.py
 import os
-from base_roi_processor import BaseROIProcessor
-from hp_ocv import get_hp_percentage
-from aliment_ocv import identify_ailment_from_cropped_image
-from tera_ocv import identify_tera_from_cropped_image
-from config import AILMENT_ICONS_DIR, TERA_ICONS_DIR, TERA_ME_ICONS_DIR
+from .base_roi_processor import BaseROIProcessor
+from .hp_ocv import get_hp_percentage
+from .aliment_ocv import identify_ailment_from_cropped_image
+from .tera_ocv import identify_tera_from_cropped_image
+from .config import AILMENT_ICONS_DIR, TERA_ICONS_DIR, TERA_ME_ICONS_DIR
 
 class SpecialROIProcessor(BaseROIProcessor):
     def __init__(self, output_dir):

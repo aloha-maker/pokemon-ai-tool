@@ -22,7 +22,7 @@ from src.routes.api.database import database_bp
 
 # SocketIOハンドラのインポート
 from src.sockets.handlers import register_socket_handlers
-from src.core.ocr import PokemonRecognizer
+from src.core.ocr_ import PokemonRecognizer
 
 def create_app():
     """ Flaskアプリケーションを生成して返す (Application Factory パターン) """

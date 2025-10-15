@@ -2,7 +2,7 @@
 import os
 import cv2
 from glob import glob
-from config import ROI_DICT
+from .config import ROI_DICT
 
 class ImageMatcher:
     def __init__(self):

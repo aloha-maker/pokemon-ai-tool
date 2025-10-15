@@ -2,7 +2,6 @@
 from flask import Blueprint, request, jsonify
 from src.database.manager import DatabaseManager
 import datetime
-import random
 
 battle_bp = Blueprint('battle_api', __name__, url_prefix='/api')
 

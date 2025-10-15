@@ -2,9 +2,9 @@ import os
 import cv2
 import re
 import pytesseract
-from base_roi_processor import BaseROIProcessor
-from config import CUSTOM_CONFIG, POKEMON_NAME_ROIS, ABILITY_NAME_ROIS, POKEMON_NO_ROIS, TESSDATA_PREFIX
-from db_access import DatabaseManager
+from .base_roi_processor import BaseROIProcessor
+from .config import CUSTOM_CONFIG, POKEMON_NAME_ROIS, ABILITY_NAME_ROIS, POKEMON_NO_ROIS, TESSDATA_PREFIX
+from .db_access import DatabaseManager
 
 class OCRROIProcessor(BaseROIProcessor):
     def __init__(self, output_dir, pokemon_corrector, ability_corrector):

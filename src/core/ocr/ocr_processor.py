@@ -1,11 +1,11 @@
 import os
 import pytesseract
-from phase_manager import PhaseManager
-from image_matcher import ImageMatcher
-from ocr_roi_processor import OCRROIProcessor
-from image_roi_processor import ImageROIProcessor
-from special_roi_processor import SpecialROIProcessor
-from config import (
+from .phase_manager import PhaseManager
+from .image_matcher import ImageMatcher
+from .ocr_roi_processor import OCRROIProcessor
+from .image_roi_processor import ImageROIProcessor
+from .special_roi_processor import SpecialROIProcessor
+from .config import (
     OUTPUT_DIR, HP_ROIS, AILMENT_ROIS, POKEMON_NAME_ROIS,
     ABILITY_NAME_ROIS, POKEMON_NO_ROIS, ROI_DICT, CUSTOM_CONFIG,
     TESSERACT_PATH, SELECT_ROIS, BATTLE_CHOOSE_ROIS, BATTLE_ACT_ROIS,
