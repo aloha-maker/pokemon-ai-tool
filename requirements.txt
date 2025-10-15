@@ -11,3 +11,4 @@ Flask
 Flask-SocketIO
 SQLAlchemy
 janome
+pandas
