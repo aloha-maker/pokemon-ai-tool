@@ -195,6 +195,11 @@ class OCRROIProcessor(BaseROIProcessor):
 
         # 誤字修正
         cleaned = cleaned.replace('ぐりだした！', 'くりだした！')
+        cleaned = cleaned.replace('“', '')
+        cleaned = cleaned.replace(',', '')
+        cleaned = cleaned.replace('〆', '')
+        cleaned = cleaned.replace('<', '')
+        cleaned = cleaned.replace('|', '')
 
         return cleaned
     
