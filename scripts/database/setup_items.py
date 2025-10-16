@@ -29,7 +29,7 @@ def setup_items():
         print("CSVファイルを読み込んでデータを準備しています...")
         items_df = pd.read_csv(ITEMS_CSV_PATH)
         
-        db_columns = ["id", "name", "name_ja"]
+        db_columns = ["id", "name", "name_ja","category"]
         data_to_insert = [tuple(row) for row in items_df[db_columns].itertuples(index=False)]
 
         # --- 2. CREATE文の準備 ---
