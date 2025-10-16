@@ -184,7 +184,7 @@ export async function initFormSelects() {
                     if (pokemon) {
                         // ポケモンアイコンを更新
                         if (imageEl) {
-                            imageEl.src = `/static/pokemon_icons/${pokemon.name}.png`;
+                            imageEl.src = `/static/pokemon_icons/${pokemon.name_ja}.png`;
                             imageEl.alt = pokemon.name_ja;
                         }
                         // すばやさ種族値を更新
