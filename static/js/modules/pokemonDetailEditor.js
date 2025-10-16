@@ -252,6 +252,27 @@ export class PokemonDetailEditor {
             }
         }
 
+        // このポケモンの技リストを取得してdatalistを更新
+        const moveDatalist = document.getElementById('move-datalist'); // グローバルなdatalistを参照
+        if (moveDatalist) {
+            try {
+                const response = await fetch(`/api/pokemon/${pokemonId}/moves`);
+                if (!response.ok) throw new Error('技リストの取得に失敗しました。');
+                const moves = await response.json();
+                
+                moveDatalist.innerHTML = ''; // 中身をクリア
+                moves.forEach(move => {
+                    const option = document.createElement('option');
+                    option.value = move.name_ja || move.name;
+                    moveDatalist.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('Error fetching pokemon-specific moves:', error);
+                moveDatalist.innerHTML = ''; // エラー時は空にする
+            }
+        }
+
         // Cache abilities and moves lists if not already cached
         if (this.abilitiesList.length === 0) {
             this.abilitiesList = await getAllAbilities();

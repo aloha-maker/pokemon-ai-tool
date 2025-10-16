@@ -45,3 +45,12 @@ def get_pokemon_abilities(pokemon_id):
         return jsonify(abilities)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@master_bp.route('/api/pokemon/<int:pokemon_id>/moves', methods=['GET'])
+def get_pokemon_moves(pokemon_id):
+    try:
+        with DatabaseManager() as db:
+            moves = db.get_moves_by_pokemon_id(pokemon_id)
+        return jsonify(moves)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

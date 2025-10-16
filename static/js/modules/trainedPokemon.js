@@ -1,7 +1,5 @@
-// trainedPokemon.js - 育成済みポケモン管理機能
-
 import { escapeHTML, showAlert } from './utils.js';
-import { updateAbilitiesForPokemon } from './formHelpers.js';
+import { updatePokemonDatalists } from './formHelpers.js';
 
 export class TrainedPokemonManager {
     constructor() {
@@ -63,12 +61,10 @@ export class TrainedPokemonManager {
 
         const pokemonMasterInput = document.getElementById('pokemon-master-input');
         if (pokemonMasterInput) {
-            pokemonMasterInput.addEventListener('change', () => this.updateAbilitiesDatalist());
-        }
-
-        const formModalEl = document.getElementById('pokemon-form-modal');
-        if (formModalEl) {
-            formModalEl.addEventListener('hide.bs.modal', () => this.resetAbilitiesDatalist());
+            pokemonMasterInput.addEventListener('change', async (event) => {
+                await this._cacheMasterData(); // Ensure pokemonList is loaded
+                updatePokemonDatalists(event.target.value, this.pokemonList);
+            });
         }
     }
 
@@ -163,7 +159,12 @@ export class TrainedPokemonManager {
             document.getElementById('pokemon-id').value = pokemon.id || '';
             
             const pokemonInfo = this.pokemonList.find(p => p.id == pokemon.pokemon_id);
-            document.getElementById('pokemon-master-input').value = pokemonInfo ? pokemonInfo.name_ja : '';
+            const pokemonName = pokemonInfo ? pokemonInfo.name_ja : '';
+            document.getElementById('pokemon-master-input').value = pokemonName;
+            // Trigger datalist update for the loaded pokemon
+            if (pokemonName) {
+                updatePokemonDatalists(pokemonName, this.pokemonList);
+            }
 
             document.getElementById('nickname').value = pokemon.nickname || '';
             document.getElementById('level').value = pokemon.level || 50;
@@ -188,59 +189,13 @@ export class TrainedPokemonManager {
                 const moveInfo = this.movesList.find(m => m.id == pokemon[`move${i}_id`]);
                 document.getElementById(`move${i}-input`).value = moveInfo ? moveInfo.name_ja : '';
             }
+        } else {
+            // Clear datalists when adding a new pokemon
+            updatePokemonDatalists('', this.pokemonList);
         }
         
         this.updateEvTotal();
         this.formModal.show();
-
-        // フォーム表示後に、現在のポケモンに基づいてdatalistを更新
-        this.updateAbilitiesDatalist();
-    }
-
-    async updateAbilitiesDatalist() {
-        const pokemonName = document.getElementById('pokemon-master-input').value.trim();
-        const abilityDatalist = document.getElementById('ability-datalist');
-        if (!abilityDatalist) return;
-
-        await this._cacheMasterData();
-
-        const pokemon = this.pokemonList.find(p => p.name_ja === pokemonName);
-
-        abilityDatalist.innerHTML = '';
-        let abilitiesToShow = [];
-
-        if (pokemon && pokemon.id) {
-            try {
-                const response = await fetch(`/api/pokemon/${pokemon.id}/abilities`);
-                if (!response.ok) throw new Error('特性リストの取得に失敗しました。');
-                abilitiesToShow = await response.json();
-            } catch (error) {
-                console.error('Error fetching pokemon-specific abilities:', error);
-                abilitiesToShow = this.abilityList;
-            }
-        } else {
-            abilitiesToShow = this.abilityList;
-        }
-
-        abilitiesToShow.forEach(ability => {
-            const option = document.createElement('option');
-            option.value = ability.name_ja || ability.name;
-            abilityDatalist.appendChild(option);
-        });
-    }
-
-    async resetAbilitiesDatalist() {
-        const abilityDatalist = document.getElementById('ability-datalist');
-        if (!abilityDatalist) return;
-
-        await this._cacheMasterData();
-
-        abilityDatalist.innerHTML = '';
-        this.abilityList.forEach(ability => {
-            const option = document.createElement('option');
-            option.value = ability.name_ja || ability.name;
-            abilityDatalist.appendChild(option);
-        });
     }
 
     async handleFormSubmit(event) {

@@ -770,6 +770,18 @@ class DatabaseManager:
         cursor.execute(query, (pokemon_id,))
         return [dict(row) for row in cursor.fetchall()]
 
+    def get_moves_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
+        """指定されたポケモンIDが覚える技をすべて取得する。"""
+        cursor = self.get_cursor()
+        query = """
+            SELECT m.id, m.name, m.name_ja
+            FROM moves m
+            JOIN pokemon_moves pm ON m.id = pm.move_id
+            WHERE pm.pokemon_id = ?
+        """
+        cursor.execute(query, (pokemon_id,))
+        return [dict(row) for row in cursor.fetchall()]
+
     def get_moves_by_type(self, move_type: str, category: str, limit: int = 10) -> list[dict]:
         """指定されたタイプとカテゴリの技を取得する（威力順）。"""
         cursor = self.get_cursor()
