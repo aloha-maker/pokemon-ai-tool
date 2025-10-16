@@ -759,16 +759,31 @@ class DatabaseManager:
         return {"total": total_records, "records": results, "columns": columns}
 
     def get_abilities_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
-        """指定されたポケモンIDが持つ特性をすべて取得する。"""
+        """指定されたポケモンIDが持つ特性を、pokemonsテーブルのabilitiesカラム(カンマ区切りのID)から取得する。"""
         cursor = self.get_cursor()
-        query = """
-            SELECT a.id, a.name, a.name_ja
-            FROM abilities a
-            JOIN pokemon_abilities pa ON a.id = pa.ability_id
-            WHERE pa.pokemon_id = ?
-        """
-        cursor.execute(query, (pokemon_id,))
+        
+        # 1. pokemonsテーブルからabilitiesカラム（カンマ区切りID文字列）を取得
+        cursor.execute("SELECT abilities FROM pokemons WHERE id = ?", (pokemon_id,))
+        row = cursor.fetchone()
+        if not row or not row['abilities']:
+            return []
+
+        try:
+            # 2. カンマで分割し、数値のIDリストに変換
+            ability_ids = [int(id_str) for id_str in row['abilities'].split(',') if id_str.strip().isdigit()]
+            if not ability_ids:
+                return []
+        except (ValueError, AttributeError):
+            return []
+
+        # 3. 特性IDリストを使ってabilitiesテーブルから詳細を一括取得
+        placeholders = ', '.join('?' for _ in ability_ids)
+        query = f"SELECT id, name, name_ja FROM abilities WHERE id IN ({placeholders})"
+        
+        cursor.execute(query, ability_ids)
         return [dict(row) for row in cursor.fetchall()]
+
+
 
     def get_moves_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
         """指定されたポケモンIDが覚える技をすべて取得する。"""
