@@ -786,15 +786,28 @@ class DatabaseManager:
 
 
     def get_moves_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
-        """指定されたポケモンIDが覚える技をすべて取得する。"""
+        """指定されたポケモンIDが覚える技を、pokemonsテーブルのmovesカラム(カンマ区切りのID)から取得する。"""
         cursor = self.get_cursor()
-        query = """
-            SELECT m.id, m.name, m.name_ja
-            FROM moves m
-            JOIN pokemon_moves pm ON m.id = pm.move_id
-            WHERE pm.pokemon_id = ?
-        """
-        cursor.execute(query, (pokemon_id,))
+        
+        # 1. pokemonsテーブルからmovesカラム（カンマ区切りID文字列）を取得
+        cursor.execute("SELECT moves FROM pokemons WHERE id = ?", (pokemon_id,))
+        row = cursor.fetchone()
+        if not row or not row['moves']:
+            return []
+
+        try:
+            # 2. カンマで分割し、数値のIDリストに変換
+            move_ids = [int(id_str) for id_str in row['moves'].split(',') if id_str.strip().isdigit()]
+            if not move_ids:
+                return []
+        except (ValueError, AttributeError):
+            return []
+
+        # 3. 技IDリストを使ってmovesテーブルから詳細を一括取得
+        placeholders = ', '.join('?' for _ in move_ids)
+        query = f"SELECT id, name, name_ja FROM moves WHERE id IN ({placeholders})"
+        
+        cursor.execute(query, move_ids)
         return [dict(row) for row in cursor.fetchall()]
 
     def get_moves_by_type(self, move_type: str, category: str, limit: int = 10) -> list[dict]:
