@@ -18,9 +18,7 @@ export class RealtimeAnalysis {
         this.logBuffer = [];
         this.sequence = 0;
         
-        if (this.toggleAnalysisButton) {
-            this.init();
-        }
+        this.init();
     }
 
     init() {
@@ -159,57 +157,69 @@ export class RealtimeAnalysis {
         const battleBtn = this.startBattleBtn;
 
         // デフォルト状態
-        btn.disabled = false;
-        cameraBtn.disabled = false;
-        battleBtn.disabled = true;
-        this.windowSelect.disabled = false;
-        this.windowRefreshButton.disabled = false;
-        this.recognizePartyBtn.disabled = true;
+        if (btn) btn.disabled = false;
+        if (cameraBtn) cameraBtn.disabled = false;
+        if (battleBtn) battleBtn.disabled = true;
+        if (this.windowSelect) this.windowSelect.disabled = false;
+        if (this.windowRefreshButton) this.windowRefreshButton.disabled = false;
+        if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = true;
 
-        btn.dataset.state = 'stopped';
-        btn.innerHTML = '<i class="bi bi-play-circle-fill"></i> 解析を開始';
-        btn.classList.remove('btn-danger');
-        btn.classList.add('btn-primary');
+        if (btn) {
+            btn.dataset.state = 'stopped';
+            btn.innerHTML = '<i class="bi bi-play-circle-fill"></i> 解析を開始';
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-primary');
+        }
 
-        cameraBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i> 仮想カメラ読込';
-        cameraBtn.classList.remove('btn-danger');
-        cameraBtn.classList.add('btn-info');
+        if (cameraBtn) {
+            cameraBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i> 仮想カメラ読込';
+            cameraBtn.classList.remove('btn-danger');
+            cameraBtn.classList.add('btn-info');
+        }
 
         if (state === 'stopped') {
             // デフォルトのまま
         } else if (state === 'running_window') {
-            btn.dataset.state = 'running';
-            btn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
-            btn.classList.add('btn-danger');
-            cameraBtn.disabled = true;
-            this.windowSelect.disabled = true;
-            this.windowRefreshButton.disabled = true;
-            this.recognizePartyBtn.disabled = false;
+            if (btn) {
+                btn.dataset.state = 'running';
+                btn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
+                btn.classList.add('btn-danger');
+            }
+            if (cameraBtn) cameraBtn.disabled = true;
+            if (this.windowSelect) this.windowSelect.disabled = true;
+            if (this.windowRefreshButton) this.windowRefreshButton.disabled = true;
+            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
         } else if (state === 'running_camera') {
-            cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
-            cameraBtn.classList.add('btn-danger');
-            btn.disabled = true;
-            battleBtn.disabled = false;
-            this.windowSelect.disabled = true;
-            this.windowRefreshButton.disabled = true;
-            this.recognizePartyBtn.disabled = false;
+            if (cameraBtn) {
+                cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
+                cameraBtn.classList.add('btn-danger');
+            }
+            if (btn) btn.disabled = true;
+            if (battleBtn) battleBtn.disabled = false;
+            if (this.windowSelect) this.windowSelect.disabled = true;
+            if (this.windowRefreshButton) this.windowRefreshButton.disabled = true;
+            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
         } else if (state === 'running_camera_ocr') {
-            cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
-            cameraBtn.classList.add('btn-danger');
-            btn.disabled = true;
-            battleBtn.disabled = true;
-            this.windowSelect.disabled = true;
-            this.windowRefreshButton.disabled = true;
-            this.recognizePartyBtn.disabled = false;
+            if (cameraBtn) {
+                cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
+                cameraBtn.classList.add('btn-danger');
+            }
+            if (btn) btn.disabled = true;
+            if (battleBtn) battleBtn.disabled = true;
+            if (this.windowSelect) this.windowSelect.disabled = true;
+            if (this.windowRefreshButton) this.windowRefreshButton.disabled = true;
+            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
         }
     }
 
     handleStartCamera() {
+        console.log("handleStartCamera called!"); // デバッグログ
         const cameraIndex = document.getElementById('camera-index-input').value || 0;
         if (this.currentState === 'running_camera' || this.currentState === 'running_camera_ocr') {
             this.socket.emit('stop_analysis', {});
         } else {
             this.clearLogs();
+            console.log(`Attempting to emit start_camera with index: ${cameraIndex}`); // デバッグログ
             this.socket.emit('start_camera', { camera_index: parseInt(cameraIndex, 10) });
         }
     }
