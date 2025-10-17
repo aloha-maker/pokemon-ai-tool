@@ -283,7 +283,7 @@ class PokemonRecognizer:
     """
     STANDARD_SIZE = (96, 96)  # 比較用の標準サイズ
 
-    def __init__(self, template_dir='data/pokemon_images', threshold=0.6):
+    def __init__(self, template_dir='static/pokemon_icons', threshold=0.6):
         """
         Args:
             template_dir (str): ポケモンのテンプレート画像が格納されているディレクトリ。
@@ -300,27 +300,25 @@ class PokemonRecognizer:
             print(f"警告: テンプレートディレクトリ '{self.template_dir}' が見つかりません。")
             return templates
 
-        for pokemon_name in os.listdir(self.template_dir):
-            pokemon_dir = os.path.join(self.template_dir, pokemon_name)
-            if os.path.isdir(pokemon_dir):
-                image_files = [f for f in os.listdir(pokemon_dir) if f.endswith(('.png', '.jpg'))]
-                if image_files:
-                    template_path = os.path.join(pokemon_dir, image_files[0])
-                    try:
-                        # 日本語パス対応
-                        with open(template_path, 'rb') as f:
-                            img_binary = np.fromfile(f, dtype=np.uint8)
-                        template_img = cv2.imdecode(img_binary, cv2.IMREAD_GRAYSCALE)
-                        
-                        if template_img is not None:
-                            # 標準サイズにリサイズして保持
-                            resized_template = cv2.resize(template_img, self.STANDARD_SIZE, interpolation=cv2.INTER_AREA)
-                            templates[pokemon_name] = resized_template
-                        else:
-                            print(f"警告: テンプレート画像をデコードできませんでした: {template_path}")
+        for filename in os.listdir(self.template_dir):
+            if filename.endswith('.png'):
+                pokemon_name = os.path.splitext(filename)[0]
+                template_path = os.path.join(self.template_dir, filename)
+                try:
+                    # 日本語パス対応
+                    with open(template_path, 'rb') as f:
+                        img_binary = np.fromfile(f, dtype=np.uint8)
+                    template_img = cv2.imdecode(img_binary, cv2.IMREAD_GRAYSCALE)
+                    
+                    if template_img is not None:
+                        # 標準サイズにリサイズして保持
+                        resized_template = cv2.resize(template_img, self.STANDARD_SIZE, interpolation=cv2.INTER_AREA)
+                        templates[pokemon_name] = resized_template
+                    else:
+                        print(f"警告: テンプレート画像をデコードできませんでした: {template_path}")
 
-                    except Exception as e:
-                        print(f"警告: テンプレート画像の読み込みに失敗しました: {template_path}, エラー: {e}")
+                except Exception as e:
+                    print(f"警告: テンプレート画像の読み込みに失敗しました: {template_path}, エラー: {e}")
                         
         print(f"{len(templates)}個のポケモンテンプレートを読み込みました。")
         return templates

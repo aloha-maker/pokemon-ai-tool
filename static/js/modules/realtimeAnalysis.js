@@ -371,6 +371,8 @@ export class RealtimeAnalysis {
                 data.party.forEach((pokemonName, index) => {
                     if (opponentInputs[index]) {
                         opponentInputs[index].value = pokemonName || ''; // 認識失敗時は空にする
+                        // ポケモンアイコンと種族値の更新をトリガーするために、手動でchangeイベントを発火させます。
+                        opponentInputs[index].dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });
             } else {

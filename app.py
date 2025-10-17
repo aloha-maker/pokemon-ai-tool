@@ -42,7 +42,7 @@ def create_app():
     os.makedirs('videos', exist_ok=True)
 
     # --- 拡張機能の初期化 ---
-    app.pokemon_recognizer = PokemonRecognizer() # ★ 追加
+    app.pokemon_recognizer = PokemonRecognizer(threshold=0.8) # ★ 追加
     executor.init_app(app)
     socketio = SocketIO(app)
 
