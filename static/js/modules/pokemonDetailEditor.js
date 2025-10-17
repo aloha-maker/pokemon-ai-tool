@@ -198,7 +198,7 @@ export class PokemonDetailEditor {
         members.forEach((member, index) => {
             if (index < this.partyState.length) {
                 this.partyState[index] = {
-                    item_id: member.item_id,
+                    item_id: member.held_item_id,
                     tera_type_id: member.tera_type_id,
                     ability_id: member.ability_id,
                     moves: [
