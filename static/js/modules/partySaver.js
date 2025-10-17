@@ -49,13 +49,20 @@ export class PartySaver {
                 const slotIndex = partyIndexOffset + index;
                 const detailedState = detailedStates[slotIndex];
 
-                const name = slot.querySelector('.pokemon-input').value.trim();
-                const isStarter = !slot.querySelector('.starter-icon').classList.contains('d-none');
-                const isSelected = isStarter || slot.querySelector('img').classList.contains('pokemon-selected');
+                const nameEl = slot.querySelector('.pokemon-input');
+                const name = nameEl ? nameEl.value.trim() : '';
+
+                const starterIcon = slot.querySelector('.starter-icon');
+                const isStarter = starterIcon ? !starterIcon.classList.contains('d-none') : false;
+
+                const imgEl = slot.querySelector('img');
+                const isSelected = isStarter || (imgEl ? imgEl.classList.contains('pokemon-selected') : false);
                 
-                const item = slot.querySelector('.item-input').value.trim();
+                const itemEl = slot.querySelector('.item-input');
+                const item = itemEl ? itemEl.value.trim() : '';
+
                 const teraTypeSelect = slot.querySelector('.tera-type-select');
-                const teraTypeId = teraTypeSelect.value;
+                const teraTypeId = teraTypeSelect ? teraTypeSelect.value : null;
 
                 const abilityId = detailedState ? detailedState.ability_id : null;
                 const moveIds = detailedState ? detailedState.moves.map(m => m.id).filter(id => id !== null) : [];
