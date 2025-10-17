@@ -9,7 +9,7 @@ function calculateMaxPP(basePP) {
 
 // This can be cached to avoid re-fetching
 let pokemonMasterList = [];
-async function getPokemonIdByName(name) {
+async function getPokemonByName(name) {
     if (pokemonMasterList.length === 0) {
         try {
             const response = await fetch('/api/master/pokemons');
@@ -19,7 +19,11 @@ async function getPokemonIdByName(name) {
             return null;
         }
     }
-    const pokemon = pokemonMasterList.find(p => p.name_ja === name);
+    return pokemonMasterList.find(p => p.name_ja === name) || null;
+}
+
+async function getPokemonIdByName(name) {
+    const pokemon = await getPokemonByName(name);
     return pokemon ? pokemon.id : null;
 }
 
@@ -356,12 +360,16 @@ export class PokemonDetailEditor {
         this.modal.hide();
     }
 
-    updateSlotUI(slotIndex) {
+    async updateSlotUI(slotIndex) {
         const slot = this.pokemonSlots[slotIndex];
         if (!slot) return;
 
         const state = this.partyState[slotIndex];
         if (!state) return;
+
+        // Get pokemon name from the UI to fetch its full data
+        const pokemonName = slot.querySelector('.pokemon-input')?.value;
+        const pokemonData = pokemonName ? await getPokemonByName(pokemonName) : null;
 
         // Update Item
         const itemNameSpan = slot.querySelector('.item-name');
@@ -402,6 +410,18 @@ export class PokemonDetailEditor {
             teraTypeNameSpan.textContent = 'テラスタイプ';
             teraTypeNameSpan.classList.add('text-muted');
             teraTypeIcon.src = 'https://placehold.co/24x24/333/ccc?text=?';
+        }
+
+        // Update Speed Stat
+        const speedStatEl = slot.querySelector('.speed-stat-value');
+        if (speedStatEl) {
+            if (pokemonData) {
+                speedStatEl.textContent = `S: ${pokemonData.speed}`;
+                speedStatEl.classList.remove('text-muted');
+            } else {
+                speedStatEl.textContent = 'S: --';
+                speedStatEl.classList.add('text-muted');
+            }
         }
     }
 
