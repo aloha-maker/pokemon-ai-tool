@@ -5,9 +5,6 @@ import { escapeHTML } from './utils.js';
 export class RealtimeAnalysis {
     constructor() {
         this.socket = io();
-        this.windowSelect = document.getElementById('window-select');
-        this.windowRefreshButton = document.getElementById('window-refresh-button');
-        this.toggleAnalysisButton = document.getElementById('toggle-analysis-button');
         this.captureImage = document.getElementById('capture-image');
         this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
@@ -23,11 +20,8 @@ export class RealtimeAnalysis {
 
     init() {
         this.setUIState('stopped');
-        this.updateWindowList();
         this.initSocketListeners();
         
-        this.windowRefreshButton?.addEventListener('click', () => this.updateWindowList());
-        this.toggleAnalysisButton?.addEventListener('click', () => this.handleToggleAnalysis());
         this.suggestionRefreshButton?.addEventListener('click', () => this.socket.emit('get_suggestion', {}));
         this.recognizePartyBtn?.addEventListener('click', () => this.handleRecognizeParty());
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
@@ -152,24 +146,13 @@ export class RealtimeAnalysis {
 
     setUIState(state) {
         this.currentState = state;
-        const btn = this.toggleAnalysisButton;
         const cameraBtn = this.startCameraBtn;
         const battleBtn = this.startBattleBtn;
 
         // デフォルト状態
-        if (btn) btn.disabled = false;
         if (cameraBtn) cameraBtn.disabled = false;
         if (battleBtn) battleBtn.disabled = true;
-        if (this.windowSelect) this.windowSelect.disabled = false;
-        if (this.windowRefreshButton) this.windowRefreshButton.disabled = false;
         if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = true;
-
-        if (btn) {
-            btn.dataset.state = 'stopped';
-            btn.innerHTML = '<i class="bi bi-play-circle-fill"></i> 解析を開始';
-            btn.classList.remove('btn-danger');
-            btn.classList.add('btn-primary');
-        }
 
         if (cameraBtn) {
             cameraBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i> 仮想カメラ読込';
@@ -179,35 +162,19 @@ export class RealtimeAnalysis {
 
         if (state === 'stopped') {
             // デフォルトのまま
-        } else if (state === 'running_window') {
-            if (btn) {
-                btn.dataset.state = 'running';
-                btn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
-                btn.classList.add('btn-danger');
-            }
-            if (cameraBtn) cameraBtn.disabled = true;
-            if (this.windowSelect) this.windowSelect.disabled = true;
-            if (this.windowRefreshButton) this.windowRefreshButton.disabled = true;
-            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
         } else if (state === 'running_camera') {
             if (cameraBtn) {
                 cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
                 cameraBtn.classList.add('btn-danger');
             }
-            if (btn) btn.disabled = true;
             if (battleBtn) battleBtn.disabled = false;
-            if (this.windowSelect) this.windowSelect.disabled = true;
-            if (this.windowRefreshButton) this.windowRefreshButton.disabled = true;
             if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
         } else if (state === 'running_camera_ocr') {
             if (cameraBtn) {
                 cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
                 cameraBtn.classList.add('btn-danger');
             }
-            if (btn) btn.disabled = true;
             if (battleBtn) battleBtn.disabled = true;
-            if (this.windowSelect) this.windowSelect.disabled = true;
-            if (this.windowRefreshButton) this.windowRefreshButton.disabled = true;
             if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
         }
     }
@@ -274,50 +241,6 @@ export class RealtimeAnalysis {
         return this.logBuffer;
     }
 
-    async updateWindowList() {
-        try {
-            const response = await fetch('/api/windows');
-            const data = await response.json();
-            
-            if (data.error) {
-                console.error('ウィンドウリストの取得に失敗しました:', data.error);
-                return;
-            }
-            
-            const currentSelection = this.windowSelect.value;
-            this.windowSelect.innerHTML = '<option value="">ウィンドウを選択...</option>';
-            
-            data.windows.forEach(title => {
-                const option = document.createElement('option');
-                option.value = title;
-                option.textContent = title;
-                this.windowSelect.appendChild(option);
-            });
-
-            if (data.windows.includes(currentSelection)){
-                this.windowSelect.value = currentSelection;
-            }
-
-        } catch (error) {
-            console.error('ウィンドウリストの取得中にエラーが発生しました:', error);
-        }
-    }
-
-    handleToggleAnalysis() {
-        if (this.currentState === 'running_window') {
-            console.log('Requesting to stop analysis.');
-            this.socket.emit('stop_analysis', {});
-        } else {
-            const windowTitle = this.windowSelect.value;
-            if (!windowTitle) {
-                alert('キャプチャ対象のウィンドウを選択してください。');
-                return;
-            }
-            this.clearLogs();
-            console.log(`Requesting to start analysis for window: ${windowTitle}`);
-            this.socket.emit('start_analysis', { window_title: windowTitle });
-        }
-    }
 
     displaySuggestion(data) {
         const suggestionContainer = document.getElementById('suggestion-overlay');
