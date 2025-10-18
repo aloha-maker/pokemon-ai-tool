@@ -12,3 +12,6 @@ Flask-SocketIO
 SQLAlchemy
 janome
 pandas
+lightgbm
+scikit-learn
+seaborn
