@@ -6,12 +6,9 @@ master_bp = Blueprint('master_api', __name__)
 
 # 各マスターデータを取得するための汎用関数
 def get_master_data(resource_name):
-    try:
-        with DatabaseManager() as db:
-            data = db.get_master_data_by_resource(resource_name)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    with DatabaseManager() as db:
+        data = db.get_master_data_by_resource(resource_name)
+    return jsonify(data)
 
 @master_bp.route('/api/master/pokemons', methods=['GET'])
 def get_pokemons():
@@ -39,18 +36,12 @@ def get_abilities():
 
 @master_bp.route('/api/pokemon/<int:pokemon_id>/abilities', methods=['GET'])
 def get_pokemon_abilities(pokemon_id):
-    try:
-        with DatabaseManager() as db:
-            abilities = db.get_abilities_by_pokemon_id(pokemon_id)
-        return jsonify(abilities)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    with DatabaseManager() as db:
+        abilities = db.get_abilities_by_pokemon_id(pokemon_id)
+    return jsonify(abilities)
 
 @master_bp.route('/api/pokemon/<int:pokemon_id>/moves', methods=['GET'])
 def get_pokemon_moves(pokemon_id):
-    try:
-        with DatabaseManager() as db:
-            moves = db.get_moves_by_pokemon_id(pokemon_id)
-        return jsonify(moves)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    with DatabaseManager() as db:
+        moves = db.get_moves_by_pokemon_id(pokemon_id)
+    return jsonify(moves)

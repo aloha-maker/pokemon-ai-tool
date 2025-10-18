@@ -7,12 +7,9 @@ database_bp = Blueprint('database_api', __name__)
 @database_bp.route('/api/db/tables', methods=['GET'])
 def get_tables():
     """データベースのテーブル一覧を返す。"""
-    try:
-        with DatabaseManager() as db:
-            tables = db.get_all_tables()
-        return jsonify(tables)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    with DatabaseManager() as db:
+        tables = db.get_all_tables()
+    return jsonify(tables)
 
 @database_bp.route('/api/db/search', methods=['GET'])
 def search():
@@ -33,5 +30,3 @@ def search():
         return jsonify(result)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500

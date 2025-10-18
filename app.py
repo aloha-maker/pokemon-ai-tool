@@ -25,6 +25,8 @@ from src.routes.api.database import database_bp
 from src.sockets.handlers import register_socket_handlers
 from src.core.ocr_ import PokemonRecognizer
 
+import logging
+
 def create_app():
     """ Flaskアプリケーションを生成して返す (Application Factory パターン) """
     app = Flask(__name__, instance_relative_config=True)
@@ -32,6 +34,18 @@ def create_app():
     # --- 環境変数から設定を読み込む ---
     config_name = os.getenv('FLASK_ENV', 'default')
     app.config.from_object(config[config_name])
+
+    # --- ロギング設定 ---
+    if not app.debug:
+        logging.basicConfig(level=logging.INFO, filename='production.log',
+                            format='%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
+
+    # --- グローバルエラーハンドラ ---
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(e):
+        """予期せぬ例外を捕捉するグローバルハンドラ"""
+        logging.exception(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "サーバー内部で予期せぬエラーが発生しました。"}), 500
 
     # --- ディレクトリ設定 ---
     # instanceフォルダやstatic/capturesフォルダの存在を確認・作成

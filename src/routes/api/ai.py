@@ -13,11 +13,8 @@ def predict():
     opponent_party = data.get('opponent_party', [])
 
     if my_party_id:
-        try:
-            with DatabaseManager() as db:
-                my_party = db.get_party_pokemon_names(my_party_id)
-        except Exception as e:
-            return jsonify({"error": f"データベースからのパーティ読み込みに失敗しました: {e}"}), 500
+        with DatabaseManager() as db:
+            my_party = db.get_party_pokemon_names(my_party_id)
     else:
         my_party = data.get('my_party', [])
 

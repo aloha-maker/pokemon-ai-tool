@@ -72,16 +72,13 @@ def upload_video():
     os.makedirs(VIDEO_DIR, exist_ok=True)
     filepath = os.path.join(VIDEO_DIR, filename)
 
-    try:
-        file.save(filepath)
-        
-        state.video_tasks[task_id] = {"status": "PENDING", "result": None, "filename": file.filename}
-        
-        executor.submit(analyze_video_task, task_id, filepath)
+    file.save(filepath)
+    
+    state.video_tasks[task_id] = {"status": "PENDING", "result": None, "filename": file.filename}
+    
+    executor.submit(analyze_video_task, task_id, filepath)
 
-        return jsonify({"message": "Video uploaded successfully. Analysis started.", "task_id": task_id}), 202
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify({"message": "Video uploaded successfully. Analysis started.", "task_id": task_id}), 202
 
 @video_bp.route('/status/<task_id>', methods=['GET'])
 def get_video_status(task_id):
@@ -92,11 +89,8 @@ def get_video_status(task_id):
 
 @video_bp.route('/result/<int:log_id>', methods=['GET'])
 def get_video_result(log_id):
-    try:
-        with DatabaseManager() as db:
-            log = db.get_battle_log_by_id(log_id)
-            if not log:
-                return jsonify({"error": "Log not found"}), 404
-            return jsonify(log)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    with DatabaseManager() as db:
+        log = db.get_battle_log_by_id(log_id)
+        if not log:
+            return jsonify({"error": "Log not found"}), 404
+        return jsonify(log)
