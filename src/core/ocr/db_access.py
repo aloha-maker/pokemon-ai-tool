@@ -13,10 +13,14 @@ class DatabaseManager:
         DatabaseManagerを初期化する。
         db_pathが指定されない場合、プロジェクトルートからの相対パスを使用する。
         """
+        from flask import current_app
+
         if db_path is None:
-            # プロジェクトのルートディレクトリを基準にDBファイルのパスを構築
-            # self.db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'pokemon_ai.db')
-            self.db_path = r'C:\pokemon-ai-tool\data\pokemon_ai.db'
+            db_url = current_app.config.get('DATABASE_URL')
+            if db_url and db_url.startswith('sqlite:///'):
+                self.db_path = db_url.replace('sqlite:///', '')
+            else:
+                self.db_path = r'C:\pokemon-ai-tool\data\pokemon_ai.db'
         else:
             self.db_path = db_path
         self.conn = None

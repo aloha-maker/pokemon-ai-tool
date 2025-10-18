@@ -2,6 +2,7 @@
 import os
 from flask import Flask
 from flask_socketio import SocketIO
+from config import config
 
 # 拡張機能の初期化
 from src.extensions import executor
@@ -28,11 +29,9 @@ def create_app():
     """ Flaskアプリケーションを生成して返す (Application Factory パターン) """
     app = Flask(__name__, instance_relative_config=True)
 
-    # --- 基本設定 ---
-    # 必要に応じて app.config に設定を追加
-    # app.config.from_mapping(
-    #     SECRET_KEY='dev',
-    # )
+    # --- 環境変数から設定を読み込む ---
+    config_name = os.getenv('FLASK_ENV', 'default')
+    app.config.from_object(config[config_name])
 
     # --- ディレクトリ設定 ---
     # instanceフォルダやstatic/capturesフォルダの存在を確認・作成
@@ -68,5 +67,5 @@ def create_app():
 
 if __name__ == '__main__':
     app, socketio = create_app()
-    # host='0.0.0.0' で外部からのアクセスを許可
-    socketio.run(app, debug=True, host='0.0.0.0', port=5001)
+    # debugフラグやhost, portはconfigから読み込まれるか、runのデフォルト値が使われる
+    socketio.run(app)

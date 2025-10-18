@@ -43,8 +43,7 @@ AILMENT_ICONS_DIR = r'C:\pokemon-ai-tool\static\ailment_icons'
 with open(ROI_FILE, "r", encoding="utf-8") as f:
     ROI_DICT = json.load(f)
 
-# Tesseract設定 - 修正箇所
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
 SCRIPT_PATH = os.path.abspath(__file__)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_PATH)))
 TESSDATA_DIR = os.path.join(PROJECT_ROOT, "tessdata_custom")

@@ -8,10 +8,12 @@ from .special_roi_processor import SpecialROIProcessor
 from .config import (
     OUTPUT_DIR, HP_ROIS, AILMENT_ROIS, POKEMON_NAME_ROIS,
     ABILITY_NAME_ROIS, POKEMON_NO_ROIS, ROI_DICT, CUSTOM_CONFIG,
-    TESSERACT_PATH, SELECT_ROIS, BATTLE_CHOOSE_ROIS, BATTLE_ACT_ROIS,
+    SELECT_ROIS, BATTLE_CHOOSE_ROIS, BATTLE_ACT_ROIS,
     START_IMAGE, SELECT_IMAGES_PATH, WIN_LOSE_IMAGES_DIR,
     TERA_ICONS_DIR, TERA_ME_ICONS_DIR, AILMENT_ICONS_DIR
 )
+
+from flask import current_app
 
 class OCRProcessor:
     def __init__(self, pokemon_corrector, ability_corrector):
@@ -25,8 +27,8 @@ class OCRProcessor:
         self.image_processor = ImageROIProcessor(OUTPUT_DIR, self.image_matcher)
         self.special_processor = SpecialROIProcessor(OUTPUT_DIR)
         
-        # テッセラクト設定
-        pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+        # テッセラクト設定 (Flaskのconfigから取得)
+        pytesseract.pytesseract.tesseract_cmd = current_app.config.get('TESSERACT_PATH')
         
         # 直前のポケモン名を保持（act→choose遷移用）
         self.last_my_pokemon_name = ""
