@@ -6,6 +6,7 @@ CREATE TABLE raw_battle_events (
     log_timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'localtime')),
     roi_name TEXT NOT NULL,
     ocr_text TEXT,
+    phase TEXT,
     FOREIGN KEY (battle_id) REFERENCES battles (battle_id),
     UNIQUE(battle_id, sequence, roi_name)
 );

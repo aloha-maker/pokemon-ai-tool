@@ -9,7 +9,7 @@ ROI_FILE = r'C:\pokemon-ai-tool\instance\roi_config.json'
 POKEMON_MASTER_PATH = r'C:\pokemon-ai-tool\data\master_data\pokemons.csv'
 ABILITY_MASTER_PATH = r'C:\pokemon-ai-tool\data\master_data\abilities.csv'
 
-EXTRACT_PER_SECOND = 0.1  # 1秒に3枚抽出
+EXTRACT_PER_SECOND = 1.2  # 1秒に3枚抽出
 
 # ROIカテゴリ設定
 OCR_EXEMPT_ROIS = {'your_ailment', 'my_ailment', 'my_pokemon_hp', 'opponent_pokemon_hp'}
