@@ -4,7 +4,7 @@ import time
 import cv2
 import pygetwindow
 import json
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, current_app
 from src.core.capture import ScreenCapturer
 from src.core.ocr.ocr_processor import OCRProcessor
 
@@ -13,63 +13,38 @@ capture_bp = Blueprint('capture_api', __name__, url_prefix='/api')
 DEBUG_IMAGE_DIR = '.img'
 ROI_CONFIG_PATH = 'instance/roi_config.json'
 
-@capture_bp.route('/capture', methods=['POST'])
-def capture_window():
-    data = request.get_json()
-    if not data or 'window_title' not in data:
-        return jsonify({"error": "window_title is required."} ), 400
+# @capture_bp.route('/capture', methods=['POST'])
+# def capture_window():
+#     data = request.get_json()
+#     if not data or 'window_title' not in data:
+#         return jsonify({"error": "window_title is required."} ), 400
 
-    window_title = data['window_title']
-    region = data.get('region')
+#     window_title = data['window_title']
+#     region = data.get('region')
 
-    capturer = ScreenCapturer(window_title)
+#     capturer = ScreenCapturer(window_title)
     
-    if not capturer._find_window():
-        return jsonify({"error": f"Window '{window_title}' not found."} ), 404
+#     if not capturer._find_window():
+#         return jsonify({"error": f"Window '{window_title}' not found."} ), 404
 
-    frame = capturer.capture_frame(region=region)
+#     frame = capturer.capture_frame(region=region)
 
-    if frame is None:
-        return jsonify({"error": "Failed to capture frame."} ), 500
+#     if frame is None:
+#         return jsonify({"error": "Failed to capture frame."} ), 500
 
-    captures_dir = os.path.join('static', 'captures')
-    filename = f"captured_{int(time.time())}.png"
-    filepath = os.path.join(captures_dir, filename)
+#     captures_dir = os.path.join('static', 'captures')
+#     filename = f"captured_{int(time.time())}.png"
+#     filepath = os.path.join(captures_dir, filename)
     
-    cv2.imwrite(filepath, frame)
+#     cv2.imwrite(filepath, frame)
     
-    return jsonify({
-        "message": "Capture successful.",
-        "file_path": filepath.replace('\\', '/')
-    })
+#     return jsonify({
+#         "message": "Capture successful.",
+#         "file_path": filepath.replace('\\', '/')
+#     })
 
-@capture_bp.route('/ocr_test', methods=['POST'])
-def ocr_test():
-    data = request.get_json()
-    if not data or 'image_path' not in data:
-        return jsonify({"error": "image_path is required."}), 400
 
-    image_path = data['image_path']
-    if not os.path.exists(image_path):
-        return jsonify({"error": f"Image not found at '{image_path}'"}), 404
 
-    img = cv2.imread(image_path)
-    if img is None:
-        return jsonify({"error": f"Failed to read image from '{image_path}'"}), 500
-
-    parser = OCRProcessor()
-    game_state = parser.parse_frame(img)
-
-    return jsonify({
-        "message": "OCR process completed.",
-        "ocr_results": game_state
-    })
-
-@capture_bp.route('/windows', methods=['GET'])
-def get_windows():
-    titles = pygetwindow.getAllTitles()
-    window_titles = [title for title in titles if title]
-    return jsonify({"windows": window_titles})
 
 @capture_bp.route('/party/recognize_opponent', methods=['POST'])
 def recognize_opponent_party():
