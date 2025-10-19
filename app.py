@@ -1,6 +1,6 @@
 # C:\pokemon-ai-tool\app.py
 import os
-from flask import Flask
+from flask import Flask, jsonify
 from flask_socketio import SocketIO
 from config import config
 
