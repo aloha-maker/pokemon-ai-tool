@@ -582,18 +582,60 @@ class DatabaseManager:
     # --- F-06: パーティ管理 (Parties) ---
 
     def get_all_parties(self) -> list[dict]:
-        """登録済みのすべてのパーティを、メンバー情報付きで取得する。"""
+        """登録済みのすべてのパーティを、JOINを使用して効率的に取得する。"""
         cursor = self.get_cursor()
         
-        # まずは全パーティを取得
-        cursor.execute("SELECT * FROM parties ORDER BY updated_at DESC")
-        parties = [dict(row) for row in cursor.fetchall()]
-        
-        # 各パーティのメンバーを取得
-        for party in parties:
-            party['members'] = self._get_party_members(party['id'])
+        query = """
+            SELECT
+                p.id as party_id,
+                p.name as party_name,
+                p.description as party_description,
+                p.created_at as party_created_at,
+                p.updated_at as party_updated_at,
+                tp.id as member_id,
+                tp.nickname,
+                tp.level,
+                pk.name_ja as pokemon_name,
+                pk.type1 as pokemon_type1,
+                pk.type2 as pokemon_type2,
+                i.name_ja as item_name
+            FROM
+                parties p
+            LEFT JOIN party_members pm ON p.id = pm.party_id
+            LEFT JOIN trained_pokemons tp ON pm.trained_pokemon_id = tp.id
+            LEFT JOIN pokemons pk ON tp.pokemon_id = pk.id
+            LEFT JOIN items i ON tp.held_item_id = i.id
+            ORDER BY p.updated_at DESC, pm.member_index ASC
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        parties_dict = {}
+        for row in rows:
+            party_id = row['party_id']
+            if party_id not in parties_dict:
+                parties_dict[party_id] = {
+                    'id': party_id,
+                    'name': row['party_name'],
+                    'description': row['party_description'],
+                    'created_at': row['party_created_at'],
+                    'updated_at': row['party_updated_at'],
+                    'members': []
+                }
             
-        return parties
+            # メンバーが存在する場合のみ追加
+            if row['member_id'] is not None:
+                parties_dict[party_id]['members'].append({
+                    'id': row['member_id'],
+                    'nickname': row['nickname'],
+                    'level': row['level'],
+                    'pokemon_name': row['pokemon_name'],
+                    'pokemon_type1': row['pokemon_type1'],
+                    'pokemon_type2': row['pokemon_type2'],
+                    'item_name': row['item_name']
+                })
+
+        return list(parties_dict.values())
 
     def get_party_by_id(self, party_id: int) -> dict | None:
         """IDで指定したパーティの情報を、メンバー付きで取得する。"""
@@ -607,27 +649,7 @@ class DatabaseManager:
         party_dict['members'] = self._get_party_members(party_id)
         return party_dict
 
-    def _get_party_members(self, party_id: int) -> list[dict]:
-        """指定されたパーティIDのメンバー（育成済みポケモン）の詳細リストを取得する。"""
-        cursor = self.get_cursor()
-        # まずはパーティに属する trained_pokemon_id と index を取得
-        cursor.execute(
-            "SELECT trained_pokemon_id, member_index FROM party_members WHERE party_id = ? ORDER BY member_index",
-            (party_id,)
-        )
-        members_info = cursor.fetchall()
-        
-        # 各メンバーの詳細情報を取得
-        members_details = []
-        for info in members_info:
-            # get_trained_pokemon_by_id を使って完全なデータを取得
-            pokemon_details = self.get_trained_pokemon_by_id(info['trained_pokemon_id'])
-            if pokemon_details:
-                # シミュレータが必要とするかもしれないので、member_index も追加
-                pokemon_details['member_index'] = info['member_index']
-                members_details.append(pokemon_details)
-                
-        return members_details
+
 
     def add_party(self, data: dict) -> int:
         """新しいパーティをデータベースに登録する。"""
