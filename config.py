@@ -18,8 +18,14 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
 
+class TestingConfig(Config):
+    TESTING = True
+    DATABASE_URL = 'sqlite:///:memory:'  # インメモリDBを使用
+    WTF_CSRF_ENABLED = False
+
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'testing': TestingConfig,
     'default': DevelopmentConfig
 }

@@ -1,9 +1,5 @@
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-
 import pprint
-from ai.win_rate_predictor import WinRatePredictor
+from src.ai.win_rate_predictor import WinRatePredictor
 
 def main():
     # --- テスト用のパーティデータ ---

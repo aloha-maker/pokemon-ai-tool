@@ -27,12 +27,13 @@ from src.core.ocr_ import PokemonRecognizer
 
 import logging
 
-def create_app():
+def create_app(config_name=None):
     """ Flaskアプリケーションを生成して返す (Application Factory パターン) """
     app = Flask(__name__, instance_relative_config=True)
 
     # --- 環境変数から設定を読み込む ---
-    config_name = os.getenv('FLASK_ENV', 'default')
+    if config_name is None:
+        config_name = os.getenv('FLASK_ENV', 'default')
     app.config.from_object(config[config_name])
 
     # --- ロギング設定 ---
