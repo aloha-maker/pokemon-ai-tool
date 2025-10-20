@@ -638,15 +638,67 @@ class DatabaseManager:
         return list(parties_dict.values())
 
     def get_party_by_id(self, party_id: int) -> dict | None:
-        """IDで指定したパーティの情報を、メンバー付きで取得する。"""
+        """IDで指定したパーティの情報を、メンバーと技詳細を含めて効率的に取得する。"""
         cursor = self.get_cursor()
+        
+        # 1. パーティの基本情報を取得
         cursor.execute("SELECT * FROM parties WHERE id = ?", (party_id,))
-        party = cursor.fetchone()
-        if not party:
+        party_row = cursor.fetchone()
+        if not party_row:
             return None
         
-        party_dict = dict(party)
-        party_dict['members'] = self._get_party_members(party_id)
+        party_dict = dict(party_row)
+        
+        # 2. パーティメンバーの基本情報と技IDを一括で取得
+        members_query = """
+            SELECT
+                tp.*,
+                pm.member_index,
+                p.name_ja as pokemon_name,
+                i.name_ja as item_name
+            FROM party_members pm
+            JOIN trained_pokemons tp ON pm.trained_pokemon_id = tp.id
+            LEFT JOIN pokemons p ON tp.pokemon_id = p.id
+            LEFT JOIN items i ON tp.held_item_id = i.id
+            WHERE pm.party_id = ?
+            ORDER BY pm.member_index ASC
+        """
+        cursor.execute(members_query, (party_id,))
+        member_rows = cursor.fetchall()
+        
+        if not member_rows:
+            party_dict['members'] = []
+            return party_dict
+
+        # 3. 取得した全メンバーから、すべての技IDを収集
+        all_move_ids = set()
+        for member in member_rows:
+            for i in range(1, 5):
+                move_id = member[f'move{i}_id']
+                if move_id:
+                    all_move_ids.add(move_id)
+        
+        # 4. 全技詳細を一括で取得
+        moves_details_map = {}
+        if all_move_ids:
+            placeholders = ', '.join('?' for _ in all_move_ids)
+            moves_query = f"SELECT * FROM moves WHERE id IN ({placeholders})"
+            cursor.execute(moves_query, list(all_move_ids))
+            for move_row in cursor.fetchall():
+                moves_details_map[move_row['id']] = dict(move_row)
+
+        # 5. メンバー情報に技詳細リストを 'moves' キーとして追加
+        members_list = []
+        for member_row in member_rows:
+            member_data = dict(member_row)
+            member_data['moves'] = [] # Create the 'moves' key
+            for i in range(1, 5):
+                move_id = member_data.get(f'move{i}_id')
+                if move_id and move_id in moves_details_map:
+                    member_data['moves'].append(moves_details_map[move_id])
+            members_list.append(member_data)
+
+        party_dict['members'] = members_list
         return party_dict
 
 
