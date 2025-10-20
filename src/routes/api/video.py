@@ -3,6 +3,7 @@ import os
 import uuid
 import sys
 from flask import Blueprint, request, jsonify
+from threading import Lock
 
 from src import state
 from src.extensions import executor
@@ -20,6 +21,7 @@ from src.core.ocr.video_processor import process_video
 video_bp = Blueprint('video_api', __name__, url_prefix='/api/videos')
 
 VIDEO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'videos')
+tasks_lock = Lock()
 
 def analyze_video_task(task_id, filepath):
     """バックグラウンドで実行される動画解析タスク - OCRベース版"""
@@ -82,10 +84,17 @@ def upload_video():
 
 @video_bp.route('/status/<task_id>', methods=['GET'])
 def get_video_status(task_id):
-    task = state.video_tasks.get(task_id)
-    if not task:
-        return jsonify({"error": "Task not found"}), 404
-    return jsonify(task)
+    with tasks_lock:
+        task = state.video_tasks.get(task_id)
+        if not task:
+            return jsonify({"error": "Task not found"}), 404
+
+        response_data = task.copy()
+
+        if response_data.get('status') in ['DONE', 'ERROR']:
+            state.video_tasks.pop(task_id, None)
+
+    return jsonify(response_data)
 
 @video_bp.route('/result/<int:log_id>', methods=['GET'])
 def get_video_result(log_id):
