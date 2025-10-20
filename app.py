@@ -60,6 +60,11 @@ def create_app(config_name=None):
     executor.init_app(app)
     socketio = SocketIO(app)
 
+    # --- favicon.ico のリクエストを処理 ---
+    @app.route('/favicon.ico')
+    def favicon():
+        return '', 204
+
     # --- Blueprintの登録 ---
     app.register_blueprint(views_bp)
     app.register_blueprint(streaming_bp)
@@ -73,7 +78,7 @@ def create_app(config_name=None):
     app.register_blueprint(master_bp)
     app.register_blueprint(trained_pokemon_bp)
     app.register_blueprint(dashboard_bp)
-    app.register_blueprint(database_bp)
+    # app.register_blueprint(database_bp)
 
     # --- SocketIOハンドラの登録 ---
     register_socket_handlers(socketio)
