@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS parties (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_parties_updated_at ON parties (updated_at);

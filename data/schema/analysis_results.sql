@@ -1,5 +1,5 @@
 -- AIによる分析結果テーブル
-CREATE TABLE analysis_results (
+CREATE TABLE IF NOT EXISTS analysis_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     log_id INTEGER NOT NULL UNIQUE,
     win_factor TEXT,

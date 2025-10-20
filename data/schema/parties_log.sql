@@ -8,3 +8,6 @@ CREATE TABLE IF NOT EXISTS parties_log (
     FOREIGN KEY (battle_id) REFERENCES battles (battle_id),
     FOREIGN KEY (pokemon_id) REFERENCES pokemons_log (pokemon_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_parties_log_battle_id ON parties_log (battle_id);
+CREATE INDEX IF NOT EXISTS idx_parties_log_opponent_pokemon ON parties_log (is_opponent, pokemon_name);

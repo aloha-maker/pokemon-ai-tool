@@ -1,5 +1,5 @@
 -- 対戦履歴テーブル
-CREATE TABLE battle_logs (
+CREATE TABLE IF NOT EXISTS battle_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     result TEXT DEFAULT 'unknown' NOT NULL CHECK(result IN ('win', 'lose', 'unknown')),
     opponent_party TEXT, -- JSON format

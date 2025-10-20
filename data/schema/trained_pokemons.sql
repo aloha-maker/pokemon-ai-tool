@@ -36,3 +36,6 @@ CREATE TABLE IF NOT EXISTS trained_pokemons (
     FOREIGN KEY (move3_id) REFERENCES moves(id),
     FOREIGN KEY (move4_id) REFERENCES moves(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_trained_pokemons_pokemon_id ON trained_pokemons (pokemon_id);
+CREATE INDEX IF NOT EXISTS idx_trained_pokemons_updated_at ON trained_pokemons (updated_at);

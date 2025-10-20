@@ -1,5 +1,5 @@
 -- 技テーブル
-CREATE TABLE moves (
+CREATE TABLE IF NOT EXISTS moves (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     name_ja TEXT,

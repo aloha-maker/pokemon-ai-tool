@@ -1,5 +1,5 @@
 -- ポケモン図鑑テーブル
-CREATE TABLE pokemons (
+CREATE TABLE IF NOT EXISTS pokemons (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     name_ja TEXT,
@@ -15,3 +15,5 @@ CREATE TABLE pokemons (
     moves TEXT,
     abilities TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_pokemons_name_ja ON pokemons (name_ja);

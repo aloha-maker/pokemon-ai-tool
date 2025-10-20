@@ -9,3 +9,6 @@ CREATE TABLE IF NOT EXISTS party_members (
     FOREIGN KEY (party_id) REFERENCES parties (id) ON DELETE CASCADE,
     FOREIGN KEY (trained_pokemon_id) REFERENCES trained_pokemons (id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_party_members_party_id ON party_members (party_id);
+CREATE INDEX IF NOT EXISTS idx_party_members_trained_pokemon_id ON party_members (trained_pokemon_id);
