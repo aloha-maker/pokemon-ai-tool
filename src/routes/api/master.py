@@ -1,47 +1,27 @@
 # src/routes/api/master.py
 from flask import Blueprint, jsonify
-from src.database.manager import DatabaseManager
+from src.services.master_data_service import MasterDataService
 
 master_bp = Blueprint('master_api', __name__)
+service = MasterDataService()
 
-# 各マスターデータを取得するための汎用関数
-def get_master_data(resource_name):
-    with DatabaseManager() as db:
-        data = db.get_master_data_by_resource(resource_name)
+@master_bp.route('/api/master/<string:resource_name>', methods=['GET'])
+def get_master_data_generic(resource_name):
+    """汎用的なマスターデータ取得エンドポイント"""
+    # 意図しないリソースへのアクセスを防ぐためのホワイトリスト
+    allowed_resources = ['pokemons', 'types', 'items', 'natures', 'moves', 'abilities']
+    if resource_name not in allowed_resources:
+        return jsonify({"error": "Resource not found"}), 404
+    
+    data = service.get_master_data(resource_name)
     return jsonify(data)
-
-@master_bp.route('/api/master/pokemons', methods=['GET'])
-def get_pokemons():
-    return get_master_data('pokemons')
-
-@master_bp.route('/api/master/types', methods=['GET'])
-def get_types():
-    return get_master_data('types')
-
-@master_bp.route('/api/master/items', methods=['GET'])
-def get_items():
-    return get_master_data('items')
-
-@master_bp.route('/api/master/natures', methods=['GET'])
-def get_natures():
-    return get_master_data('natures')
-
-@master_bp.route('/api/master/moves', methods=['GET'])
-def get_moves():
-    return get_master_data('moves')
-
-@master_bp.route('/api/master/abilities', methods=['GET'])
-def get_abilities():
-    return get_master_data('abilities')
 
 @master_bp.route('/api/pokemon/<int:pokemon_id>/abilities', methods=['GET'])
 def get_pokemon_abilities(pokemon_id):
-    with DatabaseManager() as db:
-        abilities = db.get_abilities_by_pokemon_id(pokemon_id)
+    abilities = service.get_abilities_for_pokemon(pokemon_id)
     return jsonify(abilities)
 
 @master_bp.route('/api/pokemon/<int:pokemon_id>/moves', methods=['GET'])
 def get_pokemon_moves(pokemon_id):
-    with DatabaseManager() as db:
-        moves = db.get_moves_by_pokemon_id(pokemon_id)
+    moves = service.get_moves_for_pokemon(pokemon_id)
     return jsonify(moves)

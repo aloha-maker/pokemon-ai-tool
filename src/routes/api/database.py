@@ -1,14 +1,14 @@
 # src/routes/api/database.py
 from flask import Blueprint, jsonify, request
-from src.database.manager import DatabaseManager
+from src.services.master_data_service import MasterDataService
 
 database_bp = Blueprint('database_api', __name__)
+service = MasterDataService()
 
 @database_bp.route('/api/db/tables', methods=['GET'])
 def get_tables():
     """データベースのテーブル一覧を返す。"""
-    with DatabaseManager() as db:
-        tables = db.get_all_tables()
+    tables = service.get_all_table_names()
     return jsonify(tables)
 
 @database_bp.route('/api/db/search', methods=['GET'])
@@ -19,14 +19,8 @@ def search():
     page = request.args.get('page', default=1, type=int)
     per_page = request.args.get('per_page', default=50, type=int)
     
-    if not table_name:
-        return jsonify({"error": "Table name is required"}), 400
-        
-    offset = (page - 1) * per_page
-
     try:
-        with DatabaseManager() as db:
-            result = db.search_table(table_name, keyword, limit=per_page, offset=offset)
+        result = service.search_table(table_name, keyword, page, per_page)
         return jsonify(result)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
