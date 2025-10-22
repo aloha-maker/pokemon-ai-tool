@@ -272,7 +272,7 @@ export class PredictionManager {
     }
 
     async handlePredict() {
-        const opponentPartyInputs = document.querySelectorAll('#opponent-party-form input');
+        const opponentPartyInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
         const resultArea = document.getElementById('prediction-result-area');
 
         const opponent_party = Array.from(opponentPartyInputs)
@@ -285,7 +285,7 @@ export class PredictionManager {
         if (selectedPartyId) {
             requestBody.my_party_id = selectedPartyId;
         } else {
-            const myPartyInputs = document.querySelectorAll('#my-party-form input');
+            const myPartyInputs = document.querySelectorAll('#my-party-display .pokemon-input');
             const my_party = Array.from(myPartyInputs)
                 .map(input => input.value)
                 .filter(p => p.trim() !== '');
@@ -305,7 +305,7 @@ export class PredictionManager {
         setButtonLoading(this.predictButton, true);
 
         try {
-            const response = await fetch('/predict', {
+            const response = await fetch('/api/ai/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody),
