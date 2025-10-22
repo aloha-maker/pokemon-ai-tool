@@ -46,4 +46,4 @@ class RoiService:
         # TODO: このパスは動的に決定する必要がある。
         # リアルタイム解析中の最新フレームや、ユーザーがアップロードした画像など。
         # 現状はハードコードされた値を返す。
-        return {"image_path": "/tests/img/battle_basic.png"}
+        return {"image_path": "/static/img/battle_basic.png"}
