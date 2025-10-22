@@ -47,7 +47,7 @@ export class PartyGenerator {
         registerAlert.style.display = 'none';
 
         try {
-            const response = await fetch('/generate-party', {
+            const response = await fetch('/api/ai/generate-party', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ available_pokemon, concept }),

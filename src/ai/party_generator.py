@@ -50,14 +50,7 @@ class PartyGenerator:
     def _choose_ability(self, db, p_data: dict) -> dict:
         """ポケモンに紐づく正しい特性の中からランダムに1つ選択する"""
         possible_abilities = db.get_abilities_by_pokemon_id(p_data['id'])
-        if possible_abilities:
-            # 隠れ特性でないものを優先する
-            non_hidden = [a for a in possible_abilities if not a['is_hidden']]
-            if non_hidden:
-                return random.choice(non_hidden)
-            return random.choice(possible_abilities) # 隠れ特性しかない場合
-        # 見つからなければ全特性からランダム（フォールバック）
-        return random.choice(self.all_abilities)
+        return random.choice(possible_abilities)
 
     def _choose_item(self, p_data: dict, role: str) -> dict:
         role_items = {
