@@ -11,8 +11,3 @@ def index():
 # def trained_pokemon_management():
 #     """育成済みポケモン管理ページを表示する。"""
 #     return render_template('trained_pokemon_management.html')
-
-# @views_bp.route('/database')
-# def database_viewer():
-#     """データベース管理ページを表示する。"""
-#     return render_template('database_viewer.html')
