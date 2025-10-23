@@ -4,15 +4,6 @@ from src.services.battle_service import BattleService
 
 battle_bp = Blueprint('battle_api', __name__, url_prefix='/api')
 
-@battle_bp.route('/history/add', methods=['POST'])
-def add_history():
-    service = BattleService()
-    try:
-        log_id = service.add_log(request.json)
-        return jsonify({"message": "対戦履歴を保存しました。", "log_id": log_id}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @battle_bp.route('/history', methods=['GET'])
 def get_history():
     service = BattleService()
@@ -21,23 +12,6 @@ def get_history():
         return jsonify(history_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@battle_bp.route('/battles/save_result', methods=['POST'])
-def save_battle_result():
-    """対戦結果をDBに保存する"""
-    service = BattleService()
-    data = request.json
-    try:
-        log_id = service.save_result(
-            my_party_id=data.get('my_party_id'),
-            opponent_party=data.get('opponent_party'),
-            result=data.get('result')
-        )
-        return jsonify({"message": "対戦結果を保存しました。", "log_id": log_id}), 201
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": "An internal server error occurred"}), 500
 
 @battle_bp.route('/battles/save_result_with_log', methods=['POST'])
 def save_battle_result_with_log():
@@ -54,22 +28,6 @@ def save_battle_result_with_log():
             raw_events=data.get('raw_events', [])
         )
         return jsonify({"message": "対戦結果とログを保存しました。", "log_id": log_id}), 201
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": "An internal server error occurred"}), 500
-
-@battle_bp.route('/battles/prepare', methods=['POST'])
-def prepare_battle():
-    """対戦前のパーティ情報をDBに保存する"""
-    service = BattleService()
-    data = request.json
-    try:
-        log_id = service.prepare_log(
-            my_party_id=data.get('my_party_id'),
-            opponent_party=data.get('opponent_party')
-        )
-        return jsonify({"message": "対戦パーティを保存しました。", "log_id": log_id}), 201
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:

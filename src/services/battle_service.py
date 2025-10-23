@@ -34,34 +34,12 @@ class BattleService:
             stats = db.get_battle_stats()
         return {"raw_history": raw_history, "stats": stats}
 
-    def add_log(self, data: dict) -> int:
-        """対戦ログを追加する"""
-        with DatabaseManager() as db:
-            log_id = db.add_battle_log(data)
-        return log_id
-
-    def save_result(self, my_party_id: int, opponent_party: list, result: str) -> int:
-        """対戦結果を保存する"""
-        if not all([my_party_id, opponent_party, result]) or result not in ['win', 'lose']:
-            raise ValueError("パーティ情報または勝敗結果が不正です。")
-        with DatabaseManager() as db:
-            log_id = db.save_battle_result(my_party_id, opponent_party, result)
-        return log_id
-
     def save_result_with_log(self, battle_id: str, my_party_id: int, my_party: list, opponent_party: list, result: str, raw_events: list) -> int:
         """対戦結果とリアルタイムOCRログを保存する"""
         if not all([my_party_id, opponent_party, result, battle_id]) or result not in ['win', 'lose']:
             raise ValueError("パーティ情報、勝敗結果、またはバトルIDが不正です。")
         with DatabaseManager() as db:
             log_id = db.save_battle_result_with_log(battle_id, my_party_id, my_party, opponent_party, result, raw_events)
-        return log_id
-
-    def prepare_log(self, my_party_id: int, opponent_party: list) -> int:
-        """対戦前のパーティ情報を保存する"""
-        if not my_party_id or not isinstance(opponent_party, list) or len(opponent_party) == 0:
-            raise ValueError("パーティ情報が不正です。")
-        with DatabaseManager() as db:
-            log_id = db.prepare_battle_log(my_party_id, opponent_party)
         return log_id
 
     def generate_new_battle_id(self) -> str:
