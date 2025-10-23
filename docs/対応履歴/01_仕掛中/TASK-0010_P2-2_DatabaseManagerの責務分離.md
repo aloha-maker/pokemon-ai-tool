@@ -33,3 +33,56 @@ P2-2: `DatabaseManager` の責務分離
 ### リスク
 - データベース関連のロジック変更は、データの不整合やパフォーマンス劣化に繋がるリスクがある。
 - **前提条件:** `DatabaseManager` と関連サービスに対する十分な単体テストが存在すること。
+
+### DashboardService移管対象メソッドリスト:
+
+   * get_dashboard_summary(): ダッシュボードのサマリー情報（勝率、ランク推移など）を取得する。
+   * get_opponent_pokemon_ranking(): 相手のパーティによく含まれるポケモンのランキングを取得する。
+   * get_win_rate_by_opponent(): 相手のポケモンごとの勝率を計算する。
+   * get_my_pokemon_selection_rate(): 自分のポケモンの選出率を計算する。
+   * get_selection_pattern_win_rate(): 自分の選出パターン（3体）ごとの勝率を計算する。
+   * get_opponent_pokemon_customization_ranking():
+     指定された相手ポケモンの技、持ち物、テラスタイプの採用率ランキングを取得する。
+   * get_battle_stats(): 全体の対戦数や勝利数などの基本的な統計データを取得する。
+
+
+### BattleService に移管すべきメソッド
+  対戦の履歴やログの記録・取得に関連するメソッドです。
+   * get_battle_history()
+   * get_battle_log_by_id()
+   * get_all_battle_logs()
+   * get_latest_battle_id_for_today()
+   * add_battle_log_from_video()
+   * save_battle_result_with_log()
+
+  ### TrainedPokemonService に移管すべきメソッド
+  ユーザーが育成した個々のポケモン（育成済みポケモン）のCRUD操作に関連するメソッドです。
+   * get_all_trained_pokemons()
+   * get_trained_pokemon_by_id()
+   * add_trained_pokemon()
+   * update_trained_pokemon()
+   * delete_trained_pokemon()
+
+  ### PartyService に移管すべきメソッド
+  育成済みポケモンで構成される「パーティ」のCRUD操作に関連するメソッドです。
+   * get_all_parties()
+   * get_party_by_id()
+   * add_party()
+   * update_party()
+   * delete_party()
+   * get_party_pokemon_names()
+
+  ### MasterDataService に移管すべきメソッド
+  ポケモン、技、特性などのマスターデータを取得するためのメソッドです。
+   * get_pokemon_by_name()
+   * get_move_by_name()
+   * get_pokemons_by_names()
+   * get_master_data_by_resource()
+   * get_abilities_by_pokemon_id()
+   * get_moves_by_pokemon_id()
+   * get_moves_by_type()
+
+  ### DatabaseManager に残す、または汎用DBサービスに移管するメソッド
+  テーブル横断的な汎用検索機能などです。
+   * get_all_tables()
+   * search_table()
