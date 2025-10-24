@@ -1,8 +1,9 @@
 import traceback
 import math
 import uuid
-
 from flask import Blueprint, jsonify, request
+from src.database.manager import DatabaseManager
+from src.services.party_service import PartyService
 from src.services.trained_pokemon_service import TrainedPokemonService
 from src.services.dashboard_service import DashboardService
 from src.core import calculator
@@ -25,7 +26,6 @@ def get_trained_pokemons():
         pokemons = service.get_all()
         return jsonify(pokemons), 200
     except Exception as e:
-        # ログ記録はグローバルエラーハンドラに任せる
         return jsonify({'error': '育成済みポケモンの取得に失敗しました。'}), 500
 
 @api_bp.route('/trained-pokemons/<int:pokemon_id>', methods=['GET'])
@@ -33,7 +33,7 @@ def get_trained_pokemon(pokemon_id):
     """指定したIDの育成済みポケモンの詳細を取得する。"""
     try:
         service = TrainedPokemonService()
-        pokemon = service.create(pokemon_id)
+        pokemon = service.get_by_id(pokemon_id)
         if pokemon:
             return jsonify(pokemon), 200
         else:
@@ -50,7 +50,7 @@ def add_trained_pokemon():
     
     try:
         service = TrainedPokemonService()
-        new_id = service.add_trained_pokemon(data)
+        new_id = service.create(data)
         return jsonify({'message': 'ポケモンを登録しました。', 'id': new_id}), 201
     except Exception as e:
         return jsonify({'error': 'ポケモンの登録に失敗しました。'}), 500
@@ -64,7 +64,7 @@ def update_trained_pokemon(pokemon_id):
 
     try:
         service = TrainedPokemonService()
-        updated_rows = service.update_trained_pokemon(pokemon_id, data)
+        updated_rows = service.update(pokemon_id, data)
         if updated_rows > 0:
             return jsonify({'message': f'ポケモンID {pokemon_id} を更新しました。'}), 200
         else:
@@ -77,7 +77,7 @@ def delete_trained_pokemon(pokemon_id):
     """指定したIDの育成済みポケモンを削除する。"""
     try:
         service = TrainedPokemonService()
-        deleted_rows = service.delete_trained_pokemon(pokemon_id)
+        deleted_rows = service.delete(pokemon_id)
         if deleted_rows > 0:
             return jsonify({'message': f'ポケモンID {pokemon_id} を削除しました。'}), 200
         else:
@@ -97,9 +97,7 @@ def get_master_data(resource):
     try:
         with DatabaseManager() as db:
             cursor = db.get_cursor()
-            # name_ja がないテーブル (moves) のために name を使う -> name_jaが存在するため修正
             if resource == 'pokemons':
-                # ポケモン名で重複を除外する（フォルム違いなどをまとめる）
                 cursor.execute("SELECT MIN(id) as id, name, name_ja FROM pokemons GROUP BY name_ja ORDER BY name_ja")
             else:
                  cursor.execute(f"SELECT id, name, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY name_ja")
@@ -120,12 +118,10 @@ def add_item():
     try:
         with DatabaseManager() as db:
             cursor = db.get_cursor()
-            # 既存の持ち物名と重複しないかチェック
             cursor.execute("SELECT id FROM items WHERE name_ja = ?", (data['name_ja'],))
             if cursor.fetchone():
                 return jsonify({'error': 'Item with this name already exists.'}), 409
             
-            # name は name_ja と同じ値で登録
             cursor.execute(
                 "INSERT INTO items (name, name_ja) VALUES (?, ?)",
                 (data['name_ja'], data['name_ja'])
@@ -146,12 +142,10 @@ def update_item(item_id):
     try:
         with DatabaseManager() as db:
             cursor = db.get_cursor()
-            # 既存の持ち物名と重複しないかチェック (自分自身を除く)
             cursor.execute("SELECT id FROM items WHERE name_ja = ? AND id != ?", (data['name_ja'], item_id))
             if cursor.fetchone():
                 return jsonify({'error': 'Item with this name already exists.'}), 409
 
-            # name は name_ja と同じ値で更新
             cursor.execute(
                 "UPDATE items SET name = ?, name_ja = ? WHERE id = ?",
                 (data['name_ja'], data['name_ja'], item_id)
@@ -175,7 +169,6 @@ def delete_item(item_id):
                 return jsonify({'error': 'Item not found'}), 404
         return jsonify({'message': 'Item deleted successfully'}), 200
     except Exception as e:
-        # 外部キー制約違反の場合
         if 'FOREIGN KEY constraint failed' in str(e):
             return jsonify({'error': 'This item is currently in use by a trained Pokémon and cannot be deleted.'}), 409
         return jsonify({'error': str(e)}), 500
@@ -184,40 +177,38 @@ def delete_item(item_id):
 def get_parties():
     """登録済みのパーティを一覧で取得する。"""
     try:
-        with DatabaseManager() as db:
-            parties = db.get_all_parties()
+        service = PartyService()
+        parties = service.get_all()
         return jsonify(parties), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'パーティ一覧の取得に失敗しました。'}), 500
 
 @api_bp.route('/parties/<int:party_id>', methods=['GET'])
 def get_party(party_id):
     """指定したIDのパーティ詳細を取得する。"""
     try:
-        with DatabaseManager() as db:
-            party = db.get_party_by_id(party_id)
+        service = PartyService()
+        party = service.get_by_id(party_id)
         if party:
             return jsonify(party), 200
         else:
-            return jsonify({'error': 'Party not found'}), 404
+            return jsonify({'error': '指定されたパーティが見つかりません。'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'パーティ詳細の取得に失敗しました。'}), 500
 
 @api_bp.route('/parties', methods=['POST'])
 def add_party():
     """新しいパーティを登録する。"""
     data = request.get_json()
     if not data or not data.get('name') or 'members' not in data:
-        return jsonify({'error': 'Invalid data: name and members are required.'}), 400
+        return jsonify({'error': '無効なデータです。パーティ名とメンバーは必須です。'}), 400
     
     try:
-        with DatabaseManager() as db:
-            new_id = db.add_party(data)
-        return jsonify({'message': 'Party added successfully', 'id': new_id}), 201
+        service = PartyService()
+        new_id = service.create(data)
+        return jsonify({'message': 'パーティを登録しました。', 'id': new_id}), 201
     except Exception as e:
-        print(f"Error in add_party: {e}")
-        print(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'パーティの登録に失敗しました。'}), 500
 
 @api_bp.route('/parties/<int:party_id>', methods=['PUT'])
 def update_party(party_id):
@@ -227,29 +218,27 @@ def update_party(party_id):
         return jsonify({'error': 'Invalid data: name and members are required.'}), 400
 
     try:
-        with DatabaseManager() as db:
-            updated_rows = db.update_party(party_id, data)
+        service = PartyService()
+        updated_rows = service.update(party_id, data)
         if updated_rows > 0:
-            return jsonify({'message': f'Party {party_id} updated successfully'}), 200
+            return jsonify({'message': f'パーティID {party_id} を更新しました。'}), 200
         else:
-            return jsonify({'error': 'Party not found or no changes made'}), 404
+            return jsonify({'error': '指定されたパーティが見つからないか、更新内容がありません。'}), 404
     except Exception as e:
-        print(f"Error in update_party: {e}")
-        print(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'パーティの更新に失敗しました。'}), 500
 
 @api_bp.route('/parties/<int:party_id>', methods=['DELETE'])
 def delete_party(party_id):
     """指定したIDのパーティを削除する。"""
     try:
-        with DatabaseManager() as db:
-            deleted_rows = db.delete_party(party_id)
+        service = PartyService()
+        deleted_rows = service.delete(party_id)
         if deleted_rows > 0:
-            return jsonify({'message': f'Party {party_id} deleted successfully'}), 200
+            return jsonify({'message': f'パーティID {party_id} を削除しました。'}), 200
         else:
-            return jsonify({'error': 'Party not found'}), 404
+            return jsonify({'error': '指定されたパーティが見つかりません。'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'パーティの削除に失敗しました。'}), 500
 
 # --- F-07: 計算機 (Calculator) ---
 
@@ -264,12 +253,10 @@ def calculate_status_api():
         pokemon_id = data.get('pokemon_id')
         level = int(data.get('level', 50))
         evs = data.get('evs', {})
-        # 個体値は常に31で固定
         ivs = {'hp': 31, 'attack': 31, 'defense': 31, 'sp_attack': 31, 'sp_defense': 31, 'speed': 31}
         nature_id = data.get('nature_id')
 
         with DatabaseManager() as db:
-            # 1. 種族値を取得
             cursor = db.get_cursor()
             cursor.execute("SELECT hp, attack, defense, sp_attack, sp_defense, speed FROM pokemons WHERE id = ?", (pokemon_id,))
             base_stats_row = cursor.fetchone()
@@ -277,12 +264,10 @@ def calculate_status_api():
                 return jsonify({'error': 'Pokemon not found'}), 404
             base_stats = dict(base_stats_row)
 
-            # 2. 性格補正を取得
             cursor.execute("SELECT increased_stat, decreased_stat FROM natures WHERE id = ?", (nature_id,))
             nature_row = cursor.fetchone()
             nature = dict(nature_row) if nature_row else None
 
-        # 3. 計算実行
         calculated_stats = calculator.calculate_status(base_stats, level, evs, ivs, nature)
 
         return jsonify(calculated_stats), 200
@@ -299,7 +284,6 @@ def calculate_damage_api():
         return jsonify({'error': 'Invalid data'}), 400
 
     try:
-        # フロントエンドから送られてくるデータを展開
         attacker_level = int(data['attacker_level'])
         attack_stat = int(data['attack_stat'])
         defender_hp = int(data['defender_hp'])
@@ -309,21 +293,18 @@ def calculate_damage_api():
 
         with DatabaseManager() as db:
             cursor = db.get_cursor()
-            # 技情報を取得
             cursor.execute("SELECT power, type, category FROM moves WHERE id = ?", (move_id,))
             move_info = cursor.fetchone()
             if not move_info:
                 return jsonify({'error': 'Move not found'}), 404
             move_power, move_type, move_category = move_info
 
-            # 防御側ポケモンのタイプを取得
             cursor.execute("SELECT type1, type2 FROM pokemons WHERE id = ?", (defender_id,))
             defender_types = cursor.fetchone()
             if not defender_types:
                 return jsonify({'error': 'Defender not found'}), 404
             defender_type1, defender_type2 = defender_types
 
-        # ダメージ計算実行
         min_damage, max_damage = calculator.calculate_damage(
             attacker_level=attacker_level,
             move_power=move_power,
@@ -334,7 +315,6 @@ def calculate_damage_api():
             defender_type2=defender_type2
         )
 
-        # 確定数を計算
         if min_damage > 0:
             min_hits_to_ko = math.ceil(defender_hp / max_damage) if max_damage > 0 else float('inf')
             max_hits_to_ko = math.ceil(defender_hp / min_damage) if min_damage > 0 else float('inf')
@@ -368,9 +348,9 @@ def create_simulation():
         party1_id = int(data['party1_id'])
         party2_id = int(data['party2_id'])
 
-        with DatabaseManager() as db:
-            party1 = db.get_party_by_id(party1_id)
-            party2 = db.get_party_by_id(party2_id)
+        service = PartyService()
+        party1 = service.get_by_id(party1_id)
+        party2 = service.get_by_id(party2_id)
 
         if not party1 or not party2:
             return jsonify({'error': 'One or both parties not found.'}), 404
@@ -379,7 +359,6 @@ def create_simulation():
         sim = simulator.BattleSimulator(party1, party2, party1_id, party2_id)
         simulations[sim_id] = sim
         
-        # 選出フェーズを開始
         sim.start_selection()
 
         return jsonify({'simulation_id': sim_id, 'state': sim.get_state()}), 201
@@ -409,7 +388,6 @@ def set_simulation_selection(sim_id):
         return jsonify({'error': 'Invalid data: selection1 and selection2 are required.'}), 400
 
     try:
-        # フロントエンドからのインデックスは 0-5, 0-5
         selection1 = [int(i) for i in data['selection1']]
         selection2 = [int(i) for i in data['selection2']]
         

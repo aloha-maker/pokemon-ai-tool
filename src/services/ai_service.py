@@ -2,7 +2,7 @@
 from typing import List, Dict, Any
 from src.ai.party_generator import PartyGenerator
 from src.ai.win_rate_predictor import WinRatePredictor
-from src.database.manager import DatabaseManager
+from src.services.party_service import PartyService
 
 class AiService:
     """AI関連のビジネスロジックを担当する"""
@@ -11,8 +11,8 @@ class AiService:
         """最適な選出と勝率を予測する"""
         my_party_from_db = []
         if my_party_id:
-            with DatabaseManager() as db:
-                my_party_from_db = db.get_party_pokemon_names(my_party_id)
+            party_service = PartyService()
+            my_party_from_db = party_service.get_pokemon_names(my_party_id)
         else:
             my_party_from_db = my_party or []
 
