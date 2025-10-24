@@ -3,7 +3,7 @@ import math
 import uuid
 
 from flask import Blueprint, jsonify, request
-from src.database.manager import DatabaseManager
+from src.services.trained_pokemon_service import TrainedPokemonService
 from src.services.dashboard_service import DashboardService
 from src.core import calculator
 from src.ai import simulator
@@ -21,76 +21,69 @@ simulations = {}
 def get_trained_pokemons():
     """登録済みの育成済みポケモンを一覧で取得する。"""
     try:
-        with DatabaseManager() as db:
-            pokemons = db.get_all_trained_pokemons()
+        service = TrainedPokemonService()
+        pokemons = service.get_all()
         return jsonify(pokemons), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # ログ記録はグローバルエラーハンドラに任せる
+        return jsonify({'error': '育成済みポケモンの取得に失敗しました。'}), 500
 
 @api_bp.route('/trained-pokemons/<int:pokemon_id>', methods=['GET'])
 def get_trained_pokemon(pokemon_id):
     """指定したIDの育成済みポケモンの詳細を取得する。"""
     try:
-        with DatabaseManager() as db:
-            pokemon = db.get_trained_pokemon_by_id(pokemon_id)
+        service = TrainedPokemonService()
+        pokemon = service.create(pokemon_id)
         if pokemon:
             return jsonify(pokemon), 200
         else:
-            return jsonify({'error': 'Pokemon not found'}), 404
+            return jsonify({'error': '指定されたポケモンが見つかりません。'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'ポケモンの詳細取得に失敗しました。'}), 500
 
 @api_bp.route('/trained-pokemons', methods=['POST'])
 def add_trained_pokemon():
     """新しい育成済みポケモンを登録する。"""
     data = request.get_json()
     if not data:
-        return jsonify({'error': 'Invalid data'}), 400
-
-    # フロントエンドからのキー 'pokemon_master_id' を 'pokemon_id' に変換
-    if 'pokemon_master_id' in data:
-        data['pokemon_id'] = data.pop('pokemon_master_id')
+        return jsonify({'error': '無効なデータです。'}), 400
     
     try:
-        with DatabaseManager() as db:
-            new_id = db.add_trained_pokemon(data)
-        return jsonify({'message': 'Pokemon added successfully', 'id': new_id}), 201
+        service = TrainedPokemonService()
+        new_id = service.add_trained_pokemon(data)
+        return jsonify({'message': 'ポケモンを登録しました。', 'id': new_id}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'ポケモンの登録に失敗しました。'}), 500
 
 @api_bp.route('/trained-pokemons/<int:pokemon_id>', methods=['PUT'])
 def update_trained_pokemon(pokemon_id):
     """指定したIDの育成済みポケモン情報を更新する。"""
     data = request.get_json()
     if not data:
-        return jsonify({'error': 'Invalid data'}), 400
-
-    # フロントエンドからのキー 'pokemon_master_id' を 'pokemon_id' に変換
-    if 'pokemon_master_id' in data:
-        data['pokemon_id'] = data.pop('pokemon_master_id')
+        return jsonify({'error': '無効なデータです。'}), 400
 
     try:
-        with DatabaseManager() as db:
-            updated_rows = db.update_trained_pokemon(pokemon_id, data)
+        service = TrainedPokemonService()
+        updated_rows = service.update_trained_pokemon(pokemon_id, data)
         if updated_rows > 0:
-            return jsonify({'message': f'Pokemon {pokemon_id} updated successfully'}), 200
+            return jsonify({'message': f'ポケモンID {pokemon_id} を更新しました。'}), 200
         else:
-            return jsonify({'error': 'Pokemon not found or no changes made'}), 404
+            return jsonify({'error': '指定されたポケモンが見つからないか、更新内容がありません。'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'ポケモンの更新に失敗しました。'}), 500
 
 @api_bp.route('/trained-pokemons/<int:pokemon_id>', methods=['DELETE'])
 def delete_trained_pokemon(pokemon_id):
     """指定したIDの育成済みポケモンを削除する。"""
     try:
-        with DatabaseManager() as db:
-            deleted_rows = db.delete_trained_pokemon(pokemon_id)
+        service = TrainedPokemonService()
+        deleted_rows = service.delete_trained_pokemon(pokemon_id)
         if deleted_rows > 0:
-            return jsonify({'message': f'Pokemon {pokemon_id} deleted successfully'}), 200
+            return jsonify({'message': f'ポケモンID {pokemon_id} を削除しました。'}), 200
         else:
-            return jsonify({'error': 'Pokemon not found'}), 404
+            return jsonify({'error': '指定されたポケモンが見つかりません。'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'ポケモンの削除に失敗しました。'}), 500
 
 # --- Master Data API Endpoints ---
 

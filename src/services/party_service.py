@@ -1,9 +1,13 @@
 # src/services/party_service.py
 from typing import List, Dict, Any
 from src.database.manager import DatabaseManager
+from src.services.trained_pokemon_service import TrainedPokemonService
 
 class PartyService:
     """パーティに関するビジネスロジックを担当する"""
+
+    def __init__(self, trained_pokemon_service: TrainedPokemonService = None):
+        self.trained_pokemon_service = trained_pokemon_service or TrainedPokemonService()
 
     def get_all(self) -> List[Dict[str, Any]]:
         """すべてのパーティを取得する"""
@@ -35,28 +39,29 @@ class PartyService:
         if not party_data or not party_name or len(party_data) != 6:
             raise ValueError("Invalid party data provided. Party must contain 6 Pokemon and a name.")
 
+        new_pokemon_ids = []
+        
+        # 育成済みポケモンを先に登録
+        for p in party_data:
+            trained_pokemon_data = {
+                "pokemon_id": p.get('pokemon_id'),
+                "nickname": p.get('name', 'Unknown'),
+                "level": 50,
+                "tera_type_id": p.get('tera_type_id'),
+                "ability_id": p.get('ability_id'),
+                "nature_id": p.get('nature_id'),
+                "held_item_id": p.get('item_id'),
+                "move1_id": p['moves'][0]['id'] if len(p.get('moves', [])) > 0 else None,
+                "move2_id": p['moves'][1]['id'] if len(p.get('moves', [])) > 1 else None,
+                "move3_id": p['moves'][2]['id'] if len(p.get('moves', [])) > 2 else None,
+                "move4_id": p['moves'][3]['id'] if len(p.get('moves', [])) > 3 else None,
+                **p.get('evs', {})
+            }
+            new_id = self.trained_pokemon_service.create(trained_pokemon_data)
+            new_pokemon_ids.append(new_id)
+        
+        # 新しいパーティを登録
         with DatabaseManager() as db:
-            new_pokemon_ids = []
-            for p in party_data:
-                # add_trained_pokemon が受け取る形式にデータを整形
-                trained_pokemon_data = {
-                    "pokemon_id": p.get('pokemon_id'),
-                    "nickname": p.get('name', 'Unknown'), # ニックネームはとりあえずポケモン名
-                    "level": 50,
-                    "tera_type_id": p.get('tera_type_id'),
-                    "ability_id": p.get('ability_id'),
-                    "nature_id": p.get('nature_id'),
-                    "held_item_id": p.get('item_id'),
-                    "move1_id": p['moves'][0]['id'] if len(p.get('moves', [])) > 0 else None,
-                    "move2_id": p['moves'][1]['id'] if len(p.get('moves', [])) > 1 else None,
-                    "move3_id": p['moves'][2]['id'] if len(p.get('moves', [])) > 2 else None,
-                    "move4_id": p['moves'][3]['id'] if len(p.get('moves', [])) > 3 else None,
-                    **p.get('evs', {}) # ev_hp, ev_atk, ... を展開して渡す
-                }
-                new_id = db.add_trained_pokemon(trained_pokemon_data)
-                new_pokemon_ids.append(new_id)
-            
-            # 新しいパーティを登録
             party_to_add = {
                 "name": party_name,
                 "description": "AIにより自動生成されたパーティです。",
