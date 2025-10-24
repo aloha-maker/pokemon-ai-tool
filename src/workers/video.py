@@ -1,5 +1,5 @@
 from src import state
-from src.database.manager import DatabaseManager
+from src.services.battle_service import BattleService
 from src.core.video_processor import VideoProcessor
 
 def analyze_video_task(task_id, filepath):
@@ -12,9 +12,8 @@ def analyze_video_task(task_id, filepath):
         processor = VideoProcessor(filepath)
         turn_data = processor.analyze()
 
-        log_id = None
-        with DatabaseManager() as db:
-            log_id = db.add_battle_log_from_video(task_id, turn_data)
+        battle_service = BattleService()
+        log_id = battle_service.add_battle_log_from_video(task_id, turn_data)
 
         state.video_tasks[task_id]["status"] = "DONE"
         state.video_tasks[task_id]["result"] = {"log_id": log_id}

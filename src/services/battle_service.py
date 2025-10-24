@@ -3,11 +3,13 @@ import os
 import uuid
 import sys
 import datetime
+import json
 from threading import Lock
 
 from src import state
 from src.extensions import executor
 from src.database.manager import DatabaseManager
+from src.services.dashboard_service import DashboardService
 
 # OCR関連のモジュールをインポート
 project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
@@ -29,37 +31,195 @@ class BattleService:
 
     def get_battle_history_and_stats(self) -> dict:
         """対戦履歴と統計情報をまとめて取得する"""
-        with DatabaseManager() as db:
-            raw_history = db.get_battle_history()
-            stats = db.get_battle_stats()
+        raw_history = self.get_battle_history()
+        # 統計情報はDashboardServiceから取得
+        dashboard_service = DashboardService()
+        stats = dashboard_service.get_battle_stats()
         return {"raw_history": raw_history, "stats": stats}
+
+    def get_battle_history(self, limit: int = 50) -> list[dict]:
+        """対戦履歴の一覧を取得する。"""
+        with DatabaseManager() as db:
+            cursor = db.get_cursor()
+            cursor.execute("SELECT * FROM battle_logs ORDER BY created_at DESC LIMIT ?", (limit,))
+            rows = cursor.fetchall()
+            
+            # JSONデータをパースして返す
+            logs = []
+            for row in rows:
+                log_data = dict(row)
+                if log_data.get('battle_data'):
+                    try:
+                        log_data['battle_data'] = json.loads(log_data['battle_data'])
+                    except (json.JSONDecodeError, TypeError):
+                        log_data['battle_data'] = {} # パース失敗時は空のdict
+                if log_data.get('opponent_party'):
+                    try:
+                        log_data['opponent_party'] = json.loads(log_data['opponent_party'])
+                    except (json.JSONDecodeError, TypeError):
+                        log_data['opponent_party'] = {} # パース失敗時は空のdict
+                logs.append(log_data)
+            return logs
 
     def save_result_with_log(self, battle_id: str, my_party_id: int, my_party: list, opponent_party: list, result: str, raw_events: list) -> int:
         """対戦結果とリアルタイムOCRログを保存する"""
         if not all([my_party_id, opponent_party, result, battle_id]) or result not in ['win', 'lose']:
             raise ValueError("パーティ情報、勝敗結果、またはバトルIDが不正です。")
+        
         with DatabaseManager() as db:
-            log_id = db.save_battle_result_with_log(battle_id, my_party_id, my_party, opponent_party, result, raw_events)
-        return log_id
+            cursor = db.get_cursor()
+
+            # --- マスターデータを事前に一括で取得 ---
+            types_map = {row['id']: row['name_ja'] for row in db.get_master_data_by_resource('types')}
+            abilities_map = {row['id']: row['name_ja'] for row in db.get_master_data_by_resource('abilities')}
+            moves_map = {row['id']: row['name_ja'] for row in db.get_master_data_by_resource('moves')}
+
+            try:
+                # 1. battles テーブルに対戦記録を作成または更新
+                cursor.execute(
+                    "INSERT OR IGNORE INTO battles (battle_id, result, battle_format) VALUES (?, ?, ?)",
+                    (battle_id, result, 'シングル')
+                )
+                cursor.execute(
+                    "UPDATE battles SET result = ?, battle_format = ? WHERE battle_id = ?",
+                    (result, 'シングル', battle_id)
+                )
+
+                # 2. 既存の関連ログを削除 (冪等性を保つため)
+                cursor.execute("DELETE FROM parties_log WHERE battle_id = ?", (battle_id,))
+                cursor.execute("DELETE FROM raw_battle_events WHERE battle_id = ?", (battle_id,))
+
+                # 3. パーティ処理の内部関数
+                def _process_party_log(party_list, is_opponent):
+                    parties_log_tuples = []
+                    for pokemon in party_list:
+                        name = pokemon.get('name')
+                        if not name: continue
+
+                        item_name = pokemon.get('item')
+                        tera_type_id = pokemon.get('terastal_type_id')
+                        ability_id = pokemon.get('ability_id')
+
+                        tera_type_name = types_map.get(int(tera_type_id)) if tera_type_id else None
+                        ability_name = abilities_map.get(int(ability_id)) if ability_id else None
+                        
+                        move_ids = pokemon.get('moves', [])
+                        move_names = [moves_map.get(int(move_id)) for move_id in move_ids if move_id in moves_map]
+                        moves_json = json.dumps(move_names, ensure_ascii=False)
+
+                        # pokemons_logに常に新しいレコードとして挿入
+                        cursor.execute(
+                            """INSERT INTO pokemons_log (pokemon_name, item, terastal_type, ability, moves)
+                               VALUES (?, ?, ?, ?, ?)""",
+                            (name, item_name, tera_type_name, ability_name, moves_json)
+                        )
+                        pokemon_id = cursor.lastrowid
+
+                        is_selected = 1 if pokemon.get('is_selected') else 0
+                        parties_log_tuples.append((battle_id, pokemon_id, name, 1 if is_opponent else 0, is_selected))
+                    return parties_log_tuples
+
+                # 4. 自パーティと相手パーティのログを生成・保存
+                my_parties_log_tuples = _process_party_log(my_party, is_opponent=False)
+                if my_parties_log_tuples:
+                    cursor.executemany(
+                        "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
+                        my_parties_log_tuples
+                    )
+
+                opponent_parties_log_tuples = _process_party_log(opponent_party, is_opponent=True)
+                if opponent_parties_log_tuples:
+                    cursor.executemany(
+                        "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
+                        opponent_parties_log_tuples
+                    )
+
+                # 5. 先発ポケモンをbattlesテーブルに記録
+                my_starter = next((p['name'] for p in my_party if p.get('is_starter')), None)
+                opponent_starter = next((p['name'] for p in opponent_party if p.get('is_starter')), None)
+
+                if my_starter or opponent_starter:
+                    cursor.execute(
+                        "UPDATE battles SET my_first_pokemon = ?, opponent_first_pokemon = ? WHERE battle_id = ?",
+                        (my_starter, opponent_starter, battle_id)
+                    )
+
+                # 6. raw_battle_events テーブルにリアルタイムログを記録
+                if raw_events:
+                    event_log_data = [
+                        (battle_id, event['sequence'], event['roi_name'], event['ocr_text'])
+                        for event in raw_events
+                    ]
+                    cursor.executemany(
+                        "INSERT INTO raw_battle_events (battle_id, sequence, roi_name, ocr_text) VALUES (?, ?, ?, ?)",
+                        event_log_data
+                    )
+
+                db.conn.commit()
+                return battle_id
+            except Exception as e:
+                db.conn.rollback()
+                raise e
 
     def generate_new_battle_id(self) -> str:
         """新しい連番のバトルIDを生成する"""
-        with DatabaseManager() as db:
-            now = datetime.datetime.now()
-            date_str = now.strftime('%Y%m%d')
-            latest_id = db.get_latest_battle_id_for_today(date_str)
-            
-            if latest_id:
-                try:
-                    last_seq = int(latest_id.split('-')[-1])
-                    new_seq = last_seq + 1
-                except (ValueError, IndexError):
-                    new_seq = 1
-            else:
+        now = datetime.datetime.now()
+        date_str = now.strftime('%Y%m%d')
+        latest_id = self.get_latest_battle_id_for_today(date_str)
+        
+        if latest_id:
+            try:
+                last_seq = int(latest_id.split('-')[-1])
+                new_seq = last_seq + 1
+            except (ValueError, IndexError):
                 new_seq = 1
-            
-            seq_str = f'{new_seq:04}'
-            return f'BATTLE-{date_str}-{seq_str}'
+        else:
+            new_seq = 1
+        
+        seq_str = f'{new_seq:04}'
+        return f'BATTLE-{date_str}-{seq_str}'
+
+    def get_latest_battle_id_for_today(self, date_str: str) -> str | None:
+        """
+        指定された日付の最新のバトルIDを取得する (例: BATTLE-20231027-005)
+        """
+        with DatabaseManager() as db:
+            cursor = db.get_cursor()
+            pattern = f'BATTLE-{date_str}-%'
+            cursor.execute(
+                "SELECT battle_id FROM battles WHERE battle_id LIKE ? ORDER BY battle_id DESC LIMIT 1",
+                (pattern,)
+            )
+            row = cursor.fetchone()
+            return row['battle_id'] if row else None
+
+    def add_battle_log_from_video(self, video_task_id: str, turn_data: dict) -> int:
+        """
+        動画解析結果から対戦ログを `battle_logs` テーブルに追加する。
+        video_task_id とターンごとのデータ(turn_data)を受け取る。
+        戻り値は追加されたレコードのID。
+        """
+        with DatabaseManager() as db:
+            cursor = db.get_cursor()
+
+            # battle_data をJSON文字列に変換
+            battle_data_json = json.dumps(turn_data, ensure_ascii=False, indent=2)
+
+            # TODO: 動画からパーティを特定する機能が実装されるまで、暫定的に1をセットする
+            my_party_id = 1 
+
+            # 新しいログを挿入
+            cursor.execute(
+                "INSERT INTO battle_logs (video_task_id, battle_data, result, my_party_id) VALUES (?, ?, ?, ?)",
+                (
+                    video_task_id,
+                    battle_data_json,
+                    'unknown', # 解析直後は結果不明
+                    my_party_id
+                )
+            )
+            db.conn.commit()
+            return cursor.lastrowid
 
     # --- Video Analysis Methods --- #
 
@@ -95,11 +255,55 @@ class BattleService:
         
         return response_data
 
-    def get_log_by_id(self, log_id: int) -> dict:
-        """IDを指定して対戦ログを取得する"""
+    def get_battle_log_by_id(self, log_id: int) -> dict:
+        """IDを指定して対戦ログを取得する。"""
         with DatabaseManager() as db:
-            log = db.get_battle_log_by_id(log_id)
-        return log
+            cursor = db.get_cursor()
+            cursor.execute("SELECT * FROM battle_logs WHERE id = ?", (log_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            
+            log_data = dict(row)
+            # battle_data と opponent_party はJSON文字列なのでパースする
+            if log_data.get('battle_data'):
+                try:
+                    log_data['battle_data'] = json.loads(log_data['battle_data'])
+                except (json.JSONDecodeError, TypeError):
+                    log_data['battle_data'] = {}
+            if log_data.get('opponent_party'):
+                try:
+                    log_data['opponent_party'] = json.loads(log_data['opponent_party'])
+                except (json.JSONDecodeError, TypeError):
+                    log_data['opponent_party'] = {}
+                
+            return log_data
+
+    def get_all_battle_logs(self) -> list[dict]:
+        """
+        すべての対戦履歴をDBから取得する。
+        JSONデータはパースして返す。
+        """
+        with DatabaseManager() as db:
+            cursor = db.get_cursor()
+            cursor.execute("SELECT * FROM battle_logs ORDER BY created_at DESC")
+            rows = cursor.fetchall()
+            
+            logs = []
+            for row in rows:
+                log_data = dict(row)
+                if log_data.get('battle_data'):
+                    try:
+                        log_data['battle_data'] = json.loads(log_data['battle_data'])
+                    except (json.JSONDecodeError, TypeError):
+                        log_data['battle_data'] = {}
+                if log_data.get('opponent_party'):
+                    try:
+                        log_data['opponent_party'] = json.loads(log_data['opponent_party'])
+                    except (json.JSONDecodeError, TypeError):
+                        log_data['opponent_party'] = {}
+                logs.append(log_data)
+            return logs
 
     def _analyze_video_task(self, task_id: str, filepath: str):
         """バックグラウンドで実行される動画解析タスク"""
@@ -118,15 +322,12 @@ class BattleService:
             print(f"[Task {task_id}] 動画処理を開始: {filepath}")
             turn_data = process_video(filepath, pokemon_corrector, ability_corrector, ocr_processor)
 
-            # データベースへの保存ロジックは未実装のためコメントアウト
-            # log_id = None
-            # with DatabaseManager() as db:
-            #     log_id = db.add_battle_log_from_video(task_id, turn_data)
+            # データベースへの保存ロジック
+            log_id = self.add_battle_log_from_video(task_id, turn_data)
 
             with self.tasks_lock:
                 state.video_tasks[task_id]["status"] = "DONE"
-                # state.video_tasks[task_id]["result"] = {"log_id": log_id}
-                state.video_tasks[task_id]["result"] = {"message": "解析成功（DB保存は未実装）"}
+                state.video_tasks[task_id]["result"] = {"log_id": log_id}
             print(f"[Task {task_id}] OCRベースの動画解析が完了しました。")
 
         except Exception as e:
