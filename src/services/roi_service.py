@@ -2,12 +2,13 @@
 import os
 import json
 from typing import Dict, Any
+from flask import current_app
 
 class RoiService:
     """ROI設定の読み書きに関するビジネスロジックを担当する"""
 
-    def __init__(self, config_path: str = 'instance/roi_config.json'):
-        self.config_path = config_path
+    def __init__(self):
+        self._config_path = None
         self.default_config = {
             "reference_resolution": {"width": 1280, "height": 720},
             "my_pokemon_name": [0,0,0,0],
@@ -15,6 +16,13 @@ class RoiService:
             "my_pokemon_hp": [0,0,0,0],
             "opponent_pokemon_hp": [0,0,0,0]
         }
+
+    @property
+    def config_path(self) -> str:
+        """Flaskのapp.configから設定ファイルのパスを遅延読み込みする"""
+        if self._config_path is None:
+            self._config_path = current_app.config['ROI_CONFIG_PATH']
+        return self._config_path
 
     def get_config(self) -> Dict[str, Any]:
         """ROI設定をファイルから読み込む。ファイルがなければデフォルト設定を返す。"""

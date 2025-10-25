@@ -10,6 +10,7 @@ class Config:
     DATABASE_URL = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'data', 'pokemon_ai.db')
     TESSERACT_PATH = os.environ.get('TESSERACT_PATH')
+    ROI_CONFIG_PATH = os.path.join(basedir, 'instance', 'roi_config.json')
     # ... 他の共通設定
 
 class DevelopmentConfig(Config):
