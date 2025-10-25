@@ -22,6 +22,7 @@ export class TrainedPokemonManager {
 
     async _cacheMasterData() {
         try {
+            // TODO: これらのAPIもレスポンス形式統一に対応させる
             if (this.pokemonList.length === 0) {
                 const response = await fetch('/api/master/pokemons');
                 this.pokemonList = await response.json();
@@ -71,8 +72,11 @@ export class TrainedPokemonManager {
     async loadTrainedPokemons() {
         try {
             const response = await fetch('/api/trained-pokemons');
-            if (!response.ok) throw new Error('Failed to fetch trained pokemons');
-            const pokemons = await response.json();
+            const responseData = await response.json();
+            if (!response.ok || responseData.status !== 'success') {
+                throw new Error(responseData.message || 'Failed to fetch trained pokemons');
+            }
+            const pokemons = responseData.data;
 
             this.tbody.innerHTML = '';
             if (pokemons.length === 0) {
@@ -108,10 +112,10 @@ export class TrainedPokemonManager {
     }
 
     attachActionListeners() {
-        document.querySelectorAll('.edit-btn').forEach(btn => {
+        this.tbody.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.handleEditClick(e));
         });
-        document.querySelectorAll('.delete-btn').forEach(btn => {
+        this.tbody.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.handleDeleteClick(e));
         });
     }
@@ -120,8 +124,11 @@ export class TrainedPokemonManager {
         const id = event.currentTarget.dataset.id;
         try {
             const response = await fetch(`/api/trained-pokemons/${id}`);
-            if (!response.ok) throw new Error('Failed to fetch pokemon details');
-            const pokemon = await response.json();
+            const responseData = await response.json();
+            if (!response.ok || responseData.status !== 'success') {
+                throw new Error(responseData.message || 'Failed to fetch pokemon details');
+            }
+            const pokemon = responseData.data;
             await this.showPokemonForm(pokemon);
         } catch (error) {
             console.error(`Error fetching pokemon ${id}:`, error);
@@ -134,7 +141,10 @@ export class TrainedPokemonManager {
         if (confirm(`ID: ${id} のポケモンを本当に削除しますか?`)) {
             try {
                 const response = await fetch(`/api/trained-pokemons/${id}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error('Failed to delete pokemon');
+                const responseData = await response.json();
+                if (!response.ok || responseData.status !== 'success') {
+                    throw new Error(responseData.data?.message || 'Failed to delete pokemon');
+                }
                 showAlert('trained-pokemon-alert', 'ポケモンを削除しました。', 'success');
                 this.loadTrainedPokemons();
             } catch (error) {
@@ -236,7 +246,10 @@ export class TrainedPokemonManager {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
-            if (!response.ok) throw new Error('Failed to save pokemon');
+            const responseData = await response.json();
+            if (!response.ok || responseData.status !== 'success') {
+                throw new Error(responseData.data?.message || 'Failed to save pokemon');
+            }
             this.formModal.hide();
             this.loadTrainedPokemons();
         } catch (error) {

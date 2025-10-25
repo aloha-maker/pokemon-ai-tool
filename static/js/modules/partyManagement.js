@@ -42,8 +42,11 @@ export class PartyManagement {
         try {
             const response = await fetch('/api/trained-pokemons');
             if (!response.ok) throw new Error('Failed to fetch trained pokemons');
-            // TODO: trained-pokemons APIも新しい形式に移行後、.dataを参照する
-            this.allTrainedPokemons = await response.json();
+            const responseData = await response.json();
+            if (responseData.status !== 'success') {
+                throw new Error(responseData.message || 'Failed to load trained pokemons');
+            }
+            this.allTrainedPokemons = responseData.data;
             this.populateMemberSelects();
         } catch (error) {
             console.error('Error loading trained pokemons:', error);
