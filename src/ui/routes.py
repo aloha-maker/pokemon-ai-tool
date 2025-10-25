@@ -2,7 +2,7 @@ import traceback
 import math
 import uuid
 from flask import Blueprint, jsonify, request
-from src.database.manager import DatabaseManager
+from src.services.master_data_service import MasterDataService
 from src.services.party_service import PartyService
 from src.services.trained_pokemon_service import TrainedPokemonService
 from src.services.dashboard_service import DashboardService
@@ -90,21 +90,14 @@ def delete_trained_pokemon(pokemon_id):
 @api_bp.route('/master/<resource>', methods=['GET'])
 def get_master_data(resource):
     """ポケモン、技、特性などのマスターデータを取得する。"""
-    valid_resources = ['pokemons', 'moves', 'items', 'abilities', 'natures', 'types']
-    if resource not in valid_resources:
-        return jsonify({'error': 'Invalid resource specified'}), 404
-
     try:
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            if resource == 'pokemons':
-                cursor.execute("SELECT MIN(id) as id, name, name_ja FROM pokemons GROUP BY name_ja ORDER BY name_ja")
-            else:
-                 cursor.execute(f"SELECT id, name, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY name_ja")
-            items = cursor.fetchall()
-        return jsonify([dict(item) for item in items]), 200
+        service = MasterDataService()
+        items = service.get_master_data_by_resource(resource)
+        return jsonify(items), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'マスターデータの取得に失敗しました。'}), 500
 
 # --- 持ち物編集用API ---
 

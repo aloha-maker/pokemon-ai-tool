@@ -1,23 +1,22 @@
 import random
 from collections import Counter
 from ..core.type_chart import TYPE_EFFECTIVENESS
-from ..database.manager import DatabaseManager
+from ..services.master_data_service import MasterDataService
 
 class PartyGenerator:
     """
     ユーザーの入力に基づき、コンセプトに沿ったパーティと運用ガイドを生成するクラス。
     """
     def __init__(self):
-        self.db_manager = DatabaseManager()
-        with self.db_manager as db:
-            self.all_abilities = db.get_master_data_by_resource('abilities')
-            self.all_items = db.get_master_data_by_resource('items')
-            self.all_natures = db.get_master_data_by_resource('natures')
-            self.all_types = db.get_master_data_by_resource('types')
+        self.master_data_service = MasterDataService()
+        self.all_abilities = self.master_data_service.get_master_data_by_resource('abilities')
+        self.all_items = self.master_data_service.get_master_data_by_resource('items')
+        self.all_natures = self.master_data_service.get_master_data_by_resource('natures')
+        self.all_types = self.master_data_service.get_master_data_by_resource('types')
 
-    def _get_pokemon_data(self, db, pokemon_names: list) -> list:
+    def _get_pokemon_data(self, pokemon_names: list) -> list:
         """指定されたポケモン名のリストの完全なデータをDBから取得する"""
-        return db.get_pokemons_by_names(pokemon_names)
+        return self.master_data_service.get_pokemons_by_names(pokemon_names)
 
     def _get_pokemon_role(self, stats: dict) -> str:
         """ステータスに基づいてポケモンの役割を判定する"""
@@ -47,9 +46,9 @@ class PartyGenerator:
                     weaknesses[attack_type] += 1
         return weaknesses
 
-    def _choose_ability(self, db, p_data: dict) -> dict:
+    def _choose_ability(self, p_data: dict) -> dict:
         """ポケモンに紐づく正しい特性の中からランダムに1つ選択する"""
-        possible_abilities = db.get_abilities_by_pokemon_id(p_data['id'])
+        possible_abilities = self.master_data_service.get_abilities_by_pokemon_id(p_data['id'])
         return random.choice(possible_abilities)
 
     def _choose_item(self, p_data: dict, role: str) -> dict:
@@ -110,7 +109,7 @@ class PartyGenerator:
 
         return evs
 
-    def _choose_moves(self, db, p_data: dict) -> list[dict]:
+    def _choose_moves(self, p_data: dict) -> list[dict]:
         moves = []
         is_physical = p_data['attack'] > p_data['sp_attack']
         category = "物理" if is_physical else "特殊"
@@ -118,7 +117,7 @@ class PartyGenerator:
         # STAB moves
         for move_type in [p_data['type1'], p_data['type2']]:
             if move_type and len(moves) < 2:
-                stab_moves = db.get_moves_by_type(move_type, category)
+                stab_moves = self.master_data_service.get_moves_by_type(move_type, category)
                 if stab_moves:
                     moves.append(random.choice(stab_moves))
         
@@ -130,7 +129,7 @@ class PartyGenerator:
             if any(m['type'] == move_type for m in moves):
                 continue
             
-            coverage_moves = db.get_moves_by_type(move_type, category)
+            coverage_moves = self.master_data_service.get_moves_by_type(move_type, category)
             if coverage_moves:
                 moves.append(random.choice(coverage_moves))
             else:
@@ -150,115 +149,101 @@ class PartyGenerator:
         if len(available_pokemon_names) < 6:
             return {"error": "使用可能なポケモンが6体未満です。"}
 
-        with self.db_manager as db:
-            # 1. 利用可能なポケモンの詳細データを取得
-            all_pokemon_data = self._get_pokemon_data(db, available_pokemon_names)
-            if len(all_pokemon_data) < 6:
-                # DBにない名前を特定してエラーメッセージを親切にする
-                found_names = {p['name_ja'] for p in all_pokemon_data} | {p['name'] for p in all_pokemon_data}
-                missing_names = [name for name in available_pokemon_names if name not in found_names]
-                if missing_names:
-                    return {"error": f"データベースにポケモンが見つかりません: {', '.join(missing_names)}"}
-                return {"error": "データベースに登録されているポケモンが6体未満です。"}
+        all_pokemon_data = self._get_pokemon_data(available_pokemon_names)
+        if len(all_pokemon_data) < 6:
+            found_names = {p['name_ja'] for p in all_pokemon_data} | {p['name'] for p in all_pokemon_data}
+            missing_names = [name for name in available_pokemon_names if name not in found_names]
+            if missing_names:
+                return {"error": f"データベースにポケモンが見つかりません: {', '.join(missing_names)}"}
+            return {"error": "データベースに登録されているポケモンが6体未満です。"}
 
-            # 2. 各ポケモンに役割を付与
-            for p in all_pokemon_data:
-                p['role'] = self._get_pokemon_role(p)
+        for p in all_pokemon_data:
+            p['role'] = self._get_pokemon_role(p)
 
-            # 3. コンセプトに基づいて候補をフィルタリング
-            candidates = []
-            if "対面" in concept or "アタッカー" in concept:
-                candidates = [p for p in all_pokemon_data if "アタッカー" in p['role']]
-            elif "受け" in concept or "サイクル" in concept or "耐久" in concept:
-                candidates = [p for p in all_pokemon_data if "受け" in p['role']]
-            else: # バランス
-                candidates = all_pokemon_data
-            
-            # 候補が6体未満の場合は元のリストに戻す
-            if len(candidates) < 6:
-                candidates = all_pokemon_data
-            
-            random.shuffle(candidates)
+        candidates = []
+        if "対面" in concept or "アタッカー" in concept:
+            candidates = [p for p in all_pokemon_data if "アタッカー" in p['role']]
+        elif "受け" in concept or "サイクル" in concept or "耐久" in concept:
+            candidates = [p for p in all_pokemon_data if "受け" in p['role']]
+        else: # バランス
+            candidates = all_pokemon_data
+        
+        if len(candidates) < 6:
+            candidates = all_pokemon_data
+        
+        random.shuffle(candidates)
 
-            # 4. パーティを構築 (タイプバランスを考慮)
-            party = []
-            party_names = set()
+        party = []
+        party_names = set()
 
-            # 最初の1体はコンセプトに最も合うものからランダムに選ぶ
-            if candidates:
-                first_pokemon = random.choice(candidates)
-                party.append(first_pokemon)
-                party_names.add(first_pokemon['name_ja'])
+        if candidates:
+            first_pokemon = random.choice(candidates)
+            party.append(first_pokemon)
+            party_names.add(first_pokemon['name_ja'])
 
-            # 残りの5体を選ぶ
-            while len(party) < 6:
-                weaknesses = self._get_party_weaknesses(party)
-                best_candidate = None
-                best_score = -1
+        while len(party) < 6:
+            weaknesses = self._get_party_weaknesses(party)
+            best_candidate = None
+            best_score = -1
 
-                # 候補の中から、現在のパーティの弱点を最もカバーできるポケモンを探す
-                for candidate in all_pokemon_data:
-                    if candidate['name_ja'] in party_names: continue
-                    
-                    score = 0
-                    candidate_types = [candidate['type1'], candidate['type2']]
-                    # 弱点タイプに耐性があればスコア加算
-                    for weak_type, count in weaknesses.items():
-                        for cand_type in candidate_types:
-                            if cand_type and TYPE_EFFECTIVENESS[weak_type].get(cand_type, 1.0) < 1.0:
-                                score += count # 弱点の数だけスコアを高くする
-                    
-                    if score > best_score:
-                        best_score = score
-                        best_candidate = candidate
+            for candidate in all_pokemon_data:
+                if candidate['name_ja'] in party_names: continue
                 
-                if best_candidate:
-                    party.append(best_candidate)
-                    party_names.add(best_candidate['name_ja'])
-                else:
-                    # 万が一候補が見つからなければランダムに追加してループを抜ける
-                    remaining = [p for p in all_pokemon_data if p['name_ja'] not in party_names]
-                    party.extend(random.sample(remaining, 6 - len(party)))
-                    break
-
-            # 5. 詳細と運用ガイドを生成
-            party_details = []
-            for p_data in party:
-                role = p_data['role']
-                nature = self._choose_nature(p_data, role)
-                item = self._choose_item(p_data, role)
-                ability = self._choose_ability(db, p_data)
-                evs = self._generate_evs(role, nature)
-                moves = self._choose_moves(db, p_data)
+                score = 0
+                candidate_types = [candidate['type1'], candidate['type2']]
+                for weak_type, count in weaknesses.items():
+                    for cand_type in candidate_types:
+                        if cand_type and TYPE_EFFECTIVENESS[weak_type].get(cand_type, 1.0) < 1.0:
+                            score += count
                 
-                # テラスタイプは元のタイプの一つをランダムに選択
-                tera_type_name = random.choice([p_data['type1'], p_data.get('type2') or p_data['type1']])
-                tera_type = next((t for t in self.all_types if t['name'] == tera_type_name), self.all_types[0])
+                if score > best_score:
+                    best_score = score
+                    best_candidate = candidate
+            
+            if best_candidate:
+                party.append(best_candidate)
+                party_names.add(best_candidate['name_ja'])
+            else:
+                remaining = [p for p in all_pokemon_data if p['name_ja'] not in party_names]
+                party.extend(random.sample(remaining, 6 - len(party)))
+                break
 
-                party_details.append({
-                    "pokemon_id": p_data['id'],
-                    "name": p_data['name_ja'],
-                    "item_id": item['id'],
-                    "item_name": item['name_ja'],
-                    "ability_id": ability['id'],
-                    "ability_name": ability['name_ja'],
-                    "nature_id": nature['id'],
-                    "nature_name": nature['name_ja'],
-                    "tera_type_id": tera_type['id'],
-                    "tera_type_name": tera_type['name_ja'],
-                    "evs": evs,
-                    "moves": [
-                        {"id": m.get('id'), "name": m.get('name_ja')} for m in moves
-                    ],
-                    "role": role
-                })
+        party_details = []
+        for p_data in party:
+            role = p_data['role']
+            nature = self._choose_nature(p_data, role)
+            item = self._choose_item(p_data, role)
+            ability = self._choose_ability(p_data)
+            evs = self._generate_evs(role, nature)
+            moves = self._choose_moves(p_data)
+            
+            tera_type_name = random.choice([p_data['type1'], p_data.get('type2') or p_data['type1']])
+            tera_type = next((t for t in self.all_types if t['name'] == tera_type_name), self.all_types[0])
 
-            manual = self._generate_manual(concept, party_details)
+            party_details.append({
+                "pokemon_id": p_data['id'],
+                "name": p_data['name_ja'],
+                "item_id": item['id'],
+                "item_name": item['name_ja'],
+                "ability_id": ability['id'],
+                "ability_name": ability['name_ja'],
+                "nature_id": nature['id'],
+                "nature_name": nature['name_ja'],
+                "tera_type_id": tera_type['id'],
+                "tera_type_name": tera_type['name_ja'],
+                "evs": evs,
+                "moves": [
+                    {"id": m.get('id'), "name": m.get('name_ja')} for m in moves
+                ],
+                "role": role
+            })
 
-            return {
-                "party": party_details,
-                "manual": manual
-            }
+        manual = self._generate_manual(concept, party_details)
+
+        return {
+            "party": party_details,
+            "manual": manual
+        }
 
     def _generate_manual(self, concept: str, party_details: list) -> str:
         """パーティ構成とコンセプトに基づいて運用ガイドを生成する"""
@@ -284,6 +269,3 @@ class PartyGenerator:
             manual += "状況に応じて、攻撃的な選出とサイクル重視の選出を使い分けましょう。相手のパーティを見て、どのポケモンが刺さっているかを見極めることが重要です。"
         
         return manual
-
-
-    

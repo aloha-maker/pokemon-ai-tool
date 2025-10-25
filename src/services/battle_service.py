@@ -10,6 +10,7 @@ from src import state
 from src.extensions import executor
 from src.database.manager import DatabaseManager
 from src.services.dashboard_service import DashboardService
+from src.services.master_data_service import MasterDataService
 
 # OCR関連のモジュールをインポート
 project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
@@ -66,13 +67,14 @@ class BattleService:
         if not all([my_party_id, opponent_party, result, battle_id]) or result not in ['win', 'lose']:
             raise ValueError("パーティ情報、勝敗結果、またはバトルIDが不正です。")
         
+        master_data_service = MasterDataService()
         with DatabaseManager() as db:
             cursor = db.get_cursor()
 
             # --- マスターデータを事前に一括で取得 ---
-            types_map = {row['id']: row['name_ja'] for row in db.get_master_data_by_resource('types')}
-            abilities_map = {row['id']: row['name_ja'] for row in db.get_master_data_by_resource('abilities')}
-            moves_map = {row['id']: row['name_ja'] for row in db.get_master_data_by_resource('moves')}
+            types_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('types')}
+            abilities_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('abilities')}
+            moves_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('moves')}
 
             try:
                 # 1. battles テーブルに対戦記録を作成または更新

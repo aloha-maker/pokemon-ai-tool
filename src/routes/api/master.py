@@ -13,15 +13,15 @@ def get_master_data_generic(resource_name):
     if resource_name not in allowed_resources:
         return jsonify({"error": "Resource not found"}), 404
     
-    data = service.get_master_data(resource_name)
+    data = service.get_master_data_by_resource(resource_name)
     return jsonify(data)
 
 @master_bp.route('/api/pokemon/<int:pokemon_id>/abilities', methods=['GET'])
 def get_pokemon_abilities(pokemon_id):
-    abilities = service.get_abilities_for_pokemon(pokemon_id)
+    abilities = service.get_abilities_by_pokemon_id(pokemon_id)
     return jsonify(abilities)
 
 @master_bp.route('/api/pokemon/<int:pokemon_id>/moves', methods=['GET'])
 def get_pokemon_moves(pokemon_id):
-    moves = service.get_moves_for_pokemon(pokemon_id)
+    moves = service.get_moves_by_pokemon_id(pokemon_id)
     return jsonify(moves)
