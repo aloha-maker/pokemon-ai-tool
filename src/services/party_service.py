@@ -163,6 +163,7 @@ class PartyService:
                     "UPDATE parties SET name = ?, description = ?, updated_at = ? WHERE id = ?",
                     (data['name'], data.get('description', ''), time.strftime('%Y-%m-%d %H:%M:%S'), party_id)
                 )
+                update_rowcount = cursor.rowcount # UPDATEの結果を保存
                 
                 cursor.execute("DELETE FROM party_members WHERE party_id = ?", (party_id,))
                 
@@ -179,7 +180,7 @@ class PartyService:
                     )
                 
                 db.conn.commit()
-                return cursor.rowcount
+                return update_rowcount # 保存した値を返す
             except Exception as e:
                 db.conn.rollback()
                 raise e

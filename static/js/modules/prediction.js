@@ -55,7 +55,12 @@ export class PredictionManager {
         try {
             const response = await fetch('/api/parties');
             if (!response.ok) throw new Error('パーティ一覧の取得に失敗しました。');
-            const parties = await response.json();
+            const responseData = await response.json();
+
+            if (responseData.status !== 'success') {
+                throw new Error(responseData.message || 'パーティ一覧の取得に失敗しました。');
+            }
+            const parties = responseData.data;
             
             this.myPartySelect.innerHTML = '<option selected value="">登録済みパーティから選ぶ...</option>';
             parties.forEach(party => {
@@ -79,7 +84,12 @@ export class PredictionManager {
         try {
             const response = await fetch(`/api/parties/${partyId}`);
             if (!response.ok) throw new Error('パーティ情報の取得に失敗しました。');
-            const party = await response.json();
+            const responseData = await response.json();
+
+            if (responseData.status !== 'success') {
+                throw new Error(responseData.message || 'パーティ情報の取得に失敗しました。');
+            }
+            const party = responseData.data;
 
             // Clear existing values
             const myPartySlots = document.querySelectorAll('#my-party-display .pokemon-slot');

@@ -41,7 +41,7 @@ class MasterDataService:
         with DatabaseManager() as db:
             cursor = db.get_cursor()
             if resource == 'pokemons':
-                cursor.execute("SELECT MIN(id) as id, name, name_ja FROM pokemons GROUP BY name_ja ORDER BY name_ja")
+                cursor.execute("SELECT MIN(id) as id, name, name_ja,speed FROM pokemons GROUP BY name_ja ORDER BY name_ja")
             else:
                  cursor.execute(f"SELECT id, name, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY name_ja")
             return [dict(row) for row in cursor.fetchall()]

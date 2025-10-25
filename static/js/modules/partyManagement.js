@@ -42,6 +42,7 @@ export class PartyManagement {
         try {
             const response = await fetch('/api/trained-pokemons');
             if (!response.ok) throw new Error('Failed to fetch trained pokemons');
+            // TODO: trained-pokemons APIも新しい形式に移行後、.dataを参照する
             this.allTrainedPokemons = await response.json();
             this.populateMemberSelects();
         } catch (error) {
@@ -68,7 +69,13 @@ export class PartyManagement {
         try {
             const response = await fetch('/api/parties');
             if (!response.ok) throw new Error('Failed to fetch parties');
-            const parties = await response.json();
+            const responseData = await response.json();
+
+            // 新しいレスポンス形式に対応
+            if (responseData.status !== 'success') {
+                throw new Error(responseData.message || 'Failed to load parties');
+            }
+            const parties = responseData.data;
 
             this.partyList.innerHTML = '';
             if (parties.length === 0) {
@@ -151,12 +158,13 @@ export class PartyManagement {
                 body: JSON.stringify(partyData)
             });
 
+            const responseData = await response.json();
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Save failed');
+                // 新しいエラー形式に対応
+                const errorMessage = responseData.data ? responseData.data.message : 'Save failed';
+                throw new Error(errorMessage);
             }
 
-            await response.json();
             this.resetPartyForm();
             await this.loadAndDisplayParties();
 
@@ -171,7 +179,13 @@ export class PartyManagement {
         try {
             const response = await fetch(`/api/parties/${partyId}`);
             if (!response.ok) throw new Error('Failed to fetch party details');
-            const party = await response.json();
+            const responseData = await response.json();
+
+            // 新しいレスポンス形式に対応
+            if (responseData.status !== 'success') {
+                throw new Error(responseData.message || 'Failed to load party details');
+            }
+            const party = responseData.data;
 
             this.partyIdField.value = party.id;
             this.partyNameField.value = party.name;
@@ -197,7 +211,12 @@ export class PartyManagement {
         if (confirm(`ID: ${partyId} のパーティを本当に削除しますか?`)) {
             try {
                 const response = await fetch(`/api/parties/${partyId}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error('Failed to delete party');
+                const responseData = await response.json();
+
+                if (!response.ok || responseData.status !== 'success') {
+                    const errorMessage = responseData.data ? responseData.data.message : 'Failed to delete party';
+                    throw new Error(errorMessage);
+                }
                 
                 await this.loadAndDisplayParties();
 

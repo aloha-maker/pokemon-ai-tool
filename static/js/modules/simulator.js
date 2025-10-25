@@ -50,7 +50,11 @@ export class Simulator {
         try {
             const response = await fetch('/api/parties');
             if (!response.ok) throw new Error('パーティ一覧の取得に失敗しました。');
-            const parties = await response.json();
+            const responseData = await response.json();
+            if (responseData.status !== 'success') {
+                throw new Error(responseData.message || 'パーティ一覧の取得に失敗しました。');
+            }
+            const parties = responseData.data;
             const options = parties.map(p => ({ id: p.id, name_ja: p.name }));
             populateSelect(this.party1Select.id, options, 'パーティを選択...');
             populateSelect(this.party2Select.id, options, 'パーティを選択...');
