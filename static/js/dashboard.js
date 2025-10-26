@@ -11,13 +11,17 @@ let mySelectionRateChart = null;
 async function fetchDashboardData() {
     try {
         const response = await fetch('/api/dashboard');
-        if (!response.ok) {
-            throw new Error(`APIエラー: ${response.statusText}`);
+        const jsonResponse = await response.json();
+
+        if (!response.ok || jsonResponse.status !== 'success') {
+            const errorInfo = (jsonResponse.data && jsonResponse.data.error) || jsonResponse.message || `APIエラー: ${response.status}`;
+            throw new Error(errorInfo);
         }
-        return await response.json();
+
+        return jsonResponse.data;
     } catch (error) {
         console.error('ダッシュボードデータの取得に失敗しました:', error);
-        showAlert('ダッシュボードデータの取得に失敗しました。', 'danger', 'dashboard-alert-container');
+        showAlert(`ダッシュボードデータの取得に失敗しました: ${error.message}`, 'danger', 'dashboard-alert-container');
         return null;
     }
 }
@@ -186,10 +190,14 @@ async function analyzeCustomization() {
 
     try {
         const response = await fetch(`/api/dashboard/customization?pokemon_name=${pokemonName}`);
-        if (!response.ok) {
-            throw new Error('カスタマイズデータの取得に失敗しました。');
+        const jsonResponse = await response.json();
+
+        if (!response.ok || jsonResponse.status !== 'success') {
+            const errorInfo = (jsonResponse.data && jsonResponse.data.error) || jsonResponse.message || 'カスタマイズデータの取得に失敗しました。';
+            throw new Error(errorInfo);
         }
-        const data = await response.json();
+        
+        const data = jsonResponse.data;
 
         const renderList = (ulId, items) => {
             const ul = document.getElementById(ulId);
@@ -212,7 +220,7 @@ async function analyzeCustomization() {
 
     } catch (error) {
         console.error('カスタマイズデータの分析中にエラーが発生しました:', error);
-        showAlert('カスタマイズデータの分析に失敗しました。', 'danger', 'dashboard-alert-container');
+        showAlert(`カスタマイズデータの分析に失敗しました: ${error.message}`, 'danger', 'dashboard-alert-container');
     }
 }
 
