@@ -1,7 +1,8 @@
 # src/routes/api/ai.py
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from src.services.ai_service import AiService
+from src.utils.response_handler import api_success, api_fail, api_error
 
 ai_bp = Blueprint('ai_api', __name__, url_prefix='/api/ai')
 
@@ -16,12 +17,12 @@ def predict():
             my_party_id=data.get('my_party_id'),
             opponent_party=data.get('opponent_party')
         )
-        return jsonify(result)
+        return api_success(result)
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return api_fail({"error": str(e)})
     except Exception as e:
         logging.exception(e)
-        return jsonify({"error": "An internal server error occurred"}), 500
+        return api_error("An internal server error occurred")
 
 @ai_bp.route('/generate-party', methods=['POST'])
 def generate_party():
@@ -33,9 +34,9 @@ def generate_party():
             available_pokemon=data.get('available_pokemon', []),
             concept=data.get('concept', '')
         )
-        return jsonify(result)
+        return api_success(result)
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return api_fail({"error": str(e)})
     except Exception as e:
         logging.exception(e)
-        return jsonify({"error": "An internal server error occurred"}), 500
+        return api_error("An internal server error occurred")

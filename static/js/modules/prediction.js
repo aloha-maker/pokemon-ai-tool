@@ -321,19 +321,21 @@ export class PredictionManager {
                 body: JSON.stringify(requestBody),
             });
 
-            const data = await response.json();
+            const jsonResponse = await response.json();
 
-            if (response.ok) {
-                this.displayPredictionResult(data, resultArea);
-                // 選出アドバイスのタブをアクティブにする
-                const selectionTab = new bootstrap.Tab(document.getElementById('selection-advice-tab'));
-                selectionTab.show();
-            } else {
-                resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${data.error || '不明なエラー'}</div>`;
+            if (!response.ok || jsonResponse.status !== 'success') {
+                const errorInfo = (jsonResponse.data && jsonResponse.data.error) || jsonResponse.message || '不明なエラー';
+                throw new Error(errorInfo);
             }
+
+            this.displayPredictionResult(jsonResponse.data, resultArea);
+            // 選出アドバイスのタブをアクティブにする
+            const selectionTab = new bootstrap.Tab(document.getElementById('selection-advice-tab'));
+            selectionTab.show();
+
         } catch (error) {
             console.error('選出予測APIの呼び出し中にエラーが発生しました:', error);
-            resultArea.innerHTML = `<div class="alert alert-danger">APIの呼び出しに失敗しました。</div>`;
+            resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${error.message}</div>`;
         } finally {
             setButtonLoading(this.predictButton, false);
         }

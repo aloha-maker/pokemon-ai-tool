@@ -4,6 +4,9 @@ from src.database.manager import DatabaseManager
 class DashboardService:
     """ダッシュボード関連のビジネスロジックを担当するサービスクラス"""
 
+    def __init__(self, db_path=None):
+        self.db_manager = DatabaseManager(db_path=db_path)
+
     def get_dashboard_data(self):
         """ダッシュボードに必要なデータをまとめて取得する"""
         summary = self.get_dashboard_summary()
@@ -36,7 +39,7 @@ class DashboardService:
 
     def get_selection_pattern_win_rate(self) -> list[dict]:
         """自分の選出パターン（3体）ごとの勝率を計算する。"""
-        with DatabaseManager() as db:
+        with self.db_manager as db:
             cursor = db.get_cursor()
             query = """
                 SELECT p.battle_id, p.pokemon_name, b.result
@@ -64,9 +67,9 @@ class DashboardService:
                     cursor.execute("SELECT result FROM battles WHERE battle_id = ?", (battle_id,))
                     result = cursor.fetchone()['result']
 
-                    if result == '勝ち':
+                    if result == 'win':
                         patterns[pattern]['wins'] += 1
-                    elif result == '負け':
+                    elif result == 'lose':
                         patterns[pattern]['losses'] += 1
                     patterns[pattern]['total'] += 1
 
@@ -83,7 +86,7 @@ class DashboardService:
 
     def get_my_pokemon_selection_rate(self) -> list[dict]:
         """自分のポケモンの選出率を計算する。"""
-        with DatabaseManager() as db:
+        with self.db_manager as db:
             cursor = db.get_cursor()
             query = """
                 SELECT 
@@ -111,7 +114,7 @@ class DashboardService:
 
     def get_win_rate_by_opponent(self) -> list[dict]:
         """相手のポケモンごとの勝率を計算する。"""
-        with DatabaseManager() as db:
+        with self.db_manager as db:
             cursor = db.get_cursor()
             # このクエリは複雑になるため、複数ステップで実行するか、より洗練されたSQLが必要です。
             # ここでは簡略化のため、Pythonで処理します。
@@ -146,7 +149,7 @@ class DashboardService:
 
     def get_dashboard_summary(self, season: int = None) -> dict:
         """ダッシュボードのサマリー情報を取得する。"""
-        with DatabaseManager() as db:
+        with self.db_manager as db:
             cursor = db.get_cursor()
             
             # 勝率
@@ -160,8 +163,8 @@ class DashboardService:
             cursor.execute(base_query, params)
             results = {row['result']: row['count'] for row in cursor.fetchall()}
             
-            wins = results.get('勝ち', 0)
-            losses = results.get('負け', 0)
+            wins = results.get('win', 0)
+            losses = results.get('lose', 0)
             total = wins + losses
             win_rate = (wins / total * 100) if total > 0 else 0
 
@@ -185,7 +188,7 @@ class DashboardService:
 
     def get_opponent_pokemon_ranking(self, limit: int = 10) -> list[dict]:
         """相手のパーティによく含まれるポケモンのランキングを取得する。"""
-        with DatabaseManager() as db:
+        with self.db_manager as db:
             cursor = db.get_cursor()
             query = """
                 SELECT pokemon_name, COUNT(*) as count
@@ -200,13 +203,13 @@ class DashboardService:
 
     def get_battle_stats(self) -> dict:
         """勝率などの統計データを計算して取得する。"""
-        with DatabaseManager() as db:
+        with self.db_manager as db:
             cursor = db.get_cursor()
             
-            cursor.execute("SELECT COUNT(*) as total FROM battle_logs")
+            cursor.execute("SELECT COUNT(*) as total FROM battles")
             total_matches = cursor.fetchone()['total']
             
-            cursor.execute("SELECT COUNT(*) as wins FROM battle_logs WHERE result = 'win'")
+            cursor.execute("SELECT COUNT(*) as wins FROM battles WHERE result = 'win'")
             total_wins = cursor.fetchone()['wins']
 
             win_rate = (total_wins / total_matches * 100) if total_matches > 0 else 0
@@ -226,53 +229,45 @@ class DashboardService:
 
     def get_opponent_pokemon_customization_ranking(self, pokemon_name: str, limit: int = 5) -> dict:
         """指定された相手ポケモンの技、持ち物、テラスタイプの採用率ランキングを取得する。"""
-        with DatabaseManager() as db:
+        with self.db_manager as db:
             cursor = db.get_cursor()
             
-            # pokemon_id を取得
-            cursor.execute("SELECT pokemon_id FROM pokemons_log WHERE pokemon_name = ?", (pokemon_name,))
-            pokemon_ids = [row['pokemon_id'] for row in cursor.fetchall()]
-            if not pokemon_ids:
-                return {'moves': [], 'items': [], 'terastal_types': []}
-
-            placeholders = ', '.join('?' for _ in pokemon_ids)
-
             # 技
             # movesはJSON配列なので、この方法では集計できない。要件を見直すか、テーブル構造の変更が必要。
             # ここでは仮実装として、movesカラムのテキスト自体をカウントする。
             moves_query = f"""
                 SELECT moves, COUNT(*) as count
                 FROM pokemons_log
-                WHERE pokemon_id IN ({placeholders}) AND moves IS NOT NULL
+                WHERE pokemon_name = ? AND moves IS NOT NULL
                 GROUP BY moves
                 ORDER BY count DESC
                 LIMIT ?
             """
-            cursor.execute(moves_query, pokemon_ids + [limit])
+            cursor.execute(moves_query, (pokemon_name, limit))
             moves = [dict(row) for row in cursor.fetchall()]
 
             # 持ち物
             items_query = f"""
                 SELECT item, COUNT(*) as count
                 FROM pokemons_log
-                WHERE pokemon_id IN ({placeholders}) AND item IS NOT NULL
+                WHERE pokemon_name = ? AND item IS NOT NULL
                 GROUP BY item
                 ORDER BY count DESC
                 LIMIT ?
             """
-            cursor.execute(items_query, pokemon_ids + [limit])
+            cursor.execute(items_query, (pokemon_name, limit))
             items = [dict(row) for row in cursor.fetchall()]
 
             # テラスタイプ
             terastal_query = f"""
                 SELECT terastal_type, COUNT(*) as count
                 FROM pokemons_log
-                WHERE pokemon_id IN ({placeholders}) AND terastal_type IS NOT NULL
+                WHERE pokemon_name = ? AND terastal_type IS NOT NULL
                 GROUP BY terastal_type
                 ORDER BY count DESC
                 LIMIT ?
             """
-            cursor.execute(terastal_query, pokemon_ids + [limit])
+            cursor.execute(terastal_query, (pokemon_name, limit))
             terastal_types = [dict(row) for row in cursor.fetchall()]
 
             return {
