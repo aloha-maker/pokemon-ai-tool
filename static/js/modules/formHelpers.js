@@ -50,8 +50,10 @@ export async function updatePokemonDatalists(pokemonName, pokemons) {
             throw new Error('Failed to fetch pokemon specific data');
         }
 
-        const abilities = await abilitiesRes.json();
-        const moves = await movesRes.json();
+        const abilitiesData = await abilitiesRes.json();
+        const abilities = abilitiesData.data.abilities;
+        const movesData = await movesRes.json();
+        const moves = movesData.data.moves;
 
         // 特性データリストの更新
         abilityDatalist.innerHTML = '';
@@ -113,7 +115,12 @@ export async function initFormSelects() {
         }
 
         const dataPromises = responses.map(res => res.json());
-        const [pokemons, types, items, natures] = await Promise.all(dataPromises);
+        const results = await Promise.all(dataPromises);
+
+        const pokemons = results[0].data.pokemons;
+        const types = results[1].data.types;
+        const items = results[2].data.items;
+        const natures = results[3].data.natures;
 
         // ポケモン名のdatalistを生成
         let pokemonDatalist = document.getElementById('pokemon-datalist');

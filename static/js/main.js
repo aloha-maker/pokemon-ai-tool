@@ -10,7 +10,6 @@ import { TrainedPokemonManager } from './modules/trainedPokemon.js';
 import { PartyManagement } from './modules/partyManagement.js';
 import { Calculator } from './modules/calculator.js';
 import { Simulator } from './modules/simulator.js';
-import { ItemEditor } from './modules/itemEditor.js';
 import { PokemonDetailEditor } from './modules/pokemonDetailEditor.js';
 import { PartySaver } from './modules/partySaver.js';
 import { initFormSelects } from './modules/formHelpers.js';
@@ -27,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     new PartyManagement();
     new Calculator();
     new Simulator();
-    new ItemEditor();
     const pokemonDetailEditor = new PokemonDetailEditor();
     new PartySaver(realtimeAnalysis, pokemonDetailEditor);
     

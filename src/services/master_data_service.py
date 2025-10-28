@@ -48,14 +48,23 @@ class MasterDataService:
                  cursor.execute(f"SELECT id, name, name_ja FROM {resource} WHERE name_ja IS NOT NULL AND name_ja != '' ORDER BY name_ja")
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_abilities_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
-        """指定されたポケモンIDが持つ特性を、pokemonsテーブルのabilitiesカラム(カンマ区切りのID)から取得する。"""
+    def get_abilities_by_pokemon_id(self, pokemon_id: int) -> list[dict] | None:
+        """
+        指定されたポケモンIDが持つ特性を取得する。
+        ポケモンが存在しない場合はNoneを返す。
+        """
         with DatabaseManager() as db:
             cursor = db.get_cursor()
             
             cursor.execute("SELECT abilities FROM pokemons WHERE id = ?", (pokemon_id,))
             row = cursor.fetchone()
-            if not row or not row['abilities']:
+            
+            # ポケモンが存在しない場合
+            if not row:
+                return None
+            
+            # 特性情報がない場合
+            if not row['abilities']:
                 return []
 
             try:
@@ -71,14 +80,23 @@ class MasterDataService:
             cursor.execute(query, ability_ids)
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_moves_by_pokemon_id(self, pokemon_id: int) -> list[dict]:
-        """指定されたポケモンIDが覚える技を、pokemonsテーブルのmovesカラム(カンマ区切りのID)から取得する。"""
+    def get_moves_by_pokemon_id(self, pokemon_id: int) -> list[dict] | None:
+        """
+        指定されたポケモンIDが覚える技を取得する。
+        ポケモンが存在しない場合はNoneを返す。
+        """
         with DatabaseManager() as db:
             cursor = db.get_cursor()
             
             cursor.execute("SELECT moves FROM pokemons WHERE id = ?", (pokemon_id,))
             row = cursor.fetchone()
-            if not row or not row['moves']:
+
+            # ポケモンが存在しない場合
+            if not row:
+                return None
+
+            # 技情報がない場合
+            if not row['moves']:
                 return []
 
             try:

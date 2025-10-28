@@ -13,7 +13,10 @@ async function getPokemonByName(name) {
     if (pokemonMasterList.length === 0) {
         try {
             const response = await fetch('/api/master/pokemons');
-            pokemonMasterList = await response.json();
+            const pokemonData = await response.json();
+            if (pokemonData.status === 'success') {
+                pokemonMasterList = pokemonData.data.pokemons;
+            }
         } catch (e) {
             console.error("Failed to fetch pokemon master list", e);
             return null;
@@ -32,7 +35,8 @@ async function getAllMoves() {
     try {
         const response = await fetch(`/api/master/moves`);
         if (!response.ok) return [];
-        return await response.json();
+        const movesData = await response.json();
+        return movesData.data.moves;
     } catch (error) {
         console.error(`Error fetching moves:`, error);
         return [];
@@ -43,7 +47,8 @@ async function getAllAbilities() {
     try {
         const response = await fetch(`/api/master/abilities`);
         if (!response.ok) return [];
-        return await response.json();
+        const abilitiesData = await response.json();
+        return abilitiesData.data.abilities;
     } catch (error) {
         console.error(`Error fetching abilities:`, error);
         return [];
@@ -152,8 +157,14 @@ export class PokemonDetailEditor {
                 fetch('/api/master/types'),
                 fetch('/api/master/items')
             ]);
-            this.typesList = await typesRes.json();
-            this.itemsList = await itemsRes.json();
+            const typesData = await typesRes.json();
+            if (typesData.status === 'success') {
+                this.typesList = typesData.data.types;
+            }
+            const itemsData = await itemsRes.json();
+            if (itemsData.status === 'success') {
+                this.itemsList = itemsData.data.items;
+            }
         } catch (error) {
             console.error("Failed to load master data:", error);
         }
@@ -241,14 +252,16 @@ export class PokemonDetailEditor {
             try {
                 const response = await fetch(`/api/pokemon/${pokemonId}/abilities`);
                 if (!response.ok) throw new Error('特性リストの取得に失敗しました。');
-                const abilities = await response.json();
-                
-                abilityDatalist.innerHTML = ''; // 中身をクリア
-                abilities.forEach(ability => {
-                    const option = document.createElement('option');
-                    option.value = ability.name_ja || ability.name;
-                    abilityDatalist.appendChild(option);
-                });
+                const abilitiesData = await response.json();
+                if (abilitiesData.status === 'success') {
+                    const abilities = abilitiesData.data.abilities;
+                    abilityDatalist.innerHTML = ''; // 中身をクリア
+                    abilities.forEach(ability => {
+                        const option = document.createElement('option');
+                        option.value = ability.name_ja || ability.name;
+                        abilityDatalist.appendChild(option);
+                    });
+                }
 
             } catch (error) {
                 console.error('Error fetching pokemon-specific abilities:', error);
@@ -262,14 +275,16 @@ export class PokemonDetailEditor {
             try {
                 const response = await fetch(`/api/pokemon/${pokemonId}/moves`);
                 if (!response.ok) throw new Error('技リストの取得に失敗しました。');
-                const moves = await response.json();
-                
-                moveDatalist.innerHTML = ''; // 中身をクリア
-                moves.forEach(move => {
-                    const option = document.createElement('option');
-                    option.value = move.name_ja || move.name;
-                    moveDatalist.appendChild(option);
-                });
+                const movesData = await response.json();
+                if (movesData.status === 'success') {
+                    const moves = movesData.data.moves;
+                    moveDatalist.innerHTML = ''; // 中身をクリア
+                    moves.forEach(move => {
+                        const option = document.createElement('option');
+                        option.value = move.name_ja || move.name;
+                        moveDatalist.appendChild(option);
+                    });
+                }
 
             } catch (error) {
                 console.error('Error fetching pokemon-specific moves:', error);
