@@ -115,8 +115,8 @@ export class PartySaver {
 
             const responseData = await response.json();
 
-            if (response.ok) {
-                this.showAlert(`対戦結果 (ID: ${responseData.log_id}) を保存しました。`, 'success');
+            if (response.ok && responseData.status === 'success') {
+                this.showAlert(`対戦結果 (ID: ${responseData.data.log_id}) を保存しました。`, 'success');
                 console.log('Success:', responseData);
 
                 // 新しいバトルIDを採番して表示
@@ -163,7 +163,8 @@ export class PartySaver {
                     this.pokemonDetailEditor.clearOpponentDetails();
                 }
             } else {
-                throw new Error(responseData.error || '不明なエラーが発生しました。');
+                const errorMessage = responseData.data ? responseData.data.error : (responseData.message || '不明なエラーが発生しました。');
+                throw new Error(errorMessage);
             }
         } catch (error) {
             console.error('Error:', error);

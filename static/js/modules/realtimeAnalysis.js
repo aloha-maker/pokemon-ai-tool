@@ -210,13 +210,13 @@ export class RealtimeAnalysis {
             if (!response.ok) {
                 throw new Error('サーバーからバトルIDを取得できませんでした。');
             }
-            const data = await response.json();
-            if (data.battle_id) {
+            const result = await response.json();
+            if (result.status === 'success' && result.data.battle_id) {
                 if (this.battleIdDisplay) {
-                    this.battleIdDisplay.value = data.battle_id;
+                    this.battleIdDisplay.value = result.data.battle_id;
                     this.battleIdDisplay.dispatchEvent(new Event('input'));
                 }
-                console.log(`Fetched Battle ID: ${data.battle_id}`);
+                console.log(`Fetched Battle ID: ${result.data.battle_id}`);
             } else {
                 throw new Error('レスポンスにバトルIDが含まれていません。');
             }

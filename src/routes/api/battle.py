@@ -1,17 +1,21 @@
 # src/routes/api/battle.py
-from flask import Blueprint, request, jsonify
+import logging
+from flask import Blueprint, request
 from src.services.battle_service import BattleService
+from src.utils.response_handler import api_success, api_fail, api_error
 
 battle_bp = Blueprint('battle_api', __name__, url_prefix='/api')
 
 @battle_bp.route('/history', methods=['GET'])
 def get_history():
+    """対戦履歴と統計情報を取得する"""
     service = BattleService()
     try:
         history_data = service.get_battle_history_and_stats()
-        return jsonify(history_data)
+        return api_success(history_data)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logging.exception(f"対戦履歴の取得中にエラーが発生しました: {e}")
+        return api_error("対戦履歴の取得に失敗しました。")
 
 @battle_bp.route('/battles/save_result_with_log', methods=['POST'])
 def save_battle_result_with_log():
@@ -27,11 +31,12 @@ def save_battle_result_with_log():
             result=data.get('result'),
             raw_events=data.get('raw_events', [])
         )
-        return jsonify({"message": "対戦結果とログを保存しました。", "log_id": log_id}), 201
+        return api_success({"message": "対戦結果とログを保存しました。", "log_id": log_id}, status_code=201)
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return api_fail({"error": str(e)})
     except Exception as e:
-        return jsonify({"error": "An internal server error occurred"}), 500
+        logging.exception(f"対戦結果の保存中に予期せぬエラーが発生しました: {e}")
+        return api_error("サーバー内部でエラーが発生しました。")
 
 @battle_bp.route('/battle/new_id', methods=['GET'])
 def get_new_battle_id():
@@ -39,6 +44,7 @@ def get_new_battle_id():
     service = BattleService()
     try:
         battle_id = service.generate_new_battle_id()
-        return jsonify({"battle_id": battle_id})
+        return api_success({"battle_id": battle_id})
     except Exception as e:
-        return jsonify({"error": "An internal server error occurred"}), 500
+        logging.exception(f"新規バトルIDの生成中にエラーが発生しました: {e}")
+        return api_error("新規バトルIDの生成に失敗しました。")
