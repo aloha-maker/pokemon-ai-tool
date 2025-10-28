@@ -289,9 +289,9 @@ export class RealtimeAnalysis {
 
             console.log('Received data from API:', data); // デバッグ用に追加
 
-            if (data.success && data.party) {
+            if (data.status === 'success' && data.data.party) {
                 const opponentInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
-                data.party.forEach((pokemonName, index) => {
+                data.data.party.forEach((pokemonName, index) => {
                     if (opponentInputs[index]) {
                         opponentInputs[index].value = pokemonName || ''; // 認識失敗時は空にする
                         // ポケモンアイコンと種族値の更新をトリガーするために、手動でchangeイベントを発火させます。
@@ -299,7 +299,8 @@ export class RealtimeAnalysis {
                     }
                 });
             } else {
-                alert(`パーティの認識に失敗しました: ${data.error || '不明なエラー'}`);
+                const errorMessage = data.data ? data.data.error : (data.message || '不明なエラー');
+                alert(`パーティの認識に失敗しました: ${errorMessage}`);
             }
         } catch (error) {
             console.error('パーティ認識APIの呼び出し中にエラーが発生しました:', error);
