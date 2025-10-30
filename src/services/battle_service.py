@@ -6,7 +6,6 @@ import datetime
 import json
 from threading import Lock
 
-from src import state
 from src.extensions import executor
 from src.database.manager import DatabaseManager
 from src.services.dashboard_service import DashboardService
@@ -24,7 +23,8 @@ class BattleService:
     """
     対戦履歴や動画解析タスクに関連するビジネスロジックを担当するサービスクラス
     """
-    def __init__(self):
+    def __init__(self, app_state):
+        self.state = app_state
         self.video_dir = os.path.join(project_root, 'videos')
         self.tasks_lock = Lock()
 
@@ -238,7 +238,7 @@ class BattleService:
         video_file.save(filepath)
         
         with self.tasks_lock:
-            state.video_tasks[task_id] = {"status": "PENDING", "result": None, "filename": video_file.filename}
+            self.state.video_tasks[task_id] = {"status": "PENDING", "result": None, "filename": video_file.filename}
         
         executor.submit(self._analyze_video_task, task_id, filepath)
         return task_id
@@ -246,14 +246,14 @@ class BattleService:
     def get_task_status(self, task_id: str) -> dict:
         """タスクの進捗状況を取得する"""
         with self.tasks_lock:
-            task = state.video_tasks.get(task_id)
+            task = self.state.video_tasks.get(task_id)
             if not task:
                 return None
 
             response_data = task.copy()
             # 完了またはエラーしたタスクは状態を返した後に辞書から削除する
             if response_data.get('status') in ['DONE', 'ERROR']:
-                state.video_tasks.pop(task_id, None)
+                self.state.video_tasks.pop(task_id, None)
         
         return response_data
 
@@ -312,7 +312,7 @@ class BattleService:
         try:
             print(f"[Task {task_id}] OCRベースの動画解析を開始: {filepath}")
             with self.tasks_lock:
-                state.video_tasks[task_id]["status"] = "PROCESSING"
+                self.state.video_tasks[task_id]["status"] = "PROCESSING"
             
             os.makedirs(config.OUTPUT_DIR, exist_ok=True)
             os.makedirs(config.PROCESSED_DIR, exist_ok=True)
@@ -328,8 +328,8 @@ class BattleService:
             log_id = self.add_battle_log_from_video(task_id, turn_data)
 
             with self.tasks_lock:
-                state.video_tasks[task_id]["status"] = "DONE"
-                state.video_tasks[task_id]["result"] = {"log_id": log_id}
+                self.state.video_tasks[task_id]["status"] = "DONE"
+                self.state.video_tasks[task_id]["result"] = {"log_id": log_id}
             print(f"[Task {task_id}] OCRベースの動画解析が完了しました。")
 
         except Exception as e:
@@ -337,5 +337,5 @@ class BattleService:
             import traceback
             traceback.print_exc()
             with self.tasks_lock:
-                state.video_tasks[task_id]["status"] = "ERROR"
-                state.video_tasks[task_id]["result"] = {"error": str(e)}
+                self.state.video_tasks[task_id]["status"] = "ERROR"
+                self.state.video_tasks[task_id]["result"] = {"error": str(e)}

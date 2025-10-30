@@ -2,13 +2,12 @@ import time
 import cv2
 import os
 from src.core.capture import ScreenCapturer
-from src import state
 
 # app.pyからsocketioインスタンスをインポートすると循環参照になるため、
 # ここではtime.sleep()を使用する。
 # 高負荷環境で問題になる場合は、socketioインスタンスをDIするなどの工夫が必要。
 
-def video_stream_generator(window_title: str):
+def video_stream_generator(window_title: str, stop_event):
     """画面キャプチャを行い、M-JPEGストリームのフレームを生成するジェネレータ"""
     print(f"ビデオストリームを開始します。対象: {window_title}")
     capturer = ScreenCapturer(window_title)
@@ -16,7 +15,7 @@ def video_stream_generator(window_title: str):
         print(f"警告: ウィンドウ '{window_title}' が見つかりません。ストリームを開始できません。")
         return
 
-    while not state.background_thread_stop_event.is_set():
+    while not stop_event.is_set():
         frame = capturer.capture_frame()
         if frame is None:
             print("ビデオストリームのフレーム取得に失敗しました。")
@@ -37,12 +36,12 @@ def video_stream_generator(window_title: str):
     
     print("ビデオストリームを停止しました。")
 
-def camera_stream_generator(camera_index=0):
+def camera_stream_generator(camera_index, stop_event):
     """ワーカーが保存した最新のフレーム画像を読み込み、M-JPEGストリームとして生成するジェネレータ"""
     print(f"ファイルベースのカメラストリームを開始します。")
     latest_frame_path = 'static/captures/latest_frame.jpg'
 
-    while not state.background_thread_stop_event.is_set():
+    while not stop_event.is_set():
         if os.path.exists(latest_frame_path):
             try:
                 with open(latest_frame_path, 'rb') as f:

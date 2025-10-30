@@ -4,9 +4,8 @@ import time
 from src.core.ocr.ocr_processor import OCRProcessor
 from src.core.ocr.name_corrector import PokemonNameCorrector, AbilityNameCorrector
 from src.core.ocr import config  # configモジュールをインポート
-from src import state
 
-def ocr_worker(socketio):
+def ocr_worker(socketio, state):
     """
     バックグラウンドでOCRを定期的に実行するワーカー
     'static/captures/latest_frame.jpg' を監視して処理を行う

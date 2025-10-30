@@ -2,9 +2,8 @@ import cv2
 import os
 import time
 from src.core.capture import ScreenCapturer
-from src import state
 
-def window_capture_worker(socketio, window_title):
+def window_capture_worker(socketio, window_title, state):
     """ウィンドウキャプチャを行い、latest_frame.jpgを更新するワーカー"""
     print(f"ウィンドウキャプチャワーカーを開始します。対象: {window_title}")
     capturer = ScreenCapturer(window_title)
@@ -26,7 +25,7 @@ def window_capture_worker(socketio, window_title):
         time.sleep(1/30) # キャプチャフレームレート
     print("ウィンドウキャプチャワーカーを停止しました。")
 
-def camera_capture_worker(socketio, camera_index):
+def camera_capture_worker(socketio, camera_index, state):
     """カメラキャプチャを行い、latest_frame.jpgを更新するワーカー"""
     print(f"[Log] カメラキャプチャワーカー開始。デバイス: {camera_index}")
     cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)

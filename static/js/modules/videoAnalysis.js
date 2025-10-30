@@ -55,10 +55,11 @@ export class VideoAnalysis {
 
             if (xhr.status === 202) {
                 const response = JSON.parse(xhr.responseText);
+                const taskId = response.data.task_id;
                 showAlert('video-upload-alert', 
-                    `アップロード成功!解析を開始しました。(Task ID: ${response.task_id})`, 'success');
-                this.addTaskToList(response.task_id, file.name);
-                this.startPolling(response.task_id);
+                    `アップロード成功!解析を開始しました。(Task ID: ${taskId})`, 'success');
+                this.addTaskToList(taskId, file.name);
+                this.startPolling(taskId);
             } else {
                 const errorMsg = JSON.parse(xhr.responseText).error || '不明なエラーが発生しました。';
                 showAlert('video-upload-alert', `アップロード失敗: ${errorMsg}`, 'danger');
@@ -100,10 +101,11 @@ export class VideoAnalysis {
                 const response = await fetch(`/api/videos/status/${taskId}`);
                 if (!response.ok) throw new Error(`Server responded with ${response.status}`);
                 
-                const data = await response.json();
-                this.updateTaskStatus(taskId, data);
+                const jsonResponse = await response.json();
+                const taskData = jsonResponse.data;
+                this.updateTaskStatus(taskId, taskData);
 
-                if (data.status === 'DONE' || data.status === 'ERROR') {
+                if (taskData.status === 'DONE' || taskData.status === 'ERROR') {
                     clearInterval(this.pollingIntervals[taskId]);
                     delete this.pollingIntervals[taskId];
                 }

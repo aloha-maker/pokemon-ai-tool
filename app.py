@@ -54,6 +54,10 @@ def create_app(config_name=None):
     os.makedirs('.img', exist_ok=True)
     os.makedirs('videos', exist_ok=True)
 
+    # --- 状態管理クラスの初期化 ---
+    from src.core.app_state import AppState
+    app.state = AppState()
+
     # --- 拡張機能の初期化 ---
     app.pokemon_recognizer = PokemonRecognizer(threshold=0.8) # ★ 追加
     executor.init_app(app)
