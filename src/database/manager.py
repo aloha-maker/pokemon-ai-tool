@@ -2,6 +2,9 @@ import sqlite3
 import os
 import json
 import time
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 class DatabaseManager:
     """
