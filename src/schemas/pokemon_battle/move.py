@@ -11,7 +11,7 @@ class Move:
     def __init__(
         self,
         name: str,
-        power: int,
+        power: Optional[int | str],
         move_type: TypeName,
         category: Literal["physical", "special", "status"],
         accuracy: float,
@@ -21,7 +21,17 @@ class Move:
         effect: Optional[str] = None,
     ):
         self.name: str = name
-        self.power: int = power
+
+        # --- 🔧 安全な威力変換 ---
+        # None・空文字・不正な文字列に対応して 0 にする
+        if power in (None, "", "None"):
+            self.power = 0
+        else:
+            try:
+                self.power = int(power)
+            except (TypeError, ValueError):
+                self.power = 0
+
         self.type: TypeName = move_type
         self.category: Literal["physical", "special", "status"] = category
         self.accuracy: float = accuracy

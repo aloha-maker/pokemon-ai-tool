@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Any, Dict
 from .battle_side import BattleSide
 from .battle_field import BattleField
 
@@ -41,3 +42,8 @@ class BattleState:
     def set_attacker(self, side: BattleSide) -> None:
         """特定のサイドを攻撃側に設定"""
         self.is_side1_attacker = (side is self.side1)
+
+    def update_sides(self, attacker_side: BattleSide, defender_side: BattleSide):
+        """攻撃側・防御側を新しい状態に更新"""
+        self.attacker_side = attacker_side
+        self.defender_side = defender_side

@@ -9,7 +9,7 @@ class BattleField:
         self,
         weather: Optional[str] = None,
         terrain: Optional[str] = None,
-        turn: int = 1,
+        turn: int = 0,
         is_double: bool = False,
     ):
         self.weather: Optional[str] = weather      # 例: "sunny", "rain"

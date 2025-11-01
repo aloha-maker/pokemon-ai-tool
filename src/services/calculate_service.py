@@ -4,7 +4,8 @@
 import random
 import json
 from pathlib import Path
-from typing import Tuple
+import numpy as np
+from typing import Literal, Optional, Tuple
 
 # 分割したモジュールから必要なクラスをインポート
 from src.schemas.pokemon_battle import Pokemon, Move, BattleSide, BattleField, BattleState
@@ -142,3 +143,119 @@ class DamageCalculator:
         max_damage = int(base_damage * modifier * 1.00)
 
         return (min_damage, max_damage)
+
+
+    def simulate_team_damage(
+        self,
+        battle_state: BattleState
+    ) -> dict:
+        """
+        攻撃側のアクティブポケモンが持つ全技について、
+        相手チーム全員に対するダメージをシミュレーションする。
+
+        Returns:
+            dict: {move_name: {defender_name: {"min": int, "max": int, "effectiveness": float}}}
+        """
+        
+        # BattleStateから必要な情報を取得
+        attacker_side = battle_state.get_attacker_side()
+        defender_side = battle_state.get_defender_side()
+        attacker = attacker_side.active
+        
+        results = {}
+
+        for move in attacker.moves:  # 4つの技を順に
+            move_result = {}
+            for defender in defender_side.team:
+                # 防御側を切り替えて計算
+                defender_side.set_active(defender)
+
+                # バトル状態を反映（activeを更新した状態で）
+                battle_state.update_sides(attacker_side, defender_side)
+
+                # ダメージ計算
+                min_dmg, max_dmg = self.calculate_damage(move, battle_state)
+                effectiveness = self.get_type_effectiveness(move, defender)
+
+                move_result[defender.name] = {
+                    "min": min_dmg,
+                    "max": max_dmg,
+                    "effectiveness": effectiveness,
+                    "percent_min": round(min_dmg / defender.max_hp * 100, 1),
+                    "percent_max": round(max_dmg / defender.max_hp * 100, 1),
+                }
+
+            results[move.name] = move_result
+
+        return results
+
+    def estimate_ev_from_damage(
+        self,
+        move: "Move",
+        battle_state: "BattleState",
+        observed_damage: Tuple[int, int],
+        target: Literal["attacker", "defender"] = "defender",
+        step: int = 4,
+    ) -> Optional[dict]:
+        """
+        実測ダメージ範囲から攻撃/防御努力値を推定する。
+        既存の calculate_damage() が (min, max) を返す設計に対応。
+
+        Parameters
+        ----------
+        move : Move
+            技情報
+        battle_state : BattleState
+            現在のバトル状態（attacker, defender含む）
+        observed_damage : (min, max)
+            実際に観測されたダメージ範囲
+        target : "attacker" | "defender"
+            どちらの努力値を推定するか
+        step : int
+            探索ステップ幅（通常4）
+
+        Returns
+        -------
+        dict or None
+            {"estimated_ev": int, "range": (min_ev, max_ev), "detail": [...]} 形式
+        """
+
+        candidates = []
+
+        attacker = battle_state.get_attacker_side().active
+        defender = battle_state.get_defender_side().active
+
+        for ev in range(0, 253, step):
+            # 推定対象の努力値を更新
+            if target == "attacker":
+                if move.category == "physical":
+                    attacker.ev["atk"] = ev
+                else:
+                    attacker.ev["spa"] = ev
+            else:
+                if move.category == "physical":
+                    defender.ev["def"] = ev
+                else:
+                    defender.ev["spd"] = ev
+
+            # その努力値でのダメージ範囲を取得
+            dmg_min, dmg_max = self.calculate_damage(move, battle_state)
+
+            # 観測範囲と重なるか判定
+            obs_min, obs_max = observed_damage
+            if dmg_max >= obs_min and dmg_min <= obs_max:
+                candidates.append({
+                    "ev": ev,
+                    "calc_range": (dmg_min, dmg_max),
+                })
+
+        if not candidates:
+            return None
+
+        median_ev = int(np.median([c["ev"] for c in candidates]))
+        return {
+            "estimated_ev": median_ev,
+            "range": (candidates[0]["ev"], candidates[-1]["ev"]),
+            "num_candidates": len(candidates),
+            "detail": candidates,
+        }

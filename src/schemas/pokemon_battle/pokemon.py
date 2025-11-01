@@ -4,6 +4,7 @@ from .types import StatName, TypeName
 from .move import Move
 from src.models.pokemon_model import PokemonModel
 from src.models.trained_pokemon_moedl import TrainedPokemonModel
+from src.models.move_model import MoveModel
 
 
 # =========================
@@ -66,6 +67,25 @@ class Pokemon:
         # 性格補正を反映(ここでは仮に1.0固定。後でNatureデータで調整可能)
         return int(stat_value * 1.0)
     
+    def _load_moves_from_trained_model(self, trained: TrainedPokemonModel) -> List[Move]:
+        """TrainedPokemonModelから技を読み込む"""
+        moves = []
+        move_ids = [
+            trained.move1_id, 
+            trained.move2_id, 
+            trained.move3_id, 
+            trained.move4_id
+        ]
+        
+        for move_id in move_ids:
+            if move_id is not None:
+                move_model = MoveModel.query.get(move_id)
+                if move_model:
+                    move = Move.from_model(move_model)
+                    moves.append(move)
+        
+        return moves
+    
     @classmethod
     def from_trained_model(cls, trained: TrainedPokemonModel) -> "Pokemon":
         """
@@ -103,7 +123,7 @@ class Pokemon:
 
         # --- インスタンス生成 ---
         pokemon = cls(
-            name=trained.nickname or base_model.name,
+            name=base_model.name_ja,
             level=trained.level,
             base_stats=base_stats,
             iv=iv,
@@ -114,7 +134,70 @@ class Pokemon:
             types=types,
         )
 
+        # --- 技を設定 ---
+        pokemon.moves = pokemon._load_moves_from_trained_model(trained)
+
         return pokemon
+
+    # === PokemonModel用 ===
+    @classmethod
+    def from_pokemon_model(cls, base_model: PokemonModel, level: int = 50) -> "Pokemon":
+        """
+        Trainedデータがないときに、PokemonModel単体から生成する簡易版。
+        - IV: 全て31
+        - EV: 全て0
+        - Nature: まじめ
+        - Ability/Item: なし
+        """
+
+        base_stats = {
+            "hp": base_model.hp,
+            "atk": base_model.attack,
+            "def": base_model.defense,
+            "spa": base_model.sp_attack,
+            "spd": base_model.sp_defense,
+            "spe": base_model.speed,
+        }
+
+        iv = {stat: 31 for stat in ["hp", "atk", "def", "spa", "spd", "spe"]}
+        ev = {stat: 0 for stat in ["hp", "atk", "def", "spa", "spd", "spe"]}
+
+        types = [base_model.type1]
+        if base_model.type2:
+            types.append(base_model.type2)
+
+        pokemon = cls(
+            name=base_model.name_ja,
+            level=level,
+            base_stats=base_stats,
+            iv=iv,
+            ev=ev,
+            nature="まじめ",
+            ability="なし",
+            item=None,
+            types=types,
+        )
+
+        return pokemon
+    
+    def add_move(self, move: Move) -> None:
+        """技を追加する"""
+        if len(self.moves) < 4:
+            self.moves.append(move)
+        else:
+            raise ValueError("ポケモンは最大4つまで技を覚えられます")
+    
+    def remove_move(self, move_index: int) -> None:
+        """指定したインデックスの技を削除する"""
+        if 0 <= move_index < len(self.moves):
+            self.moves.pop(move_index)
+    
+    def get_move(self, move_name: str) -> Optional[Move]:
+        """技名から技を取得する"""
+        for move in self.moves:
+            if move.name == move_name:
+                return move
+        return None
     
     def to_dict(self) -> Dict:
         """
