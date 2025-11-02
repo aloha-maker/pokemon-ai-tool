@@ -41,15 +41,8 @@ def camera_capture_worker(socketio, camera_index, state):
         if ret:
             is_success, buffer = cv2.imencode(".jpg", frame)
             if is_success:
-                tmp_path = 'static/captures/latest_frame.tmp'
-                final_path = 'static/captures/latest_frame.jpg'
-                with open(tmp_path, 'wb') as f:
-                    f.write(buffer)
-                try:
-                    os.replace(tmp_path, final_path)
-                except PermissionError:
-                    # The reader thread might have the file open. It's safe to skip.
-                    pass
+                with state.frame_lock:
+                    state.latest_frame_bytes = buffer.tobytes()
         else:
             print("カメラキャプチャワーカー: フレーム取得に失敗しました。")
             state.background_thread_stop_event.set()

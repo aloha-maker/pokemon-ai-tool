@@ -21,3 +21,7 @@ class AppState:
             "state": None,
             "last_updated": None
         }
+
+        # カメラフレームをメモリ上で共有するためのデータとロック
+        self.frame_lock = threading.Lock()
+        self.latest_frame_bytes = None

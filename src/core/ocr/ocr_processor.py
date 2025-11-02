@@ -16,7 +16,7 @@ from .config import (
 from flask import current_app
 
 class OCRProcessor:
-    def __init__(self, pokemon_corrector, ability_corrector):
+    def __init__(self, pokemon_corrector, ability_corrector, tesseract_path):
         self.pokemon_corrector = pokemon_corrector
         self.ability_corrector = ability_corrector
         
@@ -27,8 +27,9 @@ class OCRProcessor:
         self.image_processor = ImageROIProcessor(OUTPUT_DIR, self.image_matcher)
         self.special_processor = SpecialROIProcessor(OUTPUT_DIR)
         
-        # テッセラクト設定 (Flaskのconfigから取得)
-        pytesseract.pytesseract.tesseract_cmd = current_app.config.get('TESSERACT_PATH')
+        # テッセラクト設定 (引数から取得)
+        if tesseract_path:
+            pytesseract.pytesseract.tesseract_cmd = tesseract_path
         
         # 直前のポケモン名を保持（act→choose遷移用）
         self.last_my_pokemon_name = ""
@@ -123,6 +124,9 @@ class OCRProcessor:
     
     def process_phase_rois(self, frame, video_name, frame_idx, short_hash, width, height):
         """フェーズ別ROI処理のルーティング"""
+        # 新しいフレームの処理の開始時に前回の結果をクリア
+        self.ocr_processor.clear_results()
+
         processed_count = 0
         
         if self.phase_manager.current_phase == "stay":

@@ -1,11 +1,12 @@
 import cv2
 import os
 import time
+import numpy as np
 from src.core.ocr.ocr_processor import OCRProcessor
 from src.core.ocr.name_corrector import PokemonNameCorrector, AbilityNameCorrector
 from src.core.ocr import config  # configモジュールをインポート
 
-def ocr_worker(socketio, state):
+def ocr_worker(socketio, state, tesseract_path):
     """
     バックグラウンドでOCRを定期的に実行するワーカー
     'static/captures/latest_frame.jpg' を監視して処理を行う
@@ -17,7 +18,7 @@ def ocr_worker(socketio, state):
     try:
         pokemon_corrector = PokemonNameCorrector(config.POKEMON_MASTER_PATH)
         ability_corrector = AbilityNameCorrector(config.ABILITY_MASTER_PATH)
-        ocr_processor = OCRProcessor(pokemon_corrector, ability_corrector)
+        ocr_processor = OCRProcessor(pokemon_corrector, ability_corrector, tesseract_path=tesseract_path)
         print("✅ OCRProcessorの初期化が完了しました")
     except Exception as e:
         print(f"❌ OCRProcessorの初期化に失敗しました: {e}")
@@ -26,10 +27,16 @@ def ocr_worker(socketio, state):
     frame_count = 0
     
     while not state.background_thread_stop_event.is_set():
-        frame_path = 'static/captures/latest_frame.jpg'
-        if os.path.exists(frame_path):
+        frame_bytes = None
+        with state.frame_lock:
+            if state.latest_frame_bytes:
+                frame_bytes = state.latest_frame_bytes
+
+        if frame_bytes:
             try:
-                frame = cv2.imread(frame_path)
+                np_arr = np.frombuffer(frame_bytes, np.uint8)
+                frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
                 if frame is not None:
                     # OCR処理には常に1920x1080の解像度を期待
                     frame_resized = cv2.resize(frame, (1920, 1080))

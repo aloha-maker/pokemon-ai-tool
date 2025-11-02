@@ -8,9 +8,9 @@ class ActionAIModel:
     """
     ルールベースで行動を予測するAIモデルのプロトタイプ。
     """
-    def __init__(self):
+    def __init__(self, app_state):
         self.master_data_service = MasterDataService()
-        self.log_analyzer = LogAnalyzer()
+        self.log_analyzer = LogAnalyzer(app_state=app_state)
 
     def _get_pokemon_types(self, pokemon_name):
         """ポケモン名からタイプを取得する"""

@@ -13,7 +13,7 @@ class BattleSide:
     def __init__(self, team_name: str, pokemon_list: List[Pokemon]):
         self.team_name: str = team_name
         self.team: List[Pokemon] = pokemon_list
-        self.active: Pokemon = pokemon_list[0]  # 現在場に出ているポケモン
+        self.active: Pokemon =  None  # 現在場に出ているポケモン
 
         # サイド特有の効果(壁、ステルスロックなど)
         self.screens: Dict[str, bool] = {

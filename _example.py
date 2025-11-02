@@ -156,14 +156,15 @@ with app.app_context():
 
 
     # 3️⃣ フレーム単位でイベント適用
-    updater = BattleStateUpdater(state)
+    calculator = DamageCalculator()
+    updater = BattleStateUpdater(state, calculator)
     updater.apply_frames(battle_log.events)
 
     # ------------------------
     # ダメージ計算
     # ------------------------
     # デフォルト設定で計算機を作成
-    calculator = DamageCalculator()
+    # calculator = DamageCalculator()
 
     # ダメージ計算
     # min_damage, max_damage = calculator.calculate_damage(move, battle_state)

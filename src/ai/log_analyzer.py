@@ -9,11 +9,11 @@ class LogAnalyzer:
     battle_logsテーブルに蓄積された対戦データを分析するクラス。
     """
 
-    def __init__(self):
+    def __init__(self, app_state):
         """
         初期化時にバトルサービスをインスタンス化する。
         """
-        self.battle_service = BattleService()
+        self.battle_service = BattleService(app_state=app_state)
 
     def get_all_logs(self) -> list[dict]:
         """

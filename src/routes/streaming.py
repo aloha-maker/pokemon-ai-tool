@@ -8,8 +8,8 @@ streaming_bp = Blueprint('streaming', __name__)
 def camera_feed():
     """カメラからのM-JPEGストリームを配信するエンドポイント"""
     camera_index = request.args.get('camera_index', 0, type=int)
-    stop_event = current_app.state.background_thread_stop_event
-    return Response(camera_stream_generator(camera_index, stop_event),
+    state = current_app.state
+    return Response(camera_stream_generator(camera_index, state),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 

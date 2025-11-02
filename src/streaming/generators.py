@@ -36,23 +36,21 @@ def video_stream_generator(window_title: str, stop_event):
     
     print("ビデオストリームを停止しました。")
 
-def camera_stream_generator(camera_index, stop_event):
-    """ワーカーが保存した最新のフレーム画像を読み込み、M-JPEGストリームとして生成するジェネレータ"""
-    print(f"ファイルベースのカメラストリームを開始します。")
-    latest_frame_path = 'static/captures/latest_frame.jpg'
+def camera_stream_generator(camera_index, state):
+    """ワーカーがメモリに保存した最新のフレームを読み込み、M-JPEGストリームとして生成するジェネレータ"""
+    print(f"メモリベースのカメラストリームを開始します。")
 
-    while not stop_event.is_set():
-        if os.path.exists(latest_frame_path):
-            try:
-                with open(latest_frame_path, 'rb') as f:
-                    frame_bytes = f.read()
-                
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-            except IOError as e:
-                print(f"フレーム画像の読み込みに失敗しました: {e}")
-                time.sleep(1)
+    while not state.background_thread_stop_event.is_set():
+        frame_bytes = None
+        with state.frame_lock:
+            if state.latest_frame_bytes:
+                frame_bytes = state.latest_frame_bytes
+        
+        if frame_bytes:
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
         else:
-            time.sleep(0.5)
+            # フレームがまだない場合は少し待つ
+            time.sleep(0.1)
 
-        time.sleep(1/30)
+        time.sleep(1/60) # フレームレートを60fpsに近づける

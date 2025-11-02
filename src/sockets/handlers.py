@@ -40,7 +40,8 @@ def register_socket_handlers(socketio):
         app_state.background_thread_stop_event.clear()
         
         app_state.capture_thread = socketio.start_background_task(target=window_capture_worker, socketio=socketio, window_title=window_title, state=app_state)
-        app_state.ocr_thread = socketio.start_background_task(target=ocr_worker, socketio=socketio, state=app_state)
+        tesseract_path = current_app.config.get('TESSERACT_PATH')
+        app_state.ocr_thread = socketio.start_background_task(target=ocr_worker, socketio=socketio, state=app_state, tesseract_path=tesseract_path)
         
         video_feed_url = f'/video_feed?window_title={quote(window_title)}'
         emit('analysis_started', {'video_feed_url': video_feed_url, 'ocr_started': True})
@@ -77,7 +78,8 @@ def register_socket_handlers(socketio):
         print("OCR処理の開始を要求されました。")
         app_state = current_app.state
         # background_thread_stop_event はキャプチャ開始時にクリアされているはず
-        app_state.ocr_thread = socketio.start_background_task(target=ocr_worker, socketio=socketio, state=app_state)
+        tesseract_path = current_app.config.get('TESSERACT_PATH')
+        app_state.ocr_thread = socketio.start_background_task(target=ocr_worker, socketio=socketio, state=app_state, tesseract_path=tesseract_path)
         emit('ocr_started')
 
     @socketio.on('stop_analysis')
@@ -113,7 +115,7 @@ def register_socket_handlers(socketio):
         
         if current_state:
             # AIモデルで行動を予測
-            model = ActionAIModel()
+            model = ActionAIModel(app_state=current_app.state)
             recommendation = model.predict_action(current_state)
             del model # DB接続を閉じる
 

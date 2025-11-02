@@ -69,17 +69,6 @@ class BattleStateBuilder:
         my_side = BattleSide(team_name="自分", pokemon_list=my_team)
         opponent_side = BattleSide(team_name="相手", pokemon_list=opponent_team)
 
-        # アクティブポケモンをBattleLogから設定
-        if battle_log.my_first_pokemon:
-            active = next((p for p in my_team if p.name == battle_log.my_first_pokemon), None)
-            if active:
-                my_side.set_active(active)
-
-        if battle_log.opponent_first_pokemon:
-            active = next((p for p in opponent_team if p.name == battle_log.opponent_first_pokemon), None)
-            if active:
-                opponent_side.set_active(active)
-
         # ------------------------
         # 3️⃣ フィールド構築
         # ------------------------

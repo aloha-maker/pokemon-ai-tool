@@ -110,8 +110,9 @@ export class RealtimeAnalysis {
         if (rawResult && typeof rawResult === 'object' && Object.keys(rawResult).length > 0) {
             content += '<ul class="list-unstyled mb-0 small">';
             for (const [key, value] of Object.entries(rawResult)) {
-                if (value && String(value).trim()) { // 値が空や空白でない場合のみ表示
-                    content += `<li><span class="text-info" style="min-width: 180px; display: inline-block;">${escapeHTML(key)}:</span> <strong>${escapeHTML(value)}</strong></li>`;
+                const text = value.text; // オブジェクトからtextプロパティを取得
+                if (text && String(text).trim()) { // 値が空や空白でない場合のみ表示
+                    content += `<li><span class="text-info" style="min-width: 180px; display: inline-block;">${escapeHTML(key)}:</span> <strong>${escapeHTML(text)}</strong></li>`;
                     hasContent = true;
                 }
             }

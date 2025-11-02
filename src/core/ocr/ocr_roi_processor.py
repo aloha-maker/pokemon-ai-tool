@@ -19,6 +19,13 @@ class OCRROIProcessor(BaseROIProcessor):
         # 現在のバトルIDとポケモンリスト
         self.current_battle_id = ""
         self.available_pokemon_names = []  # バトルIDに紐づく全ポケモン名
+        
+        # フレームごとのOCR結果を保持
+        self.last_ocr_results = {}
+
+    def clear_results(self):
+        """フレーム処理の開始時に前回のOCR結果をクリアする"""
+        self.last_ocr_results = {}
     
     def set_battle_id(self, battle_id):
         """バトルIDを設定し、対応するポケモン名リストを取得"""
@@ -238,6 +245,12 @@ class OCRROIProcessor(BaseROIProcessor):
         
         # 補正されたテキストを使用（補正がない場合は元のテキスト）
         final_text = corrected_text if corrected_text is not None else text
+
+        # 結果をインスタンス変数に保存
+        self.last_ocr_results[roi_name] = {
+            "text": final_text,
+            "confidence": confidence
+        }
 
         # 画像保存
         image_path = self.save_roi_image(roi_img, roi_name, video_name, frame_idx, short_hash)

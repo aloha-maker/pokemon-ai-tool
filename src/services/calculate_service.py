@@ -3,6 +3,7 @@
 """
 import random
 import json
+import copy
 from pathlib import Path
 import numpy as np
 from typing import Literal, Optional, Tuple
@@ -144,7 +145,6 @@ class DamageCalculator:
 
         return (min_damage, max_damage)
 
-
     def simulate_team_damage(
         self,
         battle_state: BattleState
@@ -156,25 +156,25 @@ class DamageCalculator:
         Returns:
             dict: {move_name: {defender_name: {"min": int, "max": int, "effectiveness": float}}}
         """
-        
-        # BattleStateから必要な情報を取得
+
         attacker_side = battle_state.get_attacker_side()
-        defender_side = battle_state.get_defender_side()
         attacker = attacker_side.active
-        
         results = {}
 
-        for move in attacker.moves:  # 4つの技を順に
+        for move in attacker.moves:
             move_result = {}
-            for defender in defender_side.team:
-                # 防御側を切り替えて計算
-                defender_side.set_active(defender)
 
-                # バトル状態を反映（activeを更新した状態で）
-                battle_state.update_sides(attacker_side, defender_side)
+            for defender in battle_state.get_defender_side().team:
+                # 🔸 deepcopyで battle_state のコピーを作成
+                sim_state = copy.deepcopy(battle_state)
+
+                # コピー上で防御側を切り替える
+                sim_defender_side = sim_state.get_defender_side()
+                sim_defender_side.set_active(defender)
+                sim_state.update_sides(sim_state.get_attacker_side(), sim_defender_side)
 
                 # ダメージ計算
-                min_dmg, max_dmg = self.calculate_damage(move, battle_state)
+                min_dmg, max_dmg = self.calculate_damage(move, sim_state)
                 effectiveness = self.get_type_effectiveness(move, defender)
 
                 move_result[defender.name] = {
