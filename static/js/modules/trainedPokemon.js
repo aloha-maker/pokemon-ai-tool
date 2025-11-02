@@ -25,19 +25,23 @@ export class TrainedPokemonManager {
             // TODO: これらのAPIもレスポンス形式統一に対応させる
             if (this.pokemonList.length === 0) {
                 const response = await fetch('/api/master/pokemons');
-                this.pokemonList = await response.json();
+                const result = await response.json();
+                this.pokemonList = result.data.pokemons;
             }
             if (this.itemList.length === 0) {
                 const response = await fetch('/api/master/items');
-                this.itemList = await response.json();
+                const result = await response.json();
+                this.itemList = result.data.items;
             }
             if (this.movesList.length === 0) {
                 const response = await fetch('/api/master/moves');
-                this.movesList = await response.json();
+                const result = await response.json();
+                this.movesList = result.data.moves;
             }
             if (this.abilityList.length === 0) {
                 const response = await fetch('/api/master/abilities');
-                this.abilityList = await response.json();
+                const result = await response.json();
+                this.abilityList = result.data.abilities;
             }
         } catch (e) {
             console.error("Failed to cache master data", e);
@@ -167,6 +171,7 @@ export class TrainedPokemonManager {
 
         if (pokemon) {
             document.getElementById('pokemon-id').value = pokemon.id || '';
+            console.log(this.pokemonList.data);
             
             const pokemonInfo = this.pokemonList.find(p => p.id == pokemon.pokemon_id);
             const pokemonName = pokemonInfo ? pokemonInfo.name_ja : '';
