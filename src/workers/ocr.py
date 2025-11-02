@@ -6,6 +6,9 @@ from src.core.ocr.ocr_processor import OCRProcessor
 from src.core.ocr.name_corrector import PokemonNameCorrector, AbilityNameCorrector
 from src.core.ocr import config  # configモジュールをインポート
 
+from src.schemas.pokemon_battle.battle_log import BattleLog
+from src.models.raw_battle_event_model import RawBattleEventModel
+
 def ocr_worker(socketio, state, tesseract_path):
     """
     バックグラウンドでOCRを定期的に実行するワーカー
@@ -19,6 +22,15 @@ def ocr_worker(socketio, state, tesseract_path):
         pokemon_corrector = PokemonNameCorrector(config.POKEMON_MASTER_PATH)
         ability_corrector = AbilityNameCorrector(config.ABILITY_MASTER_PATH)
         ocr_processor = OCRProcessor(pokemon_corrector, ability_corrector, tesseract_path=tesseract_path)
+        battle_log = BattleLog(
+            battle_id='todo', # TODO クライアントからもってくる
+            battle_date='todo',
+            season='todo',
+            regulation='todo',
+            battle_format='シングル',
+            my_rank=0,
+            opponent_rank=0,
+        )
         print("✅ OCRProcessorの初期化が完了しました")
     except Exception as e:
         print(f"❌ OCRProcessorの初期化に失敗しました: {e}")
@@ -58,18 +70,22 @@ def ocr_worker(socketio, state, tesseract_path):
                     )
                     
                     # 解析結果を取得
-                    current_state = _extract_state_from_ocr_processor(ocr_processor, current_phase_info)
+                    current_state, battle_log = _extract_state_from_ocr_processor(ocr_processor, current_phase_info, battle_log, frame_count)
                     
                     with state.game_state_lock:
                         state.shared_game_state["state"] = current_state
                         state.shared_game_state["last_updated"] = time.time()
                         state.shared_game_state["phase_info"] = current_phase_info
+                        state.shared_game_state["battle_log"] = battle_log
+                        state.shared_game_state["battle_state"] = None
                     
                     # クライアントに状態更新を通知
                     socketio.emit('ocr_update', {
                         'state': current_state,
                         'phase_info': current_phase_info,
-                        'processed_count': processed_count
+                        'processed_count': processed_count,
+                        'battle_log' : battle_log.to_dict(),
+                        'battle_state' : None
                     })
                     
                     if frame_count % 10 == 0:  # 10フレームごとにログ出力
@@ -93,7 +109,7 @@ def ocr_worker(socketio, state, tesseract_path):
 
     print("🛑 OCRワーカーを停止しました。")
 
-def _extract_state_from_ocr_processor(ocr_processor, phase_info):
+def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, frame_count):
     """
     OCRProcessorの内部状態からゲーム状態を抽出する
     """
@@ -124,30 +140,45 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info):
         if hasattr(ocr_processor, 'current_battle_id') and ocr_processor.current_battle_id:
             current_state['battle_id'] = ocr_processor.current_battle_id
             
-        # OCRプロセッサーから直接OCR結果を取得（可能な場合）
-        if hasattr(ocr_processor, 'ocr_processor') and hasattr(ocr_processor.ocr_processor, 'last_ocr_results'):
-            raw_results = ocr_processor.ocr_processor.last_ocr_results
-            current_state['raw_ocr_result'] = raw_results
+        # OCRプロセッサーから直接OCR結果を取得
+        raw_results = ocr_processor.ocr_processor.last_ocr_results
+        current_state['raw_ocr_result'] = raw_results
+        
+        # ライブコメントなどのテキスト情報を抽出
+        game_text_parts = []
+        for roi_name in ['live_comment_row1', 'live_comment_row2']:
+            if roi_name in raw_results and raw_results[roi_name].get('text'):
+                game_text_parts.append(raw_results[roi_name]['text'])
+        
+        if game_text_parts:
+            current_state['game_text'] = ' '.join(game_text_parts)
             
-            # ライブコメントなどのテキスト情報を抽出
-            game_text_parts = []
-            for roi_name in ['live_comment_row1', 'live_comment_row2']:
-                if roi_name in raw_results and raw_results[roi_name].get('text'):
-                    game_text_parts.append(raw_results[roi_name]['text'])
-            
-            if game_text_parts:
-                current_state['game_text'] = ' '.join(game_text_parts)
-                
-            # 特性情報を抽出
-            ability_parts = []
-            for roi_name in ['my_tokusei_row1', 'my_tokusei_row2', 'your_tokusei_row1', 'your_tokusei_row2']:
-                if roi_name in raw_results and raw_results[roi_name].get('text'):
-                    ability_parts.append(raw_results[roi_name]['text'])
-            
-            if ability_parts:
-                current_state['triggered_ability'] = ' '.join(ability_parts)
+        # 特性情報を抽出
+        ability_parts = []
+        for roi_name in ['my_tokusei_row1', 'my_tokusei_row2', 'your_tokusei_row1', 'your_tokusei_row2']:
+            if roi_name in raw_results and raw_results[roi_name].get('text'):
+                ability_parts.append(raw_results[roi_name]['text'])
+        
+        if ability_parts:
+            current_state['triggered_ability'] = ' '.join(ability_parts)
+
+        
+        # RawBattleEventModelにセット
+        raw_battle_event_model_list = []
+        for roi_name, ocr_text in raw_results.items():            
+            raw_battle_event_model = RawBattleEventModel(
+                        battle_id=battle_log.battle_id,
+                        sequence=frame_count,
+                        roi_name=roi_name,
+                        ocr_text=ocr_text['text'],
+                        phase=phase_info['current_phase']
+                    )
+            raw_battle_event_model_list.append(raw_battle_event_model)
+        # battle_logにセット
+        battle_log.event = raw_battle_event_model_list
+
                     
     except Exception as e:
         print(f"⚠️ 状態抽出エラー: {e}")
     
-    return current_state
+    return current_state, battle_log

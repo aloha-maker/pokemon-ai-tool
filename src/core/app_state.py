@@ -19,7 +19,9 @@ class AppState:
         self.game_state_lock = threading.Lock()
         self.shared_game_state = {
             "state": None,
-            "last_updated": None
+            "last_updated": None,
+            "battle_log" : None,
+            "battle_state" : None
         }
 
         # カメラフレームをメモリ上で共有するためのデータとロック
