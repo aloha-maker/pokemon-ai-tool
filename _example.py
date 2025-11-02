@@ -1,5 +1,6 @@
 import csv
-from flask import Flask
+from flask import Flask,Blueprint, request, current_app
+
 from src.database.manager import db
 from src.models.pokemon_model import PokemonModel
 from src.models.move_model import MoveModel
@@ -20,11 +21,125 @@ from src.schemas.pokemon_battle.battle_log import BattleLog  # スキーマ層
 from src.services.calculate_service import DamageCalculator
 from src.services.battle_state_builder_service import BattleStateBuilder
 from src.services.battle_state_updater_service import BattleStateUpdater
+from src.services.battle_service import BattleService
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///C:/pokemon-ai-tool/data/pokemon_ai.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+
+class MockAppState:
+    """テスト用のモックアプリケーション状態"""
+    def __init__(self):
+        self.video_tasks = {}
+
+def test_save_result_with_log():
+    # モックアプリケーション状態を作成
+    app_state = MockAppState()
+    service = BattleService(app_state)
+
+    # テストデータの作成
+    battle_id = "test_battle_001"
+    my_party_id = 1
+    result = "win"  # または "lose"
+    
+    # 自パーティのテストデータ
+    my_party = [
+        {
+            "name": "ピカチュウ",
+            "item": "でんきだま",
+            "terastal_type_id": 13,  # でんき
+            "ability_id": 31,  # せいでんき
+            "moves": [1, 2, 3, 4],  # 10まんボルト、でんきショックなど
+            "is_selected": True,
+            "is_starter": True
+        },
+        {
+            "name": "カメックス",
+            "item": "こだわりメガネ",
+            "terastal_type_id": 11,  # みず
+            "ability_id": 44,  # あめふらし
+            "moves": [56, 57, 58, 59],  # ハイドロポンプ、れいとうビームなど
+            "is_selected": True,
+            "is_starter": False
+        },
+        {
+            "name": "リザードン",
+            "item": "こだわりスカーフ",
+            "terastal_type_id": 10,  # ほのお
+            "ability_id": 66,  # もうか
+            "moves": [52, 53, 54, 55],  # かえんほうしゃ、オーバーヒートなど
+            "is_selected": True,
+            "is_starter": False
+        }
+    ]
+    
+    # 相手パーティのテストデータ
+    opponent_party = [
+        {
+            "name": "フシギバナ",
+            "item": "くろいヘドロ",
+            "terastal_type_id": 12,  # くさ
+            "ability_id": 65,  # しんりょく
+            "moves": [75, 76, 77, 78],  # ソーラービーム、リーフストームなど
+            "is_selected": True,
+            "is_starter": True
+        },
+        {
+            "name": "カイリュー",
+            "item": "たべのこし",
+            "terastal_type_id": 16,  # ドラゴン
+            "ability_id": 39,  # マルチスケイル
+            "moves": [126, 127, 128, 129],  # りゅうせいぐん、はどうだんなど
+            "is_selected": True,
+            "is_starter": False
+        },
+        {
+            "name": "サーナイト",
+            "item": "こだわりメガネ",
+            "terastal_type_id": 14,  # エスパー
+            "ability_id": 28,  # シンクロ
+            "moves": [94, 95, 96, 97],  # サイコキネシス、めいそうなど
+            "is_selected": True,
+            "is_starter": False
+        }
+    ]
+    
+    # 生イベントログのテストデータ
+    raw_events = [
+        {
+            "sequence": 1,
+            "roi_name": "battle_start",
+            "ocr_text": "バトル開始！"
+        },
+        {
+            "sequence": 2,
+            "roi_name": "pokemon_select",
+            "ocr_text": "ピカチュウ が でてきた！"
+        },
+        {
+            "sequence": 3,
+            "roi_name": "opponent_select",
+            "ocr_text": "フシギバナ が でてきた！"
+        },
+        {
+            "sequence": 4,
+            "roi_name": "move_used",
+            "ocr_text": "ピカチュウの 10まんボルト！"
+        },
+        {
+            "sequence": 5,
+            "roi_name": "result",
+            "ocr_text": "勝利！"
+        }
+    ]
+
+    # 関数呼び出し
+    result_id = service.save_result_with_log(
+        battle_id, my_party_id, my_party, opponent_party, result, raw_events
+    )
+    return result_id
 
 
 
@@ -145,20 +260,20 @@ with app.app_context():
     # ログ→対戦状況取得
     # ------------------------
 
-    # DBからバトルログをロード
-    battle_log = BattleLog.load_from_db("BATTLE-20251018-0002")
+    # # DBからバトルログをロード
+    # battle_log = BattleLog.load_from_db("BATTLE-20251018-0002")
     
-    # 1️⃣ バトルログをDBから取得
-    battle_state = BattleStateBuilder.from_battle_log(battle_log)
+    # # 1️⃣ バトルログをDBから取得
+    # battle_state = BattleStateBuilder.from_battle_log(battle_log)
 
-    # 2️⃣ 初期BattleStateを構築
-    state = BattleStateBuilder.from_battle_log(battle_log)
+    # # 2️⃣ 初期BattleStateを構築
+    # state = BattleStateBuilder.from_battle_log(battle_log)
 
 
-    # 3️⃣ フレーム単位でイベント適用
-    calculator = DamageCalculator()
-    updater = BattleStateUpdater(state, calculator)
-    updater.apply_frames(battle_log.events)
+    # # 3️⃣ フレーム単位でイベント適用
+    # calculator = DamageCalculator()
+    # updater = BattleStateUpdater(state, calculator)
+    # updater.apply_frames(battle_log.events)
 
     # ------------------------
     # ダメージ計算
@@ -185,3 +300,4 @@ with app.app_context():
     # ------------------------
     # 
     # ------------------------
+    print(test_save_result_with_log())
