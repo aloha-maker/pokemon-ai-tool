@@ -3,6 +3,7 @@ import os
 import time
 import cv2
 import json
+import numpy as np
 from flask import current_app
 
 class CaptureService:
@@ -13,7 +14,7 @@ class CaptureService:
     def __init__(self):
         self.debug_image_dir = '.img'
         self.roi_config_path = 'instance/roi_config.json'
-        self.latest_frame_path = 'static/captures/latest_frame.jpg'
+        # self.latest_frame_path = 'static/captures/latest_frame.jpg'
 
     def recognize_opponent_party_from_frame(self) -> dict:
         """
@@ -22,19 +23,23 @@ class CaptureService:
         Returns:
             dict: 認識結果。成功時は party と debug_info を、失敗時は error を含む。
         """
-        if not os.path.exists(self.latest_frame_path):
-            return {
-                "success": False, 
-                "error": "キャプチャ画像が見つかりません。リアルタイム解析が実行されているか確認してください。",
-                "status_code": 404
-            }
+        frame = None
+        # 1. メモリ上の最新フレームを試す (camera_capture_worker)
+        with current_app.state.frame_lock:
+            if current_app.state.latest_frame_bytes:
+                np_arr = np.frombuffer(current_app.state.latest_frame_bytes, np.uint8)
+                frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-        frame = cv2.imread(self.latest_frame_path)
+        # # 2. メモリになければ、ファイルから読み込む (window_capture_worker)
+        # if frame is None and os.path.exists(self.latest_frame_path):
+        #     frame = cv2.imread(self.latest_frame_path)
+
+        # 3. どちらの方法でもフレームが取得できなかった場合
         if frame is None:
             return {
-                "success": False, 
-                "error": "キャプチャ画像の読み込みに失敗しました。",
-                "status_code": 500
+                "success": False,
+                "error": "キャプチャ画像が見つかりません。リアルタイム解析が実行されているか確認してください。",
+                "status_code": 404
             }
 
         # タイムスタンプで今回処理用のフォルダを作成

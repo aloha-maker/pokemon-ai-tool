@@ -147,9 +147,10 @@ class BattleService:
                     )
 
                 # 6. raw_battle_events テーブルにリアルタイムログを記録
+                print(raw_events)
                 if raw_events:
                     event_log_data = [
-                        (battle_id, event['sequence'], event['roi_name'], event['ocr_text'])
+                        (battle_id, event['sequence'], event['roi_name'], event['ocr_text']['text'])
                         for event in raw_events
                     ]
                     cursor.executemany(
