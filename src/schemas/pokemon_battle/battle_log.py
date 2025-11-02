@@ -1,3 +1,4 @@
+# C:\pokemon-ai-tool\src\schemas\pokemon_battle\battle_log.py
 from __future__ import annotations
 from typing import Optional, List, Dict
 
@@ -25,8 +26,6 @@ class BattleLog:
         my_rank: Optional[int] = None,
         opponent_rank: Optional[int] = None,
         result: Optional[str] = None,
-        my_first_pokemon: Optional[str] = None,
-        opponent_first_pokemon: Optional[str] = None,
         memo: Optional[str] = None,
         parties: Optional[List[PartyLogModel]] = None,
         events: Optional[List[RawBattleEventModel]] = None,
@@ -39,8 +38,6 @@ class BattleLog:
         self.my_rank = my_rank
         self.opponent_rank = opponent_rank
         self.result = result
-        self.my_first_pokemon = my_first_pokemon
-        self.opponent_first_pokemon = opponent_first_pokemon
         self.memo = memo
         self.parties = parties or []
         self.events = events or []
@@ -61,8 +58,6 @@ class BattleLog:
             my_rank=model.my_rank,
             opponent_rank=model.opponent_rank,
             result=model.result,
-            my_first_pokemon=model.my_first_pokemon,
-            opponent_first_pokemon=model.opponent_first_pokemon,
             memo=model.memo,
             parties=model.parties,
             events=model.events,
@@ -80,8 +75,6 @@ class BattleLog:
             my_rank=self.my_rank,
             opponent_rank=self.opponent_rank,
             result=self.result,
-            my_first_pokemon=self.my_first_pokemon,
-            opponent_first_pokemon=self.opponent_first_pokemon,
             memo=self.memo,
         )
         return model
@@ -92,7 +85,7 @@ class BattleLog:
 
     def save_to_db(self) -> None:
         """BattleをDBに保存"""
-        from src.database.manager import db
+        from src.extensions import db
 
         model = self.to_model()
         db.session.add(model)
@@ -102,7 +95,7 @@ class BattleLog:
         for party_log in self.parties:
             party_log.battle_id = model.battle_id
             db.session.add(party_log)
-
+        
         for event in self.events:
             event.battle_id = model.battle_id
             db.session.add(event)
@@ -138,8 +131,6 @@ class BattleLog:
             "my_rank": self.my_rank,
             "opponent_rank": self.opponent_rank,
             "result": self.result,
-            "my_first_pokemon": self.my_first_pokemon,
-            "opponent_first_pokemon": self.opponent_first_pokemon,
             "memo": self.memo,
             "parties": [p.to_dict() for p in self.parties],
             "events": [e.to_dict() for e in self.events],

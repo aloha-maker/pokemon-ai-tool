@@ -58,10 +58,10 @@ export class PartySaver {
                 const imgEl = slot.querySelector('img');
                 const isSelected = isStarter || (imgEl ? imgEl.classList.contains('pokemon-selected') : false);
                 
-                const itemEl = slot.querySelector('.item-input');
-                const item = itemEl ? itemEl.value.trim() : '';
+                const itemEl = slot.querySelector('.item-name');
+                const item = itemEl ? itemEl.textContent.trim() : '';
 
-                const teraTypeSelect = slot.querySelector('.tera-type-select');
+                const teraTypeSelect = slot.querySelector('.tera-type-name');
                 const teraTypeId = teraTypeSelect ? teraTypeSelect.value : null;
 
                 const abilityId = detailedState ? detailedState.ability_id : null;

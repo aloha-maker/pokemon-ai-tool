@@ -1,4 +1,5 @@
-from src.database.manager import db
+# from src.database.manager import db
+from src.extensions import db 
 from datetime import datetime
 
 class PartyModel(db.Model):

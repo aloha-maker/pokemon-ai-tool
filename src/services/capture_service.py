@@ -14,7 +14,6 @@ class CaptureService:
     def __init__(self):
         self.debug_image_dir = '.img'
         self.roi_config_path = 'instance/roi_config.json'
-        # self.latest_frame_path = 'static/captures/latest_frame.jpg'
 
     def recognize_opponent_party_from_frame(self) -> dict:
         """
@@ -29,10 +28,6 @@ class CaptureService:
             if current_app.state.latest_frame_bytes:
                 np_arr = np.frombuffer(current_app.state.latest_frame_bytes, np.uint8)
                 frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
-        # # 2. メモリになければ、ファイルから読み込む (window_capture_worker)
-        # if frame is None and os.path.exists(self.latest_frame_path):
-        #     frame = cv2.imread(self.latest_frame_path)
 
         # 3. どちらの方法でもフレームが取得できなかった場合
         if frame is None:

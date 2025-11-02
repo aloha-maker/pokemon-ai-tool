@@ -5,11 +5,19 @@ import sys
 import datetime
 import json
 from threading import Lock
+from typing import List, Dict, Optional
+
+from src.extensions import db
+from src.models.battle_model import BattleModel
+from src.models.party_log_model import PartyLogModel
+from src.models.raw_battle_event_model import RawBattleEventModel
 
 from src.extensions import executor
 from src.database.manager import DatabaseManager
 from src.services.dashboard_service import DashboardService
 from src.services.master_data_service import MasterDataService
+
+from src.schemas.pokemon_battle.battle_log import BattleLog
 
 # OCR関連のモジュールをインポート
 project_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
@@ -62,107 +70,97 @@ class BattleService:
                 logs.append(log_data)
             return logs
 
-    def save_result_with_log(self, battle_id: str, my_party_id: int, my_party: list, opponent_party: list, result: str, raw_events: list) -> int:
-        """対戦結果とリアルタイムOCRログを保存する"""
-        if not all([my_party_id, opponent_party, result, battle_id]) or result not in ['win', 'lose']:
-            raise ValueError("パーティ情報、勝敗結果、またはバトルIDが不正です。")
+    # def save_result_with_log(self, battle_id: str, my_party_id: int, my_party: list, opponent_party: list, result: str, raw_events: list) -> int:
+    #     """対戦結果とリアルタイムOCRログを保存する"""
+    #     if not all([my_party_id, opponent_party, result, battle_id]) or result not in ['win', 'lose']:
+    #         raise ValueError("パーティ情報、勝敗結果、またはバトルIDが不正です。")
         
-        master_data_service = MasterDataService()
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
+    #     master_data_service = MasterDataService()
+    #     with DatabaseManager() as db:
+    #         cursor = db.get_cursor()
 
-            # --- マスターデータを事前に一括で取得 ---
-            types_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('types')}
-            abilities_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('abilities')}
-            moves_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('moves')}
+    #         # --- マスターデータを事前に一括で取得 ---
+    #         types_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('types')}
+    #         abilities_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('abilities')}
+    #         moves_map = {row['id']: row['name_ja'] for row in master_data_service.get_master_data_by_resource('moves')}
 
-            try:
-                # 1. battles テーブルに対戦記録を作成または更新
-                cursor.execute(
-                    "INSERT OR IGNORE INTO battles (battle_id, result, battle_format) VALUES (?, ?, ?)",
-                    (battle_id, result, 'シングル')
-                )
-                cursor.execute(
-                    "UPDATE battles SET result = ?, battle_format = ? WHERE battle_id = ?",
-                    (result, 'シングル', battle_id)
-                )
+    #         try:
+    #             # 1. battles テーブルに対戦記録を作成または更新
+    #             cursor.execute(
+    #                 "INSERT OR IGNORE INTO battles (battle_id, result, battle_format) VALUES (?, ?, ?)",
+    #                 (battle_id, result, 'シングル')
+    #             )
+    #             cursor.execute(
+    #                 "UPDATE battles SET result = ?, battle_format = ? WHERE battle_id = ?",
+    #                 (result, 'シングル', battle_id)
+    #             )
 
-                # 2. 既存の関連ログを削除 (冪等性を保つため)
-                cursor.execute("DELETE FROM parties_log WHERE battle_id = ?", (battle_id,))
-                cursor.execute("DELETE FROM raw_battle_events WHERE battle_id = ?", (battle_id,))
+    #             # 2. 既存の関連ログを削除 (冪等性を保つため)
+    #             cursor.execute("DELETE FROM parties_log WHERE battle_id = ?", (battle_id,))
+    #             cursor.execute("DELETE FROM raw_battle_events WHERE battle_id = ?", (battle_id,))
 
-                # 3. パーティ処理の内部関数
-                def _process_party_log(party_list, is_opponent):
-                    parties_log_tuples = []
-                    for pokemon in party_list:
-                        name = pokemon.get('name')
-                        if not name: continue
+    #             # 3. パーティ処理の内部関数
+    #             def _process_party_log(party_list, is_opponent):
+    #                 parties_log_tuples = []
+    #                 for pokemon in party_list:
+    #                     name = pokemon.get('name')
+    #                     if not name: continue
 
-                        item_name = pokemon.get('item')
-                        tera_type_id = pokemon.get('terastal_type_id')
-                        ability_id = pokemon.get('ability_id')
+    #                     item_name = pokemon.get('item')
+    #                     tera_type_id = pokemon.get('terastal_type_id')
+    #                     ability_id = pokemon.get('ability_id')
 
-                        tera_type_name = types_map.get(int(tera_type_id)) if tera_type_id else None
-                        ability_name = abilities_map.get(int(ability_id)) if ability_id else None
+    #                     tera_type_name = types_map.get(int(tera_type_id)) if tera_type_id else None
+    #                     ability_name = abilities_map.get(int(ability_id)) if ability_id else None
                         
-                        move_ids = pokemon.get('moves', [])
-                        move_names = [moves_map.get(int(move_id)) for move_id in move_ids if move_id in moves_map]
-                        moves_json = json.dumps(move_names, ensure_ascii=False)
+    #                     move_ids = pokemon.get('moves', [])
+    #                     move_names = [moves_map.get(int(move_id)) for move_id in move_ids if move_id in moves_map]
+    #                     moves_json = json.dumps(move_names, ensure_ascii=False)
 
-                        # pokemons_logに常に新しいレコードとして挿入
-                        cursor.execute(
-                            """INSERT INTO pokemons_log (pokemon_name, item, terastal_type, ability, moves)
-                               VALUES (?, ?, ?, ?, ?)""",
-                            (name, item_name, tera_type_name, ability_name, moves_json)
-                        )
-                        pokemon_id = cursor.lastrowid
+    #                     # pokemons_logに常に新しいレコードとして挿入
+    #                     cursor.execute(
+    #                         """INSERT INTO pokemons_log (pokemon_name, item, terastal_type, ability, moves)
+    #                            VALUES (?, ?, ?, ?, ?)""",
+    #                         (name, item_name, tera_type_name, ability_name, moves_json)
+    #                     )
+    #                     pokemon_id = cursor.lastrowid
 
-                        is_selected = 1 if pokemon.get('is_selected') else 0
-                        parties_log_tuples.append((battle_id, pokemon_id, name, 1 if is_opponent else 0, is_selected))
-                    return parties_log_tuples
+    #                     is_selected = 1 if pokemon.get('is_selected') else 0
+    #                     parties_log_tuples.append((battle_id, pokemon_id, name, 1 if is_opponent else 0, is_selected))
+    #                 return parties_log_tuples
 
-                # 4. 自パーティと相手パーティのログを生成・保存
-                my_parties_log_tuples = _process_party_log(my_party, is_opponent=False)
-                if my_parties_log_tuples:
-                    cursor.executemany(
-                        "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
-                        my_parties_log_tuples
-                    )
+    #             # 4. 自パーティと相手パーティのログを生成・保存
+    #             my_parties_log_tuples = _process_party_log(my_party, is_opponent=False)
+    #             if my_parties_log_tuples:
+    #                 cursor.executemany(
+    #                     "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
+    #                     my_parties_log_tuples
+    #                 )
 
-                opponent_parties_log_tuples = _process_party_log(opponent_party, is_opponent=True)
-                if opponent_parties_log_tuples:
-                    cursor.executemany(
-                        "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
-                        opponent_parties_log_tuples
-                    )
+    #             opponent_parties_log_tuples = _process_party_log(opponent_party, is_opponent=True)
+    #             if opponent_parties_log_tuples:
+    #                 cursor.executemany(
+    #                     "INSERT INTO parties_log (battle_id, pokemon_id, pokemon_name, is_opponent, is_selected) VALUES (?, ?, ?, ?, ?)",
+    #                     opponent_parties_log_tuples
+    #                 )
 
-                # 5. 先発ポケモンをbattlesテーブルに記録
-                my_starter = next((p['name'] for p in my_party if p.get('is_starter')), None)
-                opponent_starter = next((p['name'] for p in opponent_party if p.get('is_starter')), None)
+    #             # 6. raw_battle_events テーブルにリアルタイムログを記録
+    #             print(raw_events)
+    #             if raw_events:
+    #                 event_log_data = [
+    #                     (battle_id, event['sequence'], event['roi_name'], event['ocr_text']['text'])
+    #                     for event in raw_events
+    #                 ]
+    #                 cursor.executemany(
+    #                     "INSERT INTO raw_battle_events (battle_id, sequence, roi_name, ocr_text) VALUES (?, ?, ?, ?)",
+    #                     event_log_data
+    #                 )
 
-                if my_starter or opponent_starter:
-                    cursor.execute(
-                        "UPDATE battles SET my_first_pokemon = ?, opponent_first_pokemon = ? WHERE battle_id = ?",
-                        (my_starter, opponent_starter, battle_id)
-                    )
-
-                # 6. raw_battle_events テーブルにリアルタイムログを記録
-                print(raw_events)
-                if raw_events:
-                    event_log_data = [
-                        (battle_id, event['sequence'], event['roi_name'], event['ocr_text']['text'])
-                        for event in raw_events
-                    ]
-                    cursor.executemany(
-                        "INSERT INTO raw_battle_events (battle_id, sequence, roi_name, ocr_text) VALUES (?, ?, ?, ?)",
-                        event_log_data
-                    )
-
-                db.conn.commit()
-                return battle_id
-            except Exception as e:
-                db.conn.rollback()
-                raise e
+    #             db.conn.commit()
+    #             return battle_id
+    #         except Exception as e:
+    #             db.conn.rollback()
+    #             raise e
 
     def generate_new_battle_id(self) -> str:
         """新しい連番のバトルIDを生成する"""
@@ -340,3 +338,123 @@ class BattleService:
             with self.tasks_lock:
                 self.state.video_tasks[task_id]["status"] = "ERROR"
                 self.state.video_tasks[task_id]["result"] = {"error": str(e)}
+                
+    def delete_battle(self, battle_id: str) -> bool:
+        """
+        バトルを削除（関連するパーティとイベントも削除される）
+        
+        Args:
+            battle_id: バトルID
+        
+        Returns:
+            bool: 削除成功時True、対象が存在しない場合False
+            
+        Raises:
+            sqlalchemy.exc.SQLAlchemyError: DB操作エラー
+        """
+        try:
+            model = BattleModel.query.get(battle_id)
+            if model:
+                db.session.delete(model)
+                db.session.commit()
+                return True
+            return False
+            
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    def create_battle_log(self, 
+        battle_data: Dict,
+        my_party: List[Dict],
+        opponent_party: List[Dict],
+        events: List[Dict]
+    ) -> BattleLog:
+        """
+        バトルの完全なレコードを一括登録（トランザクション処理）
+        バトル情報、パーティ、イベントを同時に登録します。
+        
+        Args:
+            battle_data: バトル基本情報
+                {
+                    "battle_id": str (必須),
+                    "battle_format": str (必須),
+                    "result": str (必須),
+                    "season": int,
+                    "regulation": str,
+                    "my_rank": int,
+                    "opponent_rank": int,
+                    "memo": str
+                }
+            my_party: 自分のパーティ情報のリスト
+                [{"pokemon_name": str, "is_selected": bool, "pokemon_id": int}, ...]
+            opponent_party: 相手のパーティ情報のリスト
+                [{"pokemon_name": str, "is_selected": bool, "pokemon_id": int}, ...]
+            events: イベント情報のリスト
+                [{"sequence": int, "roi_name": str, "ocr_text": str, "phase": str}, ...]
+        
+        Returns:
+            BattleLog: 登録されたBattleLogインスタンス
+            
+        Raises:
+            sqlalchemy.exc.SQLAlchemyError: DB操作エラー
+        """
+
+        try:
+            # BattleLogインスタンスを作成
+            battle_log = BattleLog(
+                battle_id=battle_data['battle_id'],
+                battle_format=battle_data['battle_format'],
+                result=battle_data['result'],
+                season=battle_data.get('season'),
+                regulation=battle_data.get('regulation'),
+                my_rank=battle_data.get('my_rank'),
+                opponent_rank=battle_data.get('opponent_rank'),
+                memo=battle_data.get('memo')
+            )
+            
+            # 自分のパーティメンバーを追加
+            for pokemon in my_party:
+                party_member = PartyLogModel(
+                    battle_id=battle_log.battle_id,
+                    pokemon_name=pokemon['pokemon_name'],
+                    is_opponent=False,
+                    is_selected=pokemon.get('is_selected', False),
+                    is_first=pokemon.get('is_first', False),
+                    pokemon_id=pokemon.get('pokemon_id')
+                )
+                battle_log.parties.append(party_member)
+            
+            # 相手のパーティメンバーを追加
+            for pokemon in opponent_party:
+                party_member = PartyLogModel(
+                    battle_id=battle_log.battle_id,
+                    pokemon_name=pokemon['pokemon_name'],
+                    is_opponent=True,
+                    is_selected=pokemon.get('is_selected', False),
+                    is_first=pokemon.get('is_first', False),
+                    pokemon_id=pokemon.get('pokemon_id')
+                )
+                battle_log.parties.append(party_member)
+            
+            # イベントを追加
+            for event_data in events:
+                event = RawBattleEventModel(
+                    battle_id=battle_log.battle_id,
+                    sequence=event_data['sequence'],
+                    roi_name=event_data['roi_name'],
+                    ocr_text=event_data.get('ocr_text'),
+                    phase=event_data.get('phase')
+                )
+                battle_log.events.append(event)
+            
+            # 一括保存（BattleLogのsave_to_dbメソッドを使用）
+            self.delete_battle(battle_data['battle_id'])
+            battle_log.save_to_db()
+        
+            return battle_log
+            
+        except Exception as e:
+            db.session.rollback()
+            raise e
+

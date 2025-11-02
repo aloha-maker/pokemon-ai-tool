@@ -1,10 +1,9 @@
+# src/database/manager.py
 import sqlite3
 import os
 import json
 import time
-from flask_sqlalchemy import SQLAlchemy
 
-db = SQLAlchemy()
 
 class DatabaseManager:
     """
@@ -72,7 +71,5 @@ class DatabaseManager:
         self.connect()
         return self.conn.cursor()
 
-
-
     # --- Dashboard ---
-
+    # ... その他のメソッド ...

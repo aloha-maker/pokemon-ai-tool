@@ -34,6 +34,55 @@ class MockAppState:
     def __init__(self):
         self.video_tasks = {}
 
+def test_create_battle_log():
+    # モックアプリケーション状態を作成
+    app_state = MockAppState()
+    service = BattleService(app_state)
+    
+    # バトルデータの準備
+    battle_data = {
+        "battle_id": "BATTLE_001",
+        "battle_format": "シングル",
+        "result": "win",
+        "season": 1,
+        "regulation": "レギュレーションF",
+        "my_rank": 1500,
+        "opponent_rank": 1480,
+        "memo": "相手のテラスタル読みが的中"
+    }
+    
+    # 自分のパーティ
+    my_party = [
+        {"pokemon_name": "ランドロス", "is_selected": True, "pokemon_id": 1},
+        {"pokemon_name": "ガブリアス", "is_selected": True, "pokemon_id": 2},
+        {"pokemon_name": "ボーマンダ", "is_selected": False, "pokemon_id": 3}
+    ]
+    
+    # 相手のパーティ
+    opponent_party = [
+        {"pokemon_name": "カイリュー", "is_selected": True,"pokemon_id": 4},
+        {"pokemon_name": "サザンドラ", "is_selected": True,"pokemon_id": 5},
+        {"pokemon_name": "パルシェン", "is_selected": False,"pokemon_id": 6}
+    ]
+    
+    # イベント
+    events = [
+        {"sequence": 1, "roi_name": "turn_start", "phase": "turn_1"},
+        {"sequence": 2, "roi_name": "action_select", "ocr_text": "たたかう", "phase": "action_phase"},
+        {"sequence": 3, "roi_name": "move_select", "ocr_text": "じしん", "phase": "move_phase"},
+        {"sequence": 4, "roi_name": "damage_calc", "ocr_text": "効果は抜群だ！", "phase": "damage_phase"}
+    ]
+    
+    # 一括登録
+    print("=== バトルデータ一括登録 ===")
+    battle_log = service.create_battle_log(battle_data=battle_data, my_party=my_party, opponent_party=opponent_party, events=events)
+    
+    print(f"登録完了: {battle_log}")
+    print(f"  バトルID: {battle_log.battle_id}")
+    print(f"  結果: {battle_log.result}")
+    print(f"  パーティ数: {len(battle_log.parties)}")
+    print(f"  イベント数: {len(battle_log.events)}")
+
 def test_save_result_with_log():
     # モックアプリケーション状態を作成
     app_state = MockAppState()
@@ -300,4 +349,4 @@ with app.app_context():
     # ------------------------
     # 
     # ------------------------
-    print(test_save_result_with_log())
+    test_create_battle_log()

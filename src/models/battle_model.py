@@ -1,6 +1,5 @@
-
-from src.database.manager import db
-
+# C:\pokemon-ai-tool\src\models\battle_model.py
+from src.extensions import db
 
 class BattleModel(db.Model):
     __tablename__ = 'battles'
@@ -23,8 +22,6 @@ class BattleModel(db.Model):
         db.String,
         nullable=False
     )
-    my_first_pokemon = db.Column(db.String)
-    opponent_first_pokemon = db.Column(db.String)
     memo = db.Column(db.Text)
 
     # リレーション
@@ -41,7 +38,5 @@ class BattleModel(db.Model):
             "my_rank": self.my_rank,
             "opponent_rank": self.opponent_rank,
             "result": self.result,
-            "my_first_pokemon": self.my_first_pokemon,
-            "opponent_first_pokemon": self.opponent_first_pokemon,
             "memo": self.memo,
         }

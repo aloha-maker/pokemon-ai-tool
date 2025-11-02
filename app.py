@@ -4,8 +4,6 @@ from flask import Flask, jsonify
 from flask_socketio import SocketIO
 from config import config
 
-# 拡張機能の初期化
-from src.extensions import executor
 
 # ルート(Blueprint)のインポート
 from src.routes.views import views_bp
@@ -22,6 +20,7 @@ from src.routes.api.dashboard import dashboard_bp
 
 # SocketIOハンドラのインポート
 from src.sockets.handlers import register_socket_handlers
+from src.extensions import executor, db
 from src.core.ocr_ import PokemonRecognizer
 
 import logging
@@ -59,9 +58,10 @@ def create_app(config_name=None):
     app.state = AppState()
 
     # --- 拡張機能の初期化 ---
+    db.init_app(app)
     app.pokemon_recognizer = PokemonRecognizer(threshold=0.8) # ★ 追加
     executor.init_app(app)
-    socketio = SocketIO(app)
+    socketio = SocketIO(app)    
 
     # --- favicon.ico のリクエストを処理 ---
     @app.route('/favicon.ico')
@@ -85,9 +85,25 @@ def create_app(config_name=None):
     # --- SocketIOハンドラの登録 ---
     register_socket_handlers(socketio)
 
+    # --- アプリケーションコンテキスト内でテーブルを作成 ---
+    with app.app_context():
+        try:            
+            # データベースファイルの存在を確認
+            db_path = app.config.get('SQLALCHEMY_DATABASE_URI', '').replace('sqlite:///', '')
+            if db_path and not os.path.exists(db_path):
+                print(f"データベースファイルを作成: {db_path}")
+            
+            # テーブルを作成
+            db.create_all()
+            print("データベーステーブルが初期化されました")
+            
+        except Exception as e:
+            print(f"データベース初期化エラー: {e}")
+            # エラーをログに記録するが、アプリケーションは続行
+            logging.exception("データベース初期化中にエラーが発生しました")
+
     return app, socketio
 
 if __name__ == '__main__':
     app, socketio = create_app()
-    # debugフラグやhost, portはconfigから読み込まれるか、runのデフォルト値が使われる
     socketio.run(app)
