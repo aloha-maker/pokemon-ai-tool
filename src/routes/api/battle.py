@@ -59,7 +59,7 @@ def save_battle_result_with_log():
         events.append({
             "sequence": ev.get('sequence'),
             "roi_name": ev.get('roi_name'),
-            "ocr_text": ev.get('ocr_text'),
+            "ocr_text": ev.get('ocr_text', {}).get('text', ''),
             "phase": "未実装"
         })
     

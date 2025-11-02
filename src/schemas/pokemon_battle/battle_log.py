@@ -98,6 +98,7 @@ class BattleLog:
         
         for event in self.events:
             event.battle_id = model.battle_id
+            print(event)
             db.session.add(event)
 
         db.session.commit()
