@@ -21,6 +21,7 @@ class AppState:
             "state": None,
             "last_updated": None,
             "battle_log" : None,
+            "latest_events" : None,
             "battle_state" : None
         }
 

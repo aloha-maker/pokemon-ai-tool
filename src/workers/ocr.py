@@ -77,6 +77,7 @@ def ocr_worker(socketio, state, tesseract_path):
                         state.shared_game_state["last_updated"] = time.time()
                         state.shared_game_state["phase_info"] = current_phase_info
                         state.shared_game_state["battle_log"] = battle_log
+                        state.shared_game_state["latest_events"] = battle_log.get_latest_sequence_events(as_dict=True)
                         state.shared_game_state["battle_state"] = None
                     
                     # クライアントに状態更新を通知
@@ -84,9 +85,12 @@ def ocr_worker(socketio, state, tesseract_path):
                         'state': current_state,
                         'phase_info': current_phase_info,
                         'processed_count': processed_count,
-                        'battle_log' : battle_log.to_dict(),
+                        'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
                         'battle_state' : None
                     })
+
+                    print("★★★★★★★★★")
+                    print(battle_log.get_latest_sequence_events(as_dict=True))
                     
                     if frame_count % 10 == 0:  # 10フレームごとにログ出力
                         print(f"📊 フレーム {frame_count}: フェーズ={current_phase_info['current_phase']}, 処理ROI数={processed_count}")
@@ -175,7 +179,7 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
                     )
             raw_battle_event_model_list.append(raw_battle_event_model)
         # battle_logにセット
-        battle_log.event = raw_battle_event_model_list
+        battle_log.events = raw_battle_event_model_list
 
                     
     except Exception as e:

@@ -1,7 +1,5 @@
 # C:\pokemon-ai-tool\src\models\raw_battle_event_model.py
-# from src.database.manager import db
 from src.extensions import db 
-
 
 class RawBattleEventModel(db.Model):
     __tablename__ = 'raw_battle_events'

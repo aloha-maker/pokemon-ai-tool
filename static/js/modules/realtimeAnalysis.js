@@ -6,7 +6,7 @@ export class RealtimeAnalysis {
     constructor() {
         this.socket = io();
         this.captureImage = document.getElementById('capture-image');
-        this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
+        // this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
         this.logOutput = document.getElementById('realtime-log-output'); // 追加
         this.startCameraBtn = document.getElementById('start-camera-btn');
@@ -80,31 +80,34 @@ export class RealtimeAnalysis {
         });
 
         this.socket.on('ocr_update', (data) => {
-            const gameState = data.state;
+            // const gameState = data.state;
+            const latest_events = data.latest_events;
+            console.log(latest_events)
 
             // リアルタイムログの表示
-            if (this.logOutput && gameState) {
-                this.appendRealtimeLog(gameState);
+            if (this.logOutput && latest_events) {
+                this.appendRealtimeLog(latest_events);
             }
 
             // AIの行動提案をリクエスト
-            this.socket.emit('get_suggestion', {});
+            // this.socket.emit('get_suggestion', {});
         });
 
-        this.socket.on('suggestion_update', (data) => {
-            console.log('Suggestion received:', data);
-            this.displaySuggestion(data);
-        });
+        // this.socket.on('suggestion_update', (data) => {
+        //     console.log('Suggestion received:', data);
+        //     this.displaySuggestion(data);
+        // });
     }
 
-    appendRealtimeLog(state) {
+    appendRealtimeLog(latest_events) {
         const logEntry = document.createElement('div');
         logEntry.classList.add('log-entry', 'mb-2', 'pb-1', 'border-bottom', 'border-secondary', 'border-opacity-25');
 
         const timestamp = new Date().toLocaleTimeString();
         let content = `<div class="text-muted small">[${timestamp}]</div>`;
 
-        const rawResult = state.raw_ocr_result;
+        // const rawResult = state.raw_ocr_result;
+        const rawResult = latest_events;
         let hasContent = false;
 
         if (rawResult && typeof rawResult === 'object' && Object.keys(rawResult).length > 0) {

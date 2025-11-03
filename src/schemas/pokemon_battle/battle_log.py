@@ -118,6 +118,44 @@ class BattleLog:
         return [cls.from_model(m) for m in models]
 
     # ======================================================
+    # --- イベント操作 ---
+    # ======================================================
+
+    def get_latest_sequence_events(self, as_dict: bool = False):
+        """
+        このバトルログの最新sequenceを持つ全てのイベントを取得する
+        
+        Args:
+            as_dict (bool): Trueの場合、JavaScript用の辞書形式で返す。Falseの場合、イベントのリストを返す
+        
+        Returns:
+            as_dict=False: List[RawBattleEventModel] - 最新sequenceのイベントリスト（複数の場合あり）
+            as_dict=True: Dict[str, Dict[str, str]] - {roi_name: {"text": ocr_text}, ...}
+            eventsが空の場合は空リスト or 空辞書
+        """
+        if not self.events:
+            return {} if as_dict else []
+        
+        # 最新のsequenceを取得
+        max_sequence = max(event.sequence for event in self.events)
+        
+        # 最新sequenceを持つ全てのイベントを抽出
+        latest_events = [event for event in self.events if event.sequence == max_sequence]
+        
+        # 辞書形式での返却が指定されている場合
+        if as_dict:
+            result = {}
+            for event in latest_events:
+                if event.roi_name and event.ocr_text:
+                    result[event.roi_name] = {
+                        "text": event.ocr_text
+                    }
+            return result
+        
+        # デフォルトはリスト形式
+        return latest_events
+
+    # ======================================================
     # --- ユーティリティ ---
     # ======================================================
 
