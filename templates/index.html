@@ -8,7 +8,7 @@
         <!-- 左カラム -->
         <div class="col-lg-6 d-flex flex-column h-100">
           <!-- 上：ゲームプレビュー -->
-          <div class="d-flex flex-grow-8 mb-3 overflow-hidden" style="flex-grow: 7;">
+          <div class="d-flex flex-grow-8 mb-3 overflow-hidden">
             {% include 'components/sections/game_preview.html' %}
           </div>
           <!-- 下：リアルタイムログ -->
@@ -20,15 +20,15 @@
         <!-- 右カラム -->
         <div class="col-lg-6 d-flex flex-column h-100">
             <!-- Top-Right -->
-            <div class="d-flex mb-3" style="flex-grow: 8;">
+            <div class="d-flex mb-3" style="flex-grow: 7.5;">
                 {% include 'components/sections/ai_advice.html' %}
             </div>
             <!-- Middle-Right -->
-            <div class="d-flex" style="flex-grow: 1;">
+            <div class="d-flex">
                 {% include 'components/sections/battle_environment_input.html' %}
             </div>
             <!-- Bottom-Right -->
-            <div class="d-flex" style="flex-grow: 1;">
+            <div class="d-flex">
                 {% include 'components/sections/party_input.html' %}
             </div>
         </div>
