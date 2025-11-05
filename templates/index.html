@@ -3,23 +3,34 @@
 {% block title %}ポケモン対戦補助AIツール{% endblock %}
 
 {% block content %}
-<main class="d-flex flex-column flex-grow-1">
-    <!-- 上段 -->
-    <div class="row gx-4">
-        <div class="col-lg-6">
+<main class="d-flex flex-column vh-100">
+    <div class="row gx-2 h-100">
+        <!-- 左カラム -->
+        <div class="col-lg-6 d-flex flex-column h-100">
+          <!-- 上：ゲームプレビュー -->
+          <div class="d-flex flex-grow-8 mb-3 overflow-hidden" style="flex-grow: 7;">
             {% include 'components/sections/game_preview.html' %}
-        </div>
-        <div class="col-lg-6">
-            {% include 'components/sections/ai_advice.html' %}
-        </div>
-    </div>
-    <!-- 下段 -->
-    <div class="row gx-4 mt-4 flex-grow-1">
-        <div class="col-lg-6 d-flex">
+          </div>
+          <!-- 下：リアルタイムログ -->
+          <div class="d-flex flex-grow-2" style="flex-grow: 3;">
             {% include 'components/sections/realtime_log.html' %}
+          </div>
         </div>
-        <div class="col-lg-6 d-flex">
-            {% include 'components/sections/party_input.html' %}
+    
+        <!-- 右カラム -->
+        <div class="col-lg-6 d-flex flex-column h-100">
+            <!-- Top-Right -->
+            <div class="d-flex mb-3" style="flex-grow: 8;">
+                {% include 'components/sections/ai_advice.html' %}
+            </div>
+            <!-- Middle-Right -->
+            <div class="d-flex" style="flex-grow: 1;">
+                {% include 'components/sections/battle_environment_input.html' %}
+            </div>
+            <!-- Bottom-Right -->
+            <div class="d-flex" style="flex-grow: 1;">
+                {% include 'components/sections/party_input.html' %}
+            </div>
         </div>
     </div>
 </main>
