@@ -11,9 +11,10 @@ class BattleStateUpdater:
     - フレーム処理後にmy_pokemon_nameが含まれていた場合にターン更新＆シミュレーション実行
     """
 
-    def __init__(self, battle_state: BattleState, calculator: DamageCalculator):
+    # def __init__(self, battle_state: BattleState, calculator: DamageCalculator):
+    def __init__(self, battle_state: BattleState):
         self.state = battle_state
-        self.calculator = calculator
+        # self.calculator = calculator
         self.frame_count = 0
 
     # =====================================================
@@ -69,7 +70,8 @@ class BattleStateUpdater:
             self._handle_turn_transition()
 
         # 状態出力
-        self._print_summary()
+        # self._print_summary()
+        return self.state
 
     # =====================================================
     # --- ターン切り替え時処理 ---
@@ -79,8 +81,8 @@ class BattleStateUpdater:
         """ターンを更新し、必要であればシミュレーション実行"""
         self.state.field.turn += 1
         print(f"\n[ターン更新] {self.state.field.turn} ターン目開始")
-        print("[シミュレーション] チームダメージ計算を実行中...")
-        results = self.calculator.simulate_team_damage(self.state)
+        # print("[シミュレーション] チームダメージ計算を実行中...")
+        # results = self.calculator.simulate_team_damage(self.state)
         # print(results)
 
 
@@ -136,41 +138,41 @@ class BattleStateUpdater:
 
         # --- ダメージ差分を算出 ---
         damage = max(0, prev_hp - current_hp)
-        if damage > 0:
-            print(f"[ダメージ検出] {target_side.team_name} {active.name} が {damage} ダメージを受けた")
+        # if damage > 0:
+        #     print(f"[ダメージ検出] {target_side.team_name} {active.name} が {damage} ダメージを受けた")
 
-            # --- 直前の技情報が存在すればEV推定 ---
-            field = self.state.field
-            if (
-                self.calculator
-                and hasattr(self.calculator, "estimate_ev_from_damage")
-                and getattr(field, "last_move_name", None)
-            ):
-                # 技オブジェクトを取得
-                move = None
-                # 攻撃側を決定
-                atk_side = self.state.side1 if field.last_move_side == "自分" else self.state.side2
-                attacker = atk_side.active
-                for m in attacker.moves:
-                    if m.name == field.last_move_name:
-                        move = m
-                        break
+        #     # --- 直前の技情報が存在すればEV推定 ---
+        #     field = self.state.field
+        #     if (
+        #         self.calculator
+        #         and hasattr(self.calculator, "estimate_ev_from_damage")
+        #         and getattr(field, "last_move_name", None)
+        #     ):
+        #         # 技オブジェクトを取得
+        #         move = None
+        #         # 攻撃側を決定
+        #         atk_side = self.state.side1 if field.last_move_side == "自分" else self.state.side2
+        #         attacker = atk_side.active
+        #         for m in attacker.moves:
+        #             if m.name == field.last_move_name:
+        #                 move = m
+        #                 break
 
-                if move:
-                    print(f"[EV推定] {field.last_move_user} の {field.last_move_name} による被ダメージから推定中...")
-                    try:
-                        result = self.calculator.estimate_ev_from_damage(
-                            move=move,
-                            battle_state=self.state,
-                            observed_damage=(damage, damage),
-                            target="defender" if side == "my" else "attacker"
-                        )
-                        if result:
-                            print(f"[EV推定結果] {target_side.team_name} {active.name}: {result.estimated_ev}")
-                        else:
-                            print("[EV推定] 該当候補なし")
-                    except Exception as e:
-                        print(f"[EV推定エラー] {e}")
+        #         if move:
+        #             print(f"[EV推定] {field.last_move_user} の {field.last_move_name} による被ダメージから推定中...")
+        #             try:
+        #                 result = self.calculator.estimate_ev_from_damage(
+        #                     move=move,
+        #                     battle_state=self.state,
+        #                     observed_damage=(damage, damage),
+        #                     target="defender" if side == "my" else "attacker"
+        #                 )
+        #                 if result:
+        #                     print(f"[EV推定結果] {target_side.team_name} {active.name}: {result.estimated_ev}")
+        #                 else:
+        #                     print("[EV推定] 該当候補なし")
+        #             except Exception as e:
+        #                 print(f"[EV推定エラー] {e}")
 
     def _update_win_lose(self, text: str):
         if "WIN" in text.upper():
@@ -301,15 +303,15 @@ class BattleStateUpdater:
     # =========================
     # --- 状態概要出力 ---
     # =========================
-    def _print_summary(self):
-        s1 = self.state.side1.active
-        s2 = self.state.side2.active
-        t = self.state.field.turn
+    # def _print_summary(self):
+    #     s1 = self.state.side1.active
+    #     s2 = self.state.side2.active
+    #     t = self.state.field.turn
 
-        name1 = s1.name if s1 else "（交代待ち）"
-        name2 = s2.name if s2 else "（交代待ち）"
+    #     name1 = s1.name if s1 else "（交代待ち）"
+    #     name2 = s2.name if s2 else "（交代待ち）"
 
-        hp1 = f"{s1.current_hp}/{s1.max_hp}" if s1 else "--/--"
-        hp2 = f"{s2.current_hp}/{s2.max_hp}" if s2 else "--/--"
+    #     hp1 = f"{s1.current_hp}/{s1.max_hp}" if s1 else "--/--"
+    #     hp2 = f"{s2.current_hp}/{s2.max_hp}" if s2 else "--/--"
 
-        print(f"[状態] {t}T | {self.state.side1.team_name}: {name1}({hp1}) vs {self.state.side2.team_name}: {name2}({hp2})")
+    #     print(f"[状態] {t}T | {self.state.side1.team_name}: {name1}({hp1}) vs {self.state.side2.team_name}: {name2}({hp2})")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import List, Dict
+from .party import Party
 from .pokemon import Pokemon
 
 # =========================
@@ -10,9 +11,9 @@ class BattleSide:
     """
     自分 or 相手の場を表現
     """
-    def __init__(self, team_name: str, pokemon_list: List[Pokemon]):
-        self.team_name: str = team_name
-        self.team: List[Pokemon] = pokemon_list
+    def __init__(self, team_name: str, party: Party):
+        self.team_name = team_name
+        self.team: Party = party
         self.active: Pokemon =  None  # 現在場に出ているポケモン
 
         # サイド特有の効果(壁、ステルスロックなど)
@@ -38,12 +39,11 @@ class BattleSide:
         """
         return {
             "team_name": self.team_name,
-            "team": [pokemon.to_dict() for pokemon in self.team],
+            "team": self.team.to_dict(),
             "active": self.active.to_dict() if self.active else None,
             "screens": self.screens,
             "side_conditions": self.side_conditions,
             "team_size": len(self.team),
-            "remaining_members": len([p for p in self.team if p.current_hp > 0])
         }
 
     def __str__(self) -> str:

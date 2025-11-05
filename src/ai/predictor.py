@@ -37,21 +37,23 @@ class ActionAIModel:
         except (ValueError, IndexError):
             return None
 
-    def predict_action(self, game_state):
+    def predict_action(self, battle_state):
         """
         盤面情報から最適な行動を予測する。
         """
-        my_poke_name = game_state.get('my_pokemon_name')
-        opp_poke_name = game_state.get('opponent_pokemon_name')
-        my_hp_str = game_state.get('my_pokemon_hp')
-        my_moves = game_state.get('moves_list', [])
+        print(battle_state.to_dict()) 
+        my_poke_name = battle_state.side1.active.name
+        opp_poke_name = battle_state.side2.active.name
+        my_hp_str = battle_state.side1.active.current_hp
+        my_moves = battle_state.side1.active.moves
 
         if not my_poke_name or not opp_poke_name:
-            return {"action": "待機", "reason": "盤面情報が不十分です。"}
+            return {"action": "待機", "reason": "盤面情報が不十分です。","battle_state": battle_state.to_dict()}
 
-        my_types = self._get_pokemon_types(my_poke_name)
-        opp_types = self._get_pokemon_types(opp_poke_name)
+        my_types = battle_state.side1.active.types
+        opp_types = battle_state.side2.active.types
         my_hp = self._parse_hp(my_hp_str)
+        my_hp = my_hp_str
 
         if not my_types or not opp_types:
             return {"action": "待機", "reason": f"DBからポケモン情報({my_poke_name} or {opp_poke_name})が見つかりません。"}

@@ -60,8 +60,8 @@ class BattleStateBuilder:
                 else:
                     raise ValueError(f"Opponent Pokemon '{pokemon_name}' not found in DB")
 
-        if not my_team or not opponent_team:
-            raise ValueError("BattleLogに十分なパーティ情報がありません。")
+        # if not my_team or not opponent_team:
+        #     raise ValueError("BattleLogに十分なパーティ情報がありません。")
 
         # ------------------------
         # 2️⃣ サイド構築

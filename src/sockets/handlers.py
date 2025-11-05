@@ -65,7 +65,7 @@ def register_socket_handlers(socketio):
         emit('camera_started', {'video_feed_url': video_feed_url, 'ocr_started': False})
 
     @socketio.on('start_ocr')
-    def start_ocr(data=None):
+    def start_ocr(data):
         """クライアントからの要求でOCR処理のみを開始する"""
         if current_app.state.ocr_thread and current_app.state.ocr_thread.is_alive():
             print("既にOCRスレッドは実行中です。")
@@ -79,7 +79,13 @@ def register_socket_handlers(socketio):
         app_state = current_app.state
         # background_thread_stop_event はキャプチャ開始時にクリアされているはず
         tesseract_path = current_app.config.get('TESSERACT_PATH')
-        app_state.ocr_thread = socketio.start_background_task(target=ocr_worker, socketio=socketio, state=app_state, tesseract_path=tesseract_path)
+        app_state.ocr_thread = socketio.start_background_task(
+            target=ocr_worker, 
+            socketio=socketio, 
+            state=app_state, 
+            tesseract_path=tesseract_path,
+            battle_data=data
+        )
         emit('ocr_started')
 
     @socketio.on('stop_analysis')
@@ -111,12 +117,12 @@ def register_socket_handlers(socketio):
         クライアントからの要求に応じて、最新の盤面情報からAIの提案を生成する
         """
         with current_app.state.game_state_lock:
-            current_state = current_app.state.shared_game_state["state"]
+            battle_state = current_app.state.shared_game_state["battle_state"]
         
-        if current_state:
+        if battle_state:
             # AIモデルで行動を予測
             model = ActionAIModel(app_state=current_app.state)
-            recommendation = model.predict_action(current_state)
+            recommendation = model.predict_action(battle_state)
             del model # DB接続を閉じる
 
             # 結果をクライアントに送信

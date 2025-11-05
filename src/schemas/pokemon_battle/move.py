@@ -64,7 +64,25 @@ class Move:
             contact=contact,
             effect=None,  # 効果は必要に応じて実装
         )
-    
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "Move":
+        """
+        辞書形式のデータからMoveインスタンスを生成する。
+        (to_dictの逆操作)
+        """
+        return cls(
+            name=data["name"],
+            power=data["power"],
+            move_type=data["type"],  # to_dictの 'type' キーを 'move_type' 引数にマッピング
+            category=data["category"],
+            accuracy=data["accuracy"],
+            pp=data["pp"],
+            crit_rate=data.get("crit_rate", 1/24), # .get() を使い、キーが存在しない場合に備える
+            contact=data.get("contact", False),
+            effect=data.get("effect", None)
+        )
+
     def to_dict(self) -> Dict:
         """
         Moveインスタンスを辞書形式に変換する

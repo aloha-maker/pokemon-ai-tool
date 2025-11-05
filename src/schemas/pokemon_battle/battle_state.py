@@ -47,3 +47,17 @@ class BattleState:
         """攻撃側・防御側を新しい状態に更新"""
         self.attacker_side = attacker_side
         self.defender_side = defender_side
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        JSONシリアライズ可能な辞書に変換
+        
+        Returns:
+            Dict[str, Any]: シリアライズ可能なバトル状態データ
+        """
+        return {
+            'side1': self.side1.to_dict(),
+            'side2': self.side2.to_dict(),
+            'field': self.field.to_dict(),
+            'is_side1_attacker': self.is_side1_attacker
+        }

@@ -140,6 +140,26 @@ class Party:
         party_models = PartyModel.query.all()
         return [cls.from_model(model) for model in party_models]
 
+    @classmethod
+    def from_dict(cls, data: Dict) -> "Party":
+        """
+        辞書形式のデータからPartyインスタンスを生成する。
+        (to_dictの逆操作)
+        """
+        
+        # 'members' (ポケモンの辞書のリスト) を Pokemon オブジェクトのリストに変換
+        # Pokemon.from_dict が存在することを前提とする
+        members_list = []
+        if "members" in data and data["members"]:
+            members_list = [Pokemon.from_dict(pokemon_data) for pokemon_data in data["members"]]
+        
+        return cls(
+            name=data["name"],
+            description=data.get("description"), # Optional
+            party_id=data.get("party_id"),    # Optional
+            members=members_list
+        )
+
     def to_dict(self) -> Dict:
         """
         Partyインスタンスを辞書形式に変換する

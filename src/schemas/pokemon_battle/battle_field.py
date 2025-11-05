@@ -21,3 +21,21 @@ class BattleField:
         self.last_move_user: Optional[str] = None  # 使用者のポケモン名
         self.last_move_name: Optional[str] = None  # 使用技名
         self.last_move_side: Optional[str] = None  # "自分" or "相手"
+    
+    
+    def to_dict(self) -> dict:
+        """
+        JSONシリアライズ可能な辞書に変換
+        
+        Returns:
+            dict: シリアライズ可能なバトルフィールドデータ
+        """
+        return {
+            'weather': self.weather,
+            'terrain': self.terrain,
+            'turn': self.turn,
+            'is_double': self.is_double,
+            'last_move_user': self.last_move_user,
+            'last_move_name': self.last_move_name,
+            'last_move_side': self.last_move_side
+        }

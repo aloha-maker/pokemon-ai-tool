@@ -1,19 +1,19 @@
-// realtimeAnalysis.js - リアルタイム解析機能
-
 import { escapeHTML } from './utils.js';
+import { createBattleState } from '../collectors/BattleState.js';
+import { gatherSideDataAsJson } from '../collectors/pokemonDataCollector.js';
 
 export class RealtimeAnalysis {
     constructor() {
         this.socket = io();
         this.captureImage = document.getElementById('capture-image');
-        // this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
-        this.logOutput = document.getElementById('realtime-log-output'); // 追加
+        this.logOutput = document.getElementById('realtime-log-output');
         this.startCameraBtn = document.getElementById('start-camera-btn');
         this.startBattleBtn = document.getElementById('start-battle-btn');
         this.battleIdDisplay = document.getElementById('battle-id-display');
         this.logBuffer = [];
         this.sequence = 0;
+        this.partySaver = null;
         
         this.init();
     }
@@ -22,25 +22,24 @@ export class RealtimeAnalysis {
         this.setUIState('stopped');
         this.initSocketListeners();
         
-        this.suggestionRefreshButton?.addEventListener('click', () => this.socket.emit('get_suggestion', {}));
         this.recognizePartyBtn?.addEventListener('click', () => this.handleRecognizeParty());
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
         this.startBattleBtn?.addEventListener('click', () => this.handleStartBattle());
 
-        // バトルIDの有無に応じてパーティ保存ボタンの状態を更新
         if (this.battleIdDisplay) {
             const savePartyBtn = document.getElementById('save-party-button');
             if (savePartyBtn) {
-                // 初期状態を設定
                 savePartyBtn.disabled = !this.battleIdDisplay.value;
-
-                // inputイベントを監視してボタンの状態を更新
                 this.battleIdDisplay.addEventListener('input', () => {
                     savePartyBtn.disabled = !this.battleIdDisplay.value;
                 });
             }
         }
     }
+
+    setPartySaver(partySaver) {
+        this.partySaver = partySaver;
+    }    
 
     initSocketListeners() {
         this.socket.on('connect', () => {
@@ -50,7 +49,6 @@ export class RealtimeAnalysis {
         this.socket.on('analysis_started', (data) => {
             console.log('Analysis started by server.');
             this.setUIState('running_window');
-
             if (data.video_feed_url) {
                 this.captureImage.src = data.video_feed_url;
             }
@@ -59,7 +57,6 @@ export class RealtimeAnalysis {
         this.socket.on('camera_started', (data) => {
             console.log('Camera stream started by server.');
             this.setUIState('running_camera');
-
             if (data.video_feed_url) {
                 this.captureImage.src = data.video_feed_url;
             }
@@ -80,71 +77,63 @@ export class RealtimeAnalysis {
         });
 
         this.socket.on('ocr_update', (data) => {
-            // const gameState = data.state;
             const latest_events = data.latest_events;
-            console.log(latest_events)
-
-            // リアルタイムログの表示
             if (this.logOutput && latest_events) {
                 this.appendRealtimeLog(latest_events);
             }
 
-            // AIの行動提案をリクエスト
-            // this.socket.emit('get_suggestion', {});
+            if(data.phase_info['current_phase'] === 'battle' && data.phase_info['battle_sub_phase'] === 'choose') {
+                const battleState = this.gatherFullBattleState();
+                console.log("Sending full battle state for suggestion:", battleState);
+                this.socket.emit('get_suggestion', battleState);
+            }
         });
 
-        // this.socket.on('suggestion_update', (data) => {
-        //     console.log('Suggestion received:', data);
-        //     this.displaySuggestion(data);
-        // });
+        this.socket.on('suggestion_update', (data) => {
+            console.log('Suggestion received:', data);
+            this.displaySuggestion(data);
+        });
+    }
+
+    gatherFullBattleState() {
+        console.log("Gathering full battle state...");
+        const side1Data = gatherSideDataAsJson('my-party');
+        const side2Data = gatherSideDataAsJson('opponent-party');
+        return createBattleState({ side1: side1Data, side2: side2Data });
     }
 
     appendRealtimeLog(latest_events) {
         const logEntry = document.createElement('div');
         logEntry.classList.add('log-entry', 'mb-2', 'pb-1', 'border-bottom', 'border-secondary', 'border-opacity-25');
-
         const timestamp = new Date().toLocaleTimeString();
         let content = `<div class="text-muted small">[${timestamp}]</div>`;
-
-        // const rawResult = state.raw_ocr_result;
         const rawResult = latest_events;
         let hasContent = false;
-
         if (rawResult && typeof rawResult === 'object' && Object.keys(rawResult).length > 0) {
             content += '<ul class="list-unstyled mb-0 small">';
             for (const [key, value] of Object.entries(rawResult)) {
-                const text = value.text; // オブジェクトからtextプロパティを取得
-                if (text && String(text).trim()) { // 値が空や空白でない場合のみ表示
+                const text = value.text;
+                if (text && String(text).trim()) {
                     content += `<li><span class="text-info" style="min-width: 180px; display: inline-block;">${escapeHTML(key)}:</span> <strong>${escapeHTML(text)}</strong></li>`;
                     hasContent = true;
                 }
             }
             content += '</ul>';
         }
-        
-        // 表示すべき内容がある場合のみログに追加
         if (hasContent) {
             logEntry.innerHTML = content;
             this.logOutput.prepend(logEntry);
         }
-
-        // ログが50件を超えたら古いものを削除
         if (this.logOutput.children.length > 50) {
             this.logOutput.removeChild(this.logOutput.lastChild);
         }
-
-        // バッファへの保存処理
         if (hasContent) {
             for (const [key, value] of Object.entries(rawResult)) {
                 if (value && String(value).trim()) {
-                    this.logBuffer.push({
-                        sequence: this.sequence,
-                        roi_name: key,
-                        ocr_text: value
-                    });
+                    this.logBuffer.push({ sequence: this.sequence, roi_name: key, ocr_text: value });
                 }
             }
-            this.sequence++; // 内容のあるイベントのみシーケンスを進める
+            this.sequence++;
         }
     }
 
@@ -152,20 +141,15 @@ export class RealtimeAnalysis {
         this.currentState = state;
         const cameraBtn = this.startCameraBtn;
         const battleBtn = this.startBattleBtn;
-
-        // デフォルト状態
         if (cameraBtn) cameraBtn.disabled = false;
         if (battleBtn) battleBtn.disabled = true;
         if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = true;
-
         if (cameraBtn) {
             cameraBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i> 仮想カメラ読込';
             cameraBtn.classList.remove('btn-danger');
             cameraBtn.classList.add('btn-info');
         }
-
         if (state === 'stopped') {
-            // デフォルトのまま
         } else if (state === 'running_camera') {
             if (cameraBtn) {
                 cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
@@ -184,27 +168,27 @@ export class RealtimeAnalysis {
     }
 
     handleStartCamera() {
-        console.log("handleStartCamera called!"); // デバッグログ
+        console.log("handleStartCamera called!");
         const cameraIndex = document.getElementById('camera-index-input').value || 0;
         if (this.currentState === 'running_camera' || this.currentState === 'running_camera_ocr') {
             this.socket.emit('stop_analysis', {});
         } else {
             this.clearLogs();
-            console.log(`Attempting to emit start_camera with index: ${cameraIndex}`); // デバッグログ
+            console.log(`Attempting to emit start_camera with index: ${cameraIndex}`);
             this.socket.emit('start_camera', { camera_index: parseInt(cameraIndex, 10) });
         }
     }
 
     handleStartOcr() {
         if (this.currentState === 'running_camera') {
-            this.socket.emit('start_ocr', {});
+            const battleState = this.gatherFullBattleState();
+            console.log("Sending battle state to server on OCR start:", battleState);
+            this.socket.emit('start_ocr', battleState);
         }
     }
 
     async handleStartBattle() {
-        // OCR開始処理を呼び出す
         this.handleStartOcr();
-        // 新しいバトルIDを取得・設定する
         await this.fetchAndSetNewBattleId();
     }
 
@@ -237,7 +221,7 @@ export class RealtimeAnalysis {
         this.logBuffer = [];
         this.sequence = 0;
         if (this.logOutput) {
-            this.logOutput.innerHTML = ''; // 画面のログもクリア
+            this.logOutput.innerHTML = '';
         }
     }
 
@@ -245,10 +229,8 @@ export class RealtimeAnalysis {
         return this.logBuffer;
     }
 
-
     displaySuggestion(data) {
         const suggestionContainer = document.getElementById('suggestion-overlay');
-
         if (data && data.action) {
             let html = `
                 <div class="advice-card p-3 rounded-lg mb-4 glass-card-inside">
@@ -264,8 +246,6 @@ export class RealtimeAnalysis {
                 </div>
             `;
             suggestionContainer.innerHTML = html;
-
-            // バトル中アドバイスタブをアクティブにする
             const battleTab = new bootstrap.Tab(document.getElementById('battle-advice-tab'));
             battleTab.show();
         } else {
@@ -279,26 +259,21 @@ export class RealtimeAnalysis {
 
     async handleRecognizeParty() {
         if (!this.recognizePartyBtn || this.recognizePartyBtn.disabled) return;
-
         const originalHtml = this.recognizePartyBtn.innerHTML;
         this.recognizePartyBtn.disabled = true;
         this.recognizePartyBtn.innerHTML = `
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
             認識中...
         `;
-
         try {
             const response = await fetch('/api/party/recognize_opponent', { method: 'POST' });
             const data = await response.json();
-
-            console.log('Received data from API:', data); // デバッグ用に追加
-
+            console.log('Received data from API:', data);
             if (data.status === 'success' && data.data.party) {
                 const opponentInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
                 data.data.party.forEach((pokemonName, index) => {
                     if (opponentInputs[index]) {
-                        opponentInputs[index].value = pokemonName || ''; // 認識失敗時は空にする
-                        // ポケモンアイコンと種族値の更新をトリガーするために、手動でchangeイベントを発火させます。
+                        opponentInputs[index].value = pokemonName || '';
                         opponentInputs[index].dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });

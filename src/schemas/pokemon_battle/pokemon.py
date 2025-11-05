@@ -198,7 +198,45 @@ class Pokemon:
             if move.name == move_name:
                 return move
         return None
-    
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "Pokemon":
+        """
+        辞書形式のデータからPokemonインスタンスを生成する。
+        (to_dictの逆操作)
+        """
+        
+        # 1. __init__に必要な引数を渡して、基本的なインスタンスを生成
+        # (max_hpは__init__内で自動計算される)
+        pokemon = cls(
+            name=data["name"],
+            level=data["level"],
+            base_stats=data["base_stats"],
+            iv=data["iv"],
+            ev=data["ev"],
+            nature=data["nature"],
+            ability=data["ability"],
+            item=data["item"],
+            types=data["types"],
+            tera_type=data.get("tera_type"),
+            status=data.get("status"),
+            current_hp=data.get("current_hp") # Noneでも__init__がmax_hpを代入
+        )
+
+        # 2. __init__以外で設定される属性を辞書から復元
+        
+        # 能力ランク (デフォルトは0だが、保存された状態を復元)
+        if "boosts" in data:
+            pokemon.boosts = data["boosts"]
+
+        # 技リスト (Move.from_dict が存在することを前提とする)
+        if "moves" in data and data["moves"]:
+            pokemon.moves = [Move.from_dict(move_data) for move_data in data["moves"]]
+        
+        # calculated_stats は動的に計算されるため、復元不要
+
+        return pokemon
+
     def to_dict(self) -> Dict:
         """
         Pokemonインスタンスを辞書形式に変換する

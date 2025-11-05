@@ -28,9 +28,13 @@ document.addEventListener('DOMContentLoaded', () => {
     new Simulator();
     const pokemonDetailEditor = new PokemonDetailEditor();
     new PartySaver(realtimeAnalysis, pokemonDetailEditor);
+    const partySaver = new PartySaver(realtimeAnalysis, pokemonDetailEditor);
     
     // フォーム選択肢の初期化はボタンクリック時に行う
     // initFormSelects();
+
+    // RealtimeAnalysisにPartySaverを設定
+    realtimeAnalysis.setPartySaver(partySaver);
 
     // 持ち物アイコンのクリックイベント
     document.querySelectorAll('.item-icon').forEach(icon => {
