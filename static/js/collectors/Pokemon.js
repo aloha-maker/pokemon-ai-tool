@@ -19,14 +19,15 @@ export function createPokemon(rawData) {
         tera_type,
         item,
         moves: moveNames, // movesは技名の配列を期待
-        hpPercentage
+        hpPercentage,
+        nature, // rawDataからnatureを取得
+        ev,     // rawDataからevを取得
+        boosts, // rawDataからboostsを取得
     } = rawData;
 
     // --- UIに存在しない項目（仮データ） ---
     const level = 50;
     const iv = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
-    const ev = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
-    const nature = "まじめ";
 
     // Moveオブジェクトのリストを生成
     const moves = moveNames ? moveNames.map(moveName => createMove(moveName)) : [];
@@ -46,7 +47,7 @@ export function createPokemon(rawData) {
         base_stats: null,
         types: null,
         status: null,
-        boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
+        boosts: boosts || { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
     };
 
     return pokemonJson;

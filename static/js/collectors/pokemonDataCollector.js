@@ -32,13 +32,35 @@ function collectRawPokemonData(partyType, slotIndex) {
 
     const hpBar = slotElement.querySelector('.hp-bar');
 
+    // EVの収集
+    const ev = {
+        hp: parseInt(modal.querySelector('#details-ev-hp').value || '0', 10),
+        atk: parseInt(modal.querySelector('#details-ev-atk').value || '0', 10),
+        def: parseInt(modal.querySelector('#details-ev-def').value || '0', 10),
+        spa: parseInt(modal.querySelector('#details-ev-spa').value || '0', 10),
+        spd: parseInt(modal.querySelector('#details-ev-spd').value || '0', 10),
+        spe: parseInt(modal.querySelector('#details-ev-spe').value || '0', 10),
+    };
+
+    // Boostsの収集
+    const boosts = {
+        atk: parseInt(modal.querySelector('#details-boost-atk').value || '0', 10),
+        def: parseInt(modal.querySelector('#details-boost-def').value || '0', 10),
+        spa: parseInt(modal.querySelector('#details-boost-spa').value || '0', 10),
+        spd: parseInt(modal.querySelector('#details-boost-spd').value || '0', 10),
+        spe: parseInt(modal.querySelector('#details-boost-spe').value || '0', 10),
+    };
+
     return {
         name: slotElement.querySelector('.pokemon-input').value,
         ability: modal.querySelector('#details-ability-input').value,
         tera_type: modal.querySelector('#details-tera-type-select').value,
         item: modal.querySelector('#details-item-input').value,
         moves: moves,
-        hpPercentage: hpBar ? parseFloat(hpBar.style.width) : 100
+        hpPercentage: hpBar ? parseFloat(hpBar.style.width) : 100,
+        nature: modal.querySelector('#details-nature-select').value, // 性格を追加
+        ev: ev, // 努力値を追加
+        boosts: boosts, // 能力ランクを追加
     };
 }
 
