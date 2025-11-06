@@ -80,10 +80,10 @@ export class PokemonDetailEditor {
 
         this.partyState = Array(12).fill(null).map(() => ({
             ability_id: null,
-            // --- 追加 ---
             item_id: null,
             tera_type_id: null,
-            // --- ここまで ---
+            nature: 'まじめ', // デフォルト値
+            ev: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }, // デフォルト値
             moves: [
                 { id: null, pp: null },
                 { id: null, pp: null },
@@ -216,6 +216,15 @@ export class PokemonDetailEditor {
                     item_id: member.held_item_id,
                     tera_type_id: member.tera_type_id,
                     ability_id: member.ability_id,
+                    nature: member.nature_name || 'まじめ', // nature_name を想定
+                    ev: {
+                        hp: member.ev_hp || 0,
+                        atk: member.ev_atk || 0,
+                        def: member.ev_def || 0,
+                        spa: member.ev_spa || 0,
+                        spd: member.ev_spd || 0,
+                        spe: member.ev_spe || 0,
+                    },
                     moves: [
                         { id: member.move1_id, pp: member.move1_pp },
                         { id: member.move2_id, pp: member.move2_pp },
@@ -313,6 +322,16 @@ export class PokemonDetailEditor {
             const ability = this.abilitiesList.find(a => a.id == state.ability_id);
             this.abilityInput.value = ability ? (ability.name_ja || ability.name) : '';
             console.log(`Set ability input to: ${this.abilityInput.value}`);
+
+            // --- Nature and EVs ---
+            document.getElementById('details-nature-select').value = state.nature || 'まじめ';
+            document.getElementById('details-ev-hp').value = state.ev.hp || 0;
+            document.getElementById('details-ev-atk').value = state.ev.atk || 0;
+            document.getElementById('details-ev-def').value = state.ev.def || 0;
+            document.getElementById('details-ev-spa').value = state.ev.spa || 0;
+            document.getElementById('details-ev-spd').value = state.ev.spd || 0;
+            document.getElementById('details-ev-spe').value = state.ev.spe || 0;
+            // --- ここまで ---
             
             this.moveInputs.forEach((input, i) => {
                 const ppInput = this.ppInputs[i];
@@ -358,6 +377,18 @@ export class PokemonDetailEditor {
         const abilityName = this.abilityInput.value.trim();
         const ability = this.abilitiesList.find(a => (a.name_ja || a.name) === abilityName);
         state.ability_id = ability ? ability.id : null;
+
+        // --- Nature and EVs ---
+        state.nature = document.getElementById('details-nature-select').value;
+        state.ev = {
+            hp: parseInt(document.getElementById('details-ev-hp').value, 10) || 0,
+            atk: parseInt(document.getElementById('details-ev-atk').value, 10) || 0,
+            def: parseInt(document.getElementById('details-ev-def').value, 10) || 0,
+            spa: parseInt(document.getElementById('details-ev-spa').value, 10) || 0,
+            spd: parseInt(document.getElementById('details-ev-spd').value, 10) || 0,
+            spe: parseInt(document.getElementById('details-ev-spe').value, 10) || 0,
+        };
+        // --- ここまで ---
 
         this.moveInputs.forEach((input, i) => {
             const moveName = input.value.trim();
