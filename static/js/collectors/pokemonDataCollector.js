@@ -61,6 +61,7 @@ function collectRawPokemonData(partyType, slotIndex) {
         nature: modal.querySelector('#details-nature-select').value, // 性格を追加
         ev: ev, // 努力値を追加
         boosts: boosts, // 能力ランクを追加
+        status: slotElement.querySelector('.pokemon-status-select').value, // 状態異常を追加
     };
 }
 

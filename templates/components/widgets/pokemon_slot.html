@@ -30,4 +30,13 @@
             <span class="speed-stat-value small text-muted">S: --</span>
         </div>
     </div>
+    <!-- Status -->
+    <select class="form-select form-select-sm mt-1 pokemon-status-select" data-party-type="{{ party_type }}" data-slot-index="{{ slot_index }}">
+        <option value="">状態異常なし</option>
+        <option value="poison">どく</option>
+        <option value="paralysis">まひ</option>
+        <option value="burn">やけど</option>
+        <option value="freeze">こおり</option>
+        <option value="sleep">ねむり</option>
+    </select>
 </div>

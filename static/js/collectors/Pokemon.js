@@ -23,6 +23,7 @@ export function createPokemon(rawData) {
         nature, // rawDataからnatureを取得
         ev,     // rawDataからevを取得
         boosts, // rawDataからboostsを取得
+        status, // rawDataからstatusを取得
     } = rawData;
 
     // --- UIに存在しない項目（仮データ） ---
@@ -46,7 +47,7 @@ export function createPokemon(rawData) {
         current_hp_percentage: hpPercentage || 100,
         base_stats: null,
         types: null,
-        status: null,
+        status: status || null,
         boosts: boosts || { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }
     };
 
