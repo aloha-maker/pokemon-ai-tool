@@ -12,6 +12,7 @@ def save_battle_result_with_log():
     """対戦結果とリアルタイムOCRログをDBに保存する"""
     service = BattleService(current_app.state)
     data = request.json
+    battle_state = data.get('battle_state')
     # バトルデータの準備
     battle_data = {
         "battle_id": data.get('battle_id'),
@@ -21,55 +22,59 @@ def save_battle_result_with_log():
         "regulation": "レギュレーションJ",
         "my_rank": 0,
         "opponent_rank": 0,
-        "memo": ""
+        "memo": "",
+        "parties": [data.get('my_party'),data.get('opponent_party')],
+        "events": data.get('raw_events')
     }
     # 自分のパーティ
-    my_party = []
-    for pokemon in data.get('my_party'):
-        my_party.append({
-            "pokemon_name": pokemon.get('name'),
-            "is_selected": bool(1 if pokemon.get('is_selected') else 0),
-            "pokemon_id": 0,
-            "item_name": pokemon.get('item'),
-            "tera_type_id": pokemon.get('terastal_type_id'),
-            "ability_id": pokemon.get('ability_id'),
-            "moves_json": json.dumps(pokemon.get('moves', []), ensure_ascii=False),
-            "is_starter": bool(1 if pokemon.get('is_starter') else 0),
-            "is_opponent": bool(0)
-        })
+    # my_party = []
+    # for pokemon in data.get('my_party'):
+    #     my_party.append({
+    #         "pokemon_name": pokemon.get('name'),
+    #         "is_selected": bool(1 if pokemon.get('is_selected') else 0),
+    #         "pokemon_id": 0,
+    #         "item_name": pokemon.get('item'),
+    #         "tera_type_id": pokemon.get('terastal_type_id'),
+    #         "ability_id": pokemon.get('ability_id'),
+    #         "moves_json": json.dumps(pokemon.get('moves', []), ensure_ascii=False),
+    #         "is_starter": bool(1 if pokemon.get('is_starter') else 0),
+    #         "is_opponent": bool(0)
+    #     })
     
     # 相手のパーティ
-    opponent_party = []
-    for pokemon in data.get('opponent_party'):
-        opponent_party.append({
-            "pokemon_name": pokemon.get('name'),
-            "is_selected": bool(1 if pokemon.get('is_selected') else 0),
-            "pokemon_id": 0,
-            "item_name": pokemon.get('item'),
-            "tera_type_id": pokemon.get('terastal_type_id'),
-            "ability_id": pokemon.get('ability_id'),
-            "moves_json": json.dumps(pokemon.get('moves', []), ensure_ascii=False),
-            "is_starter": bool(1 if pokemon.get('is_starter') else 0),
-            "is_opponent": bool(1)
-        })
+    # opponent_party = []
+    # for pokemon in data.get('opponent_party'):
+    #     opponent_party.append({
+    #         "pokemon_name": pokemon.get('name'),
+    #         "is_selected": bool(1 if pokemon.get('is_selected') else 0),
+    #         "pokemon_id": 0,
+    #         "item_name": pokemon.get('item'),
+    #         "tera_type_id": pokemon.get('terastal_type_id'),
+    #         "ability_id": pokemon.get('ability_id'),
+    #         "moves_json": json.dumps(pokemon.get('moves', []), ensure_ascii=False),
+    #         "is_starter": bool(1 if pokemon.get('is_starter') else 0),
+    #         "is_opponent": bool(1)
+    #     })
 
     # イベント
-    events =[]
-    for ev in data.get('raw_events'):
-        events.append({
-            "sequence": ev.get('sequence'),
-            "roi_name": ev.get('roi_name'),
-            "ocr_text": ev.get('ocr_text', {}).get('text', ''),
-            "phase": "未実装"
-        })
+    # events =[]
+    # for ev in data.get('raw_events'):
+    #     events.append({
+    #         "sequence": ev.get('sequence'),
+    #         "roi_name": ev.get('roi_name'),
+    #         "ocr_text": ev.get('ocr_text', {}).get('text', ''),
+    #         "phase": "未実装"
+    #     })
     
     try:
-        battle_log = service.create_battle_log(
-            battle_data=battle_data, 
-            my_party=my_party, 
-            opponent_party=opponent_party, 
-            events=events
-            )
+        # battle_log = service.create_battle_log(
+        #     battle_data=battle_data, 
+        #     my_party=data.get('my_party'), 
+        #     opponent_party=data.get('opponent_party'), 
+        #     events=data.get('raw_events')
+        #     )
+        
+        battle_log = service.create_battle_log(battle_data)
 
         return api_success({"message": "対戦結果とログを保存しました。", "log_id": battle_log.battle_id}, status_code=201)
     except ValueError as e:

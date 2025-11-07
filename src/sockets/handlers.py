@@ -65,7 +65,7 @@ def register_socket_handlers(socketio):
         emit('camera_started', {'video_feed_url': video_feed_url, 'ocr_started': False})
 
     @socketio.on('start_ocr')
-    def start_ocr(data):
+    def start_ocr(battle_state,battle_id):
         """クライアントからの要求でOCR処理のみを開始する"""
         if current_app.state.ocr_thread and current_app.state.ocr_thread.is_alive():
             print("既にOCRスレッドは実行中です。")
@@ -77,14 +77,14 @@ def register_socket_handlers(socketio):
         
         print("OCR処理の開始を要求されました。")
         app_state = current_app.state
-        # background_thread_stop_event はキャプチャ開始時にクリアされているはず
         tesseract_path = current_app.config.get('TESSERACT_PATH')
         app_state.ocr_thread = socketio.start_background_task(
             target=ocr_worker, 
             socketio=socketio, 
             state=app_state, 
             tesseract_path=tesseract_path,
-            battle_data=data
+            battle_state=battle_state,
+            battle_id=battle_id
         )
         emit('ocr_started')
 

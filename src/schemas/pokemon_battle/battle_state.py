@@ -61,3 +61,26 @@ class BattleState:
             'field': self.field.to_dict(),
             'is_side1_attacker': self.is_side1_attacker
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> BattleState:
+        """
+        辞書データから BattleState インスタンスを復元する
+
+        Args:
+            data (Dict[str, Any]): BattleState の辞書データ
+
+        Returns:
+            BattleState: 復元されたバトル状態
+        """
+        side1 = BattleSide.from_dict(data['side1'])
+        side2 = BattleSide.from_dict(data['side2'])
+        field = BattleField.from_dict(data['field'])
+        is_side1_attacker = data.get('is_side1_attacker', True)
+
+        return cls(
+            side1=side1,
+            side2=side2,
+            field=field,
+            is_side1_attacker=is_side1_attacker
+        )

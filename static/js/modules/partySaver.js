@@ -97,11 +97,13 @@ export class PartySaver {
         const data = this.gatherBattleData();
         data.result = result; // 'win' or 'lose'
 
-        // ログバッファを取得してペイロードに追加
+        // ログバッファとBattleStateを取得してペイロードに追加
         if (this.realtimeAnalysis) {
             data.raw_events = this.realtimeAnalysis.getLogBuffer();
+            data.battle_state = this.realtimeAnalysis.gatherFullBattleState();
         } else {
             data.raw_events = [];
+            data.battle_state = null;
         }
 
         try {

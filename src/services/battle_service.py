@@ -273,10 +273,10 @@ class BattleService:
             raise e
 
     def create_battle_log(self, 
-        battle_data: Dict,
-        my_party: List[Dict],
-        opponent_party: List[Dict],
-        events: List[Dict]
+        battle_data: Dict
+        # my_party: List[Dict],
+        # opponent_party: List[Dict],
+        # events: List[Dict]
     ) -> BattleLog:
         """
         バトルの完全なレコードを一括登録（トランザクション処理）
@@ -310,51 +310,52 @@ class BattleService:
 
         try:
             # BattleLogインスタンスを作成
-            battle_log = BattleLog(
-                battle_id=battle_data['battle_id'],
-                battle_format=battle_data['battle_format'],
-                result=battle_data['result'],
-                season=battle_data.get('season'),
-                regulation=battle_data.get('regulation'),
-                my_rank=battle_data.get('my_rank'),
-                opponent_rank=battle_data.get('opponent_rank'),
-                memo=battle_data.get('memo')
-            )
+            battle_log = BattleLog.from_dict(battle_data)
+            # battle_log = BattleLog(
+            #     battle_id=battle_data['battle_id'],
+            #     battle_format=battle_data['battle_format'],
+            #     result=battle_data['result'],
+            #     season=battle_data.get('season'),
+            #     regulation=battle_data.get('regulation'),
+            #     my_rank=battle_data.get('my_rank'),
+            #     opponent_rank=battle_data.get('opponent_rank'),
+            #     memo=battle_data.get('memo')
+            # )
             
-            # 自分のパーティメンバーを追加
-            for pokemon in my_party:
-                party_member = PartyLogModel(
-                    battle_id=battle_log.battle_id,
-                    pokemon_name=pokemon['pokemon_name'],
-                    is_opponent=False,
-                    is_selected=pokemon.get('is_selected', False),
-                    is_first=pokemon.get('is_first', False),
-                    pokemon_id=pokemon.get('pokemon_id')
-                )
-                battle_log.parties.append(party_member)
+            # # 自分のパーティメンバーを追加
+            # for pokemon in my_party:
+            #     party_member = PartyLogModel(
+            #         battle_id=battle_log.battle_id,
+            #         pokemon_name=pokemon['pokemon_name'],
+            #         is_opponent=False,
+            #         is_selected=pokemon.get('is_selected', False),
+            #         is_first=pokemon.get('is_first', False),
+            #         pokemon_id=pokemon.get('pokemon_id')
+            #     )
+            #     battle_log.parties.append(party_member)
             
-            # 相手のパーティメンバーを追加
-            for pokemon in opponent_party:
-                party_member = PartyLogModel(
-                    battle_id=battle_log.battle_id,
-                    pokemon_name=pokemon['pokemon_name'],
-                    is_opponent=True,
-                    is_selected=pokemon.get('is_selected', False),
-                    is_first=pokemon.get('is_first', False),
-                    pokemon_id=pokemon.get('pokemon_id')
-                )
-                battle_log.parties.append(party_member)
+            # # 相手のパーティメンバーを追加
+            # for pokemon in opponent_party:
+            #     party_member = PartyLogModel(
+            #         battle_id=battle_log.battle_id,
+            #         pokemon_name=pokemon['pokemon_name'],
+            #         is_opponent=True,
+            #         is_selected=pokemon.get('is_selected', False),
+            #         is_first=pokemon.get('is_first', False),
+            #         pokemon_id=pokemon.get('pokemon_id')
+            #     )
+            #     battle_log.parties.append(party_member)
             
-            # イベントを追加
-            for event_data in events:
-                event = RawBattleEventModel(
-                    battle_id=battle_log.battle_id,
-                    sequence=event_data['sequence'],
-                    roi_name=event_data['roi_name'],
-                    ocr_text=event_data.get('ocr_text'),
-                    phase=event_data.get('phase')
-                )
-                battle_log.events.append(event)
+            # # イベントを追加
+            # for event_data in events:
+            #     event = RawBattleEventModel(
+            #         battle_id=battle_log.battle_id,
+            #         sequence=event_data['sequence'],
+            #         roi_name=event_data['roi_name'],
+            #         ocr_text=event_data.get('ocr_text'),
+            #         phase=event_data.get('phase')
+            #     )
+            #     battle_log.events.append(event)
             
             # 一括保存（BattleLogのsave_to_dbメソッドを使用）
             self.delete_battle(battle_data['battle_id'])

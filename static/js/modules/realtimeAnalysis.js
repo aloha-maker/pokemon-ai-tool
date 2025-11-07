@@ -80,10 +80,12 @@ export class RealtimeAnalysis {
             const latest_events = data.latest_events;
             if (this.logOutput && latest_events) {
                 this.appendRealtimeLog(latest_events);
+                // TODO:ここにBattleStateのデータを画面に反映する処理を追加
             }
 
             if(data.phase_info['current_phase'] === 'battle' && data.phase_info['battle_sub_phase'] === 'choose') {
-                const battleState = this.gatherFullBattleState();
+                // TODO :　battleStateは画面から取得して送る形にする
+                const battleState = data.battle_state;
                 console.log("Sending full battle state for suggestion:", battleState);
                 this.socket.emit('get_suggestion', battleState);
             }
@@ -182,8 +184,10 @@ export class RealtimeAnalysis {
     handleStartOcr() {
         if (this.currentState === 'running_camera') {
             const battleState = this.gatherFullBattleState();
-            console.log("Sending battle state to server on OCR start:", battleState);
-            this.socket.emit('start_ocr', battleState);
+            const battleId = this.battleIdDisplay ? this.battleIdDisplay.value : null; // バトルIDを取得
+
+            console.log("Sending battle state to server on OCR start:", battleState, "with Battle ID:", battleId);
+            this.socket.emit('start_ocr', battleState, battleId);
         }
     }
 

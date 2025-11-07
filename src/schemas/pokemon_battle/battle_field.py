@@ -39,3 +39,29 @@ class BattleField:
             'last_move_name': self.last_move_name,
             'last_move_side': self.last_move_side
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "BattleField":
+        """
+        辞書データから BattleField インスタンスを復元する
+
+        Args:
+            data (dict): BattleField の辞書データ
+
+        Returns:
+            BattleField: 復元されたバトルフィールド
+        """
+        # コンストラクタで扱う主要プロパティをセット
+        instance = cls(
+            weather=data.get('weather'),
+            terrain=data.get('terrain'),
+            turn=data.get('turn', 0),
+            is_double=data.get('is_double', False),
+        )
+
+        # 追加の行動履歴情報を復元
+        instance.last_move_user = data.get('last_move_user')
+        instance.last_move_name = data.get('last_move_name')
+        instance.last_move_side = data.get('last_move_side')
+
+        return instance

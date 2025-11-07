@@ -46,6 +46,41 @@ class BattleSide:
             "team_size": len(self.team),
         }
 
+    @classmethod
+    def from_dict(cls, data: Dict) -> BattleSide:
+        """
+        辞書データから BattleSide インスタンスを復元する
+
+        Args:
+            data (Dict): BattleSide の辞書データ
+
+        Returns:
+            BattleSide: 復元された BattleSide インスタンス
+        """
+        # Partyを復元
+        team = Party.from_dict(data["team"])
+        # インスタンス生成
+        instance = cls(team_name=data["team_name"], party=team)
+
+        # activeポケモンが存在する場合のみ復元
+        if data.get("active"):
+            instance.active = Pokemon.from_dict(data["active"])
+
+        # 壁・設置技状態などを復元
+        instance.screens = data.get("screens", {
+            "reflect": False,
+            "light_screen": False,
+            "aurora_veil": False,
+        })
+        instance.side_conditions = data.get("side_conditions", {
+            "spikes": 0,
+            "toxic_spikes": 0,
+            "stealth_rock": False,
+            "tailwind": False,
+        })
+
+        return instance
+
     def __str__(self) -> str:
         """文字列表現"""
         active_name = self.active.name if self.active else "None"

@@ -1,9 +1,10 @@
 # C:\pokemon-ai-tool\src\schemas\pokemon_battle\battle_log.py
 from __future__ import annotations
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
+from .party import Party
 from src.models.battle_model import BattleModel
-from src.models.party_log_model import PartyLogModel
+# from src.models.party_log_model import PartyLogModel
 from src.models.raw_battle_event_model import RawBattleEventModel
 
 
@@ -27,7 +28,7 @@ class BattleLog:
         opponent_rank: Optional[int] = None,
         result: Optional[str] = None,
         memo: Optional[str] = None,
-        parties: Optional[List[PartyLogModel]] = None,
+        parties: Optional[List[Party]] = None, # 相手パーティと自分パーティ
         events: Optional[List[RawBattleEventModel]] = None,
     ):
         self.battle_id = battle_id
@@ -63,6 +64,44 @@ class BattleLog:
             events=model.events,
         )
         return battle
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "BattleLog":
+        """
+        辞書からBattleLogインスタンスを生成
+        
+        Args:
+            data: BattleLogのデータを含む辞書
+            
+        Returns:
+            BattleLogインスタンス
+        """
+        # ネストされたモデルの変換
+        parties = []
+        for party_data in data["parties"]:
+            parties.append(Party.from_dict(party_data))
+        
+        events = []
+        if "events" in data and data["events"]:
+            for event_data in data["events"]:
+                if isinstance(event_data, RawBattleEventModel):
+                    events.append(event_data)
+                else:
+                    events.append(RawBattleEventModel(**event_data))
+        
+        return cls(
+            battle_id=data["battle_id"],
+            battle_date=data.get("battle_date"),
+            season=data.get("season"),
+            regulation=data.get("regulation"),
+            battle_format=data.get("battle_format"),
+            my_rank=data.get("my_rank"),
+            opponent_rank=data.get("opponent_rank"),
+            result=data.get("result"),
+            memo=data.get("memo"),
+            parties=parties,
+            events=events,
+        )
 
     def to_model(self) -> BattleModel:
         """BattleインスタンスからBattleModelを生成"""

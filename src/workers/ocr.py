@@ -20,10 +20,9 @@ from src.models.party_log_model import PartyLogModel
 
 from src.services.battle_state_updater_service import BattleStateUpdater
 
-def ocr_worker(socketio, state, tesseract_path, battle_data):
+def ocr_worker(socketio, state, tesseract_path, battle_state,battle_id):
     """
     バックグラウンドでOCRを定期的に実行するワーカー
-    'static/captures/latest_frame.jpg' を監視して処理を行う
     OCRProcessorを使用して高度なフェーズ管理とROI処理を行う
     """
     print("OCRワーカーを開始します。")
@@ -34,7 +33,7 @@ def ocr_worker(socketio, state, tesseract_path, battle_data):
         ability_corrector = AbilityNameCorrector(config.ABILITY_MASTER_PATH)
         ocr_processor = OCRProcessor(pokemon_corrector, ability_corrector, tesseract_path=tesseract_path)
         battle_log = BattleLog(
-            battle_id=battle_data.get('battle_id'),
+            battle_id=battle_id,
             season=34,
             regulation='レギュレーションJ',
             battle_format='シングル',
@@ -43,90 +42,91 @@ def ocr_worker(socketio, state, tesseract_path, battle_data):
         )
         
         # 自分のパーティメンバーを追加
-        print(battle_data)
-        my_party_members = []
-        for pokemon in battle_data.get('my_party'):
-            my_party_member = Pokemon(
-                name=pokemon.get('name'),
-                level=50,
-                base_stats={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, #種族値
-                iv={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, # 個体値
-                ev={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, # 努力値
-                nature=None, # 性格
-                ability=pokemon.get('ability_id'), # 特性
-                item=pokemon.get('item'),
-                types=[], # タイプ
-                tera_type=None, # テラスタル
-                status=None, # 実数値
-                current_hp=None #現在のHP
-            )
-            for move in pokemon.get('moves'):
-                move_ = Move(
-                    name='name',
-                    power=move,
-                    move_type=None,
-                    category='physical',
-                    accuracy=100,
-                    pp=10
-                    ) # TODO　本当はId
-                my_party_member.add_move(move_)
-            my_party_members.append(my_party_member)
+        # my_party_members = []
+        # for pokemon in battle_data.get('my_party'):
+        #     my_party_member = Pokemon(
+        #         name=pokemon.get('name'),
+        #         level=50,
+        #         base_stats={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, #種族値
+        #         iv={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, # 個体値
+        #         ev={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, # 努力値
+        #         nature=None, # 性格
+        #         ability=pokemon.get('ability_id'), # 特性
+        #         item=pokemon.get('item'),
+        #         types=[], # タイプ
+        #         tera_type=None, # テラスタル
+        #         status=None, # 実数値
+        #         current_hp=None #現在のHP
+        #     )
+        #     for move in pokemon.get('moves'):
+        #         move_ = Move(
+        #             name='name',
+        #             power=move,
+        #             move_type=None,
+        #             category='physical',
+        #             accuracy=100,
+        #             pp=10
+        #             ) # TODO　本当はId
+        #         my_party_member.add_move(move_)
+        #     my_party_members.append(my_party_member)
             
-        my_party = Party(
-            name = "自分",
-            description = "説明",
-            members =my_party_members,
-            party_id=battle_data.get('my_party_id')
-            )
-        print("my_party")
+        # my_party = Party(
+        #     name = "自分",
+        #     description = "説明",
+        #     members =my_party_members,
+        #     party_id=battle_data.get('my_party_id')
+        #     )
+        # print("my_party")
         
-        my_side = BattleSide(
-            team_name="自分",
-            party=my_party
-            )
-        my_side.set_active(my_party.members[0])
+        # my_side = BattleSide(
+        #     team_name="自分",
+        #     party=my_party
+        #     )
+        # my_side.set_active(my_party.members[0])
 
-        # 相手のパーティメンバーを追加
-        opponent_party_members = []
-        for pokemon in battle_data.get('opponent_party'):
-            opponent_party_member = Pokemon(
-                name=pokemon.get('name'),
-                level=50,
-                base_stats={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, #種族値
-                iv={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, # 個体値
-                ev={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, # 努力値
-                nature=None, # 性格
-                ability=pokemon.get('ability_id'), # 特性
-                item=pokemon.get('item'),
-                types=[], # タイプ
-                tera_type=None, # テラスタル
-                status=None, # 実数値
-                current_hp=None #現在のHP
-            )
-            for move in pokemon.get('moves'):
-                move_ = Move(power=move) # TODO　本当はId
-                opponent_party_member.add_move(move_)
-            opponent_party_members.append(opponent_party_member)
+        # # 相手のパーティメンバーを追加
+        # opponent_party_members = []
+        # for pokemon in battle_data.get('opponent_party'):
+        #     opponent_party_member = Pokemon(
+        #         name=pokemon.get('name'),
+        #         level=50,
+        #         base_stats={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, #種族値
+        #         iv={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, # 個体値
+        #         ev={"hp" : 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}, # 努力値
+        #         nature=None, # 性格
+        #         ability=pokemon.get('ability_id'), # 特性
+        #         item=pokemon.get('item'),
+        #         types=[], # タイプ
+        #         tera_type=None, # テラスタル
+        #         status=None, # 実数値
+        #         current_hp=None #現在のHP
+        #     )
+        #     for move in pokemon.get('moves'):
+        #         move_ = Move(power=move) # TODO　本当はId
+        #         opponent_party_member.add_move(move_)
+        #     opponent_party_members.append(opponent_party_member)
             
-        opponent_party = Party(
-            name = "相手",
-            description = "説明",
-            members =opponent_party_members,
-            party_id=None
-            )
+        # opponent_party = Party(
+        #     name = "相手",
+        #     description = "説明",
+        #     members =opponent_party_members,
+        #     party_id=None
+        #     )
         
-        opponent_side = BattleSide(
-            team_name="相手",
-            party=opponent_party
-            )
-        opponent_side.set_active(opponent_party.members[0])
+        # opponent_side = BattleSide(
+        #     team_name="相手",
+        #     party=opponent_party
+        #     )
+        # opponent_side.set_active(opponent_party.members[0])
         
-        battle_state = BattleState(
-            side1=my_side,
-            side2=opponent_side,
-            field=BattleField(),
-            is_side1_attacker=True
-        )
+        # battle_state = BattleState(
+        #     side1=my_side,
+        #     side2=opponent_side,
+        #     field=BattleField(),
+        #     is_side1_attacker=True
+        # )
+
+        battle_state = BattleState.from_dict(battle_state)
 
         print("✅ OCRProcessorの初期化が完了しました")
     except Exception as e:
@@ -167,7 +167,7 @@ def ocr_worker(socketio, state, tesseract_path, battle_data):
                     )
                     
                     # 解析結果を取得
-                    current_state, battle_log, battle_state = _extract_state_from_ocr_processor(ocr_processor, current_phase_info, battle_log, frame_count, battle_state)
+                    current_state, battle_log, battle_state_after = _extract_state_from_ocr_processor(ocr_processor, current_phase_info, battle_log, frame_count, battle_state_after)
                     
                     with state.game_state_lock:
                         state.shared_game_state["state"] = current_state
@@ -175,15 +175,15 @@ def ocr_worker(socketio, state, tesseract_path, battle_data):
                         state.shared_game_state["phase_info"] = current_phase_info
                         state.shared_game_state["battle_log"] = battle_log
                         state.shared_game_state["latest_events"] = battle_log.get_latest_sequence_events(as_dict=True)
-                        state.shared_game_state["battle_state"] = battle_state
+                        state.shared_game_state["battle_state"] = battle_state_after
                     
                     # クライアントに状態更新を通知
                     socketio.emit('ocr_update', {
                         'state': current_state,
                         'phase_info': current_phase_info,
                         'processed_count': processed_count,
-                        'latest_events' : battle_log.get_latest_sequence_events(as_dict=True)
-                        # 'battle_state' : battle_state
+                        'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
+                        'battle_state' : battle_state_after.to_dict()
                     })
                     
                     if frame_count % 10 == 0:  # 10フレームごとにログ出力
@@ -283,4 +283,4 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
     except Exception as e:
         print(f"⚠️ 状態抽出エラー: {e}")
     
-    return current_state, battle_log, battle_state
+    return current_state, battle_log, updater
