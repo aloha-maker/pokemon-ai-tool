@@ -80,12 +80,15 @@ export class RealtimeAnalysis {
             const latest_events = data.latest_events;
             if (this.logOutput && latest_events) {
                 this.appendRealtimeLog(latest_events);
-                // TODO:ここにBattleStateのデータを画面に反映する処理を追加
+                // サーバーから battle_state が送られてきたらUIを更新する
+                if (data.battle_state) {
+                    console.log("Received battle state, updating UI.", data.battle_state);
+                    this.updateUIWithBattleState(data.battle_state);
+                }
             }
 
             if(data.phase_info['current_phase'] === 'battle' && data.phase_info['battle_sub_phase'] === 'choose') {
-                // TODO :　battleStateは画面から取得して送る形にする
-                const battleState = data.battle_state;
+                const battleState = this.gatherFullBattleState();
                 console.log("Sending full battle state for suggestion:", battleState);
                 this.socket.emit('get_suggestion', battleState);
             }
@@ -291,6 +294,156 @@ export class RealtimeAnalysis {
         } finally {
             this.recognizePartyBtn.disabled = false;
             this.recognizePartyBtn.innerHTML = originalHtml;
+        }
+    }
+
+    /**
+     * サーバーから受信したBattleStateオブジェクトでUIを更新します。
+     * 正確な階層構造を反映しています。
+     * @param {object} battleState - サーバーから送信されたバトル状態オブジェクト。
+     */
+    updateUIWithBattleState(battleState) {
+        if (!battleState) {
+            console.warn("updateUIWithBattleState: battleState is null or undefined.");
+            return;
+        }
+
+        // side1 (自分側) のデータを更新
+        if (battleState.side1) {
+            this.updateSideUI('my-party', battleState.side1);
+        }
+
+        // side2 (相手側) のデータを更新
+        if (battleState.side2) {
+            this.updateSideUI('opponent-party', battleState.side2);
+        }
+
+        // フィールドの状態を更新
+        if (battleState.field) {
+            this.updateFieldUI(battleState.field);
+        }
+    }
+
+    /**
+     * 片方のサイド（自分または相手）のUIを更新します。
+     * @param {string} containerId - 'my-party' または 'opponent-party'。
+     * @param {object} sideData - BattleSideのデータ。
+     */
+    updateSideUI(containerId, sideData) {
+        const displayContainer = document.getElementById(containerId + '-display');
+        if (!displayContainer) {
+            console.warn(`updateSideUI: Display container for #${containerId} not found.`);
+            return;
+        }
+
+        // アクティブなポケモンのUIを更新 (この部分は変更なし)
+        if (sideData.active) {
+            const pokemon = sideData.active;
+            const activePokemonContainer = displayContainer.querySelector('.active-pokemon-display');
+
+            if (activePokemonContainer) {
+                // ポケモン名
+                const nameEl = activePokemonContainer.querySelector('.pokemon-name');
+                if (nameEl) nameEl.textContent = pokemon.name || '---';
+
+                // HPバー
+                const hpBar = activePokemonContainer.querySelector('.hp-bar-inner');
+                if (hpBar) {
+                    const hpPercentage = (pokemon.max_hp > 0) ? (pokemon.current_hp / pokemon.max_hp) * 100 : 0;
+                    hpBar.style.width = `${hpPercentage}%`;
+                }
+
+                // HPテキスト
+                const hpText = activePokemonContainer.querySelector('.hp-text');
+                if (hpText) hpText.textContent = (pokemon.current_hp !== null && pokemon.max_hp !== null) ? `${pokemon.current_hp} / ${pokemon.max_hp}` : 'HP';
+
+                // 状態異常アイコン
+                const statusIcon = activePokemonContainer.querySelector('.status-icon');
+                if (statusIcon) {
+                    if (pokemon.status) {
+                        statusIcon.src = `/static/ailment_icons/${pokemon.status}.png`;
+                        statusIcon.style.display = 'inline';
+                        statusIcon.title = pokemon.status;
+                    } else {
+                        statusIcon.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        // パーティ全体の情報を詳細に更新
+        if (sideData.team && Array.isArray(sideData.team.members)) {
+            sideData.team.members.forEach((pokemon, index) => {
+                // 各パーティメンバーのUIコンテナを取得 (HTML構造を仮定)
+                // 例: <div class="party-member-container" data-pokemon-index="0"> ... </div>
+                const memberContainer = displayContainer.querySelector(`.party-member-container[data-pokemon-index="${index}"]`);
+                if (!memberContainer) return;
+
+                // 1. ポケモンアイコンの更新 (瀕死状態など)
+                const iconEl = memberContainer.querySelector('.party-pokemon-icon');
+                if (iconEl) {
+                    if (pokemon.current_hp === 0) {
+                        iconEl.classList.add('fainted');
+                    } else {
+                        iconEl.classList.remove('fainted');
+                    }
+                }
+
+                // 2. HPバーの更新
+                const hpBar = memberContainer.querySelector('.party-hp-bar-inner');
+                if (hpBar) {
+                    const hpPercentage = (pokemon.max_hp > 0) ? (pokemon.current_hp / pokemon.max_hp) * 100 : 0;
+                    hpBar.style.width = `${hpPercentage}%`;
+                    
+                    // HP残量に応じて色を更新
+                    hpBar.classList.remove('hp-high', 'hp-medium', 'hp-low');
+                    if (hpPercentage > 50) {
+                        hpBar.classList.add('hp-high');
+                    } else if (hpPercentage > 20) {
+                        hpBar.classList.add('hp-medium');
+                    } else {
+                        hpBar.classList.add('hp-low');
+                    }
+                }
+
+                // 3. 状態異常アイコンの更新
+                const statusIcon = memberContainer.querySelector('.party-status-icon');
+                if (statusIcon) {
+                    if (pokemon.status) {
+                        statusIcon.src = `/static/ailment_icons/${pokemon.status}.png`;
+                        statusIcon.title = pokemon.status;
+                        statusIcon.style.display = 'inline';
+                    } else {
+                        statusIcon.style.display = 'none';
+                    }
+                }
+
+                // 4. ポケモン名やHPテキストなど、その他の情報の更新 (必要に応じて)
+                const nameEl = memberContainer.querySelector('.party-pokemon-name');
+                if (nameEl) {
+                    nameEl.textContent = pokemon.name;
+                }
+                const hpTextEl = memberContainer.querySelector('.party-hp-text');
+                if (hpTextEl) {
+                    hpTextEl.textContent = `${pokemon.current_hp}/${pokemon.max_hp}`;
+                }
+            });
+        }
+    }
+
+    /**
+     * バトルフィールド（天候など）のUIを更新します。
+     * @param {object} fieldData - BattleFieldのデータ。
+     */
+    updateFieldUI(fieldData) {
+        const weatherDisplay = document.getElementById('weather-display');
+        if (weatherDisplay) {
+            weatherDisplay.textContent = `天候: ${fieldData.weather || 'なし'}`;
+        }
+
+        const fieldEffectDisplay = document.getElementById('field-effect-display');
+        if (fieldEffectDisplay) {
+            fieldEffectDisplay.textContent = `フィールド: ${fieldData.terrain || 'なし'}`;
         }
     }
 }

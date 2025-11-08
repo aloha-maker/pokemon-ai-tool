@@ -76,12 +76,17 @@ def register_socket_handlers(socketio):
             return
         
         print("OCR処理の開始を要求されました。")
+        
         app_state = current_app.state
         tesseract_path = current_app.config.get('TESSERACT_PATH')
+
+        # Flaskアプリを取得して渡す
+        app = current_app._get_current_object()
         app_state.ocr_thread = socketio.start_background_task(
-            target=ocr_worker, 
-            socketio=socketio, 
-            state=app_state, 
+            target=ocr_worker_with_context,
+            app=app,
+            socketio=socketio,
+            state=app_state,
             tesseract_path=tesseract_path,
             battle_state=battle_state,
             battle_id=battle_id
@@ -112,12 +117,12 @@ def register_socket_handlers(socketio):
         # current_app.state.background_thread_stop_event.set()
 
     @socketio.on('get_suggestion')
-    def handle_get_suggestion(json_data):
+    def handle_get_suggestion(battle_state):
         """
         クライアントからの要求に応じて、最新の盤面情報からAIの提案を生成する
         """
-        with current_app.state.game_state_lock:
-            battle_state = current_app.state.shared_game_state["battle_state"]
+        # with current_app.state.game_state_lock:
+            # b_s = current_app.state.shared_game_state["battle_state"]
         
         if battle_state:
             # AIモデルで行動を予測
@@ -129,3 +134,9 @@ def register_socket_handlers(socketio):
             emit('suggestion_update', recommendation)
         else:
             emit('suggestion_update', {"action": "待機", "reason": "盤面情報を取得中です..."})
+
+    def ocr_worker_with_context(app, socketio, state, tesseract_path, battle_state, battle_id):
+        """アプリケーションコンテキスト付きでOCRワーカーを起動"""
+        with app.app_context():
+            from src.workers.ocr import ocr_worker
+            ocr_worker(socketio, state, tesseract_path, battle_state, battle_id)

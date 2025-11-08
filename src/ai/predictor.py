@@ -2,6 +2,7 @@ import os
 from ..core.type_chart import get_effectiveness
 from ..services.master_data_service import MasterDataService
 from .log_analyzer import LogAnalyzer
+from src.schemas.pokemon_battle.battle_state import BattleState
 
 
 class ActionAIModel:
@@ -37,11 +38,13 @@ class ActionAIModel:
         except (ValueError, IndexError):
             return None
 
-    def predict_action(self, battle_state):
+    def predict_action(self, battle_state_dict):
         """
         盤面情報から最適な行動を予測する。
         """
-        print(battle_state.to_dict()) 
+
+        battle_state = BattleState.from_dict(battle_state_dict)
+
         my_poke_name = battle_state.side1.active.name
         opp_poke_name = battle_state.side2.active.name
         my_hp_str = battle_state.side1.active.current_hp

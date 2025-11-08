@@ -11,7 +11,6 @@ import { createBattleSide } from './BattleSide.js';
  * @returns {object|null} - ポケモンの生データ or null
  */
 function collectRawPokemonData(partyType, slotIndex) {
-    console.log(partyType,slotIndex)
 
     const slotSelector = `.pokemon-slot[data-party-type='${partyType}'][data-slot-index='${slotIndex}']`;
     const slotElement = document.querySelector(slotSelector);
