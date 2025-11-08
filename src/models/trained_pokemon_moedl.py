@@ -1,6 +1,6 @@
-# from src.database.manager import db
 from src.extensions import db 
 from datetime import datetime
+from typing import Optional, List
 
 class TrainedPokemonModel(db.Model):
     __tablename__ = 'trained_pokemons'
@@ -61,3 +61,23 @@ class TrainedPokemonModel(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+    @classmethod
+    def find_by_id(cls, trained_id: int) -> Optional['TrainedPokemonModel']:
+        """IDで育成済みポケモンを検索"""
+        return cls.query.get(trained_id)
+
+    @classmethod
+    def find_by_pokemon_id(cls, pokemon_id: int) -> List['TrainedPokemonModel']:
+        """種族IDで育成済みポケモンを検索"""
+        return cls.query.filter_by(pokemon_id=pokemon_id).all()
+
+    @classmethod
+    def find_by_nickname(cls, nickname: str) -> List['TrainedPokemonModel']:
+        """ニックネームで育成済みポケモンを検索"""
+        return cls.query.filter_by(nickname=nickname).all()
+
+    @classmethod
+    def find_all(cls) -> List['TrainedPokemonModel']:
+        """すべての育成済みポケモンを取得"""
+        return cls.query.all()

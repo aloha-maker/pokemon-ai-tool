@@ -1,6 +1,7 @@
 # C:\pokemon-ai-tool\src\models\party_log_model.py
 # from src.database.manager import db
 from src.extensions import db 
+import json
 
 class PartyLogModel(db.Model):
     __tablename__ = 'parties_log'
@@ -29,8 +30,25 @@ class PartyLogModel(db.Model):
             "is_selected": self.is_selected,
             "is_first": self.is_first,
             "nickname": self.nickname,
-            "moves": self.moves,
+            "moves": json.loads(self.moves) if self.moves else [],
             "terastal_type": self.terastal_type,
             "item": self.item,
             "ability": self.ability,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """辞書からPartyLogModelインスタンスを生成する"""
+        return cls(
+            pokemon_id=data.get("pokemon_id"),
+            battle_id=data.get("battle_id"),
+            pokemon_name=data.get("pokemon_name"),
+            is_opponent=data.get("is_opponent", False),
+            is_selected=data.get("is_selected", False),
+            is_first=data.get("is_first", False),
+            nickname=data.get("nickname"),
+            moves=json.dumps(data.get("moves")) if data.get("moves") else None,
+            terastal_type=data.get("terastal_type"),
+            item=data.get("item"),
+            ability=data.get("ability"),
+        )

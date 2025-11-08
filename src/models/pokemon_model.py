@@ -1,5 +1,4 @@
-# from src.database.manager import db
-from src.extensions import db 
+from src.extensions import db
 
 class PokemonModel(db.Model):
     __tablename__ = 'pokemons'

@@ -68,12 +68,12 @@ export class PartySaver {
                 const moveIds = detailedState ? detailedState.moves.map(m => m.id).filter(id => id !== null) : [];
 
                 return {
-                    name,
+                    pokemon_name: name,
                     is_selected: isSelected,
-                    is_starter: isStarter,
+                    is_first: isStarter,
                     item,
-                    terastal_type_id: teraTypeId,
-                    ability_id: abilityId,
+                    terastal_type: teraTypeId,
+                    ability: abilityId,
                     moves: moveIds
                 };
             }).filter(p => p.name !== '');

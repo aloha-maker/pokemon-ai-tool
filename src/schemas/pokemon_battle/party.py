@@ -153,6 +153,7 @@ class Party:
         if "members" in data and data["members"]:
             members_list = [Pokemon.from_dict(pokemon_data) for pokemon_data in data["members"]]
         
+        # print(data)
         return cls(
             name=data["name"],
             description=data.get("description"), # Optional

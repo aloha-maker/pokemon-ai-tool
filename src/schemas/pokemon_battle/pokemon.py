@@ -1,4 +1,5 @@
 from __future__ import annotations
+from functools import partial
 from typing import Optional, List, Dict
 from .types import StatName, TypeName
 from .move import Move
@@ -205,23 +206,22 @@ class Pokemon:
         辞書形式のデータからPokemonインスタンスを生成する。
         (to_dictの逆操作)
         """
+        # まずPokemonModelからname_jaを検索
+        pokemon_name = data["name"]
+        base_model = PokemonModel.query.filter_by(name_ja=pokemon_name).first()
         
-        # 1. __init__に必要な引数を渡して、基本的なインスタンスを生成
-        # (max_hpは__init__内で自動計算される)
-        pokemon = cls(
-            name=data["name"],
-            level=data["level"],
-            base_stats=data["base_stats"],
-            iv=data["iv"],
-            ev=data["ev"],
-            nature=data["nature"],
-            ability=data["ability"],
-            item=data["item"],
-            types=data["types"],
-            tera_type=data.get("tera_type"),
-            status=data.get("status"),
-            current_hp=data.get("current_hp") # Noneでも__init__がmax_hpを代入
-        )
+        # 種族データから基本インスタンスを生成
+        pokemon = cls.from_pokemon_model(base_model=base_model, level=data.get("level", 50))
+        
+        # 個体値・努力値・性格など個別データで上書き
+        pokemon.iv = data.get("iv", {stat: 31 for stat in ["hp", "atk", "def", "spa", "spd", "spe"]})
+        pokemon.ev = data["ev"]
+        pokemon.nature = data["nature"]
+        pokemon.ability = data["ability"]
+        pokemon.item = data["item"]
+        pokemon.tera_type = data.get("tera_type")
+        pokemon.status = data.get("status")
+        pokemon.current_hp = data.get("current_hp")
 
         # 2. __init__以外で設定される属性を辞書から復元
         

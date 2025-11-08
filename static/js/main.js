@@ -27,11 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
     new Calculator();
     new Simulator();
     const pokemonDetailEditor = new PokemonDetailEditor();
-    new PartySaver(realtimeAnalysis, pokemonDetailEditor);
     const partySaver = new PartySaver(realtimeAnalysis, pokemonDetailEditor);
     
     // フォーム選択肢の初期化はボタンクリック時に行う
-    // initFormSelects();
+    initFormSelects();
 
     // RealtimeAnalysisにPartySaverを設定
     realtimeAnalysis.setPartySaver(partySaver);

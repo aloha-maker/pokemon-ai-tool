@@ -11,11 +11,14 @@ import { createBattleSide } from './BattleSide.js';
  * @returns {object|null} - ポケモンの生データ or null
  */
 function collectRawPokemonData(partyType, slotIndex) {
+    console.log(partyType,slotIndex)
+
     const slotSelector = `.pokemon-slot[data-party-type='${partyType}'][data-slot-index='${slotIndex}']`;
     const slotElement = document.querySelector(slotSelector);
 
     // スロットが存在しない、またはポケモン名が入力されていなければ対象外
     if (!slotElement || !slotElement.querySelector('.pokemon-input').value) {
+        console.log("スロットが存在しない、またはポケモン名が入力されていなければ対象外")
         return null;
     }
 
@@ -26,7 +29,8 @@ function collectRawPokemonData(partyType, slotIndex) {
     const moves = [];
     moveNodes.forEach(input => {
         if (input.value) {
-            moves.push(input.value);
+            const move ={name : input.value}
+            moves.push(move);
         }
     });
 
@@ -57,7 +61,7 @@ function collectRawPokemonData(partyType, slotIndex) {
         tera_type: modal.querySelector('#details-tera-type-select').value,
         item: modal.querySelector('#details-item-input').value,
         moves: moves,
-        hpPercentage: hpBar ? parseFloat(hpBar.style.width) : 100,
+        current_hp: hpBar ? parseFloat(hpBar.style.width) : 100,
         nature: modal.querySelector('#details-nature-select').value, // 性格を追加
         ev: ev, // 努力値を追加
         boosts: boosts, // 能力ランクを追加

@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 
 from .party import Party
 from src.models.battle_model import BattleModel
-# from src.models.party_log_model import PartyLogModel
+from src.models.party_log_model import PartyLogModel
 from src.models.raw_battle_event_model import RawBattleEventModel
 
 
@@ -28,7 +28,7 @@ class BattleLog:
         opponent_rank: Optional[int] = None,
         result: Optional[str] = None,
         memo: Optional[str] = None,
-        parties: Optional[List[Party]] = None, # 相手パーティと自分パーティ
+        parties: Optional[List[PartyLogModel]] = None, # 相手パーティと自分パーティ
         events: Optional[List[RawBattleEventModel]] = None,
     ):
         self.battle_id = battle_id
@@ -79,7 +79,8 @@ class BattleLog:
         # ネストされたモデルの変換
         parties = []
         for party_data in data["parties"]:
-            parties.append(Party.from_dict(party_data))
+            for menber in party_data:
+                parties.append(PartyLogModel.from_dict(menber))
         
         events = []
         if "events" in data and data["events"]:
@@ -133,11 +134,11 @@ class BattleLog:
         # PartyLogやEventも保存
         for party_log in self.parties:
             party_log.battle_id = model.battle_id
+            party_log.pokemon_id = 0 # TODO
             db.session.add(party_log)
         
         for event in self.events:
             event.battle_id = model.battle_id
-            print(event)
             db.session.add(event)
 
         db.session.commit()
