@@ -78,25 +78,7 @@ export async function updatePokemonDatalists(pokemonName, pokemons) {
     }
 }
 
-
-document.addEventListener('DOMContentLoaded', () => {
-    const loadButton = document.getElementById('load-master-data-btn');
-    if (loadButton) {
-        loadButton.addEventListener('click', initFormSelects);
-    }
-});
-
 export async function initFormSelects() {
-    const button = document.getElementById('load-master-data-btn');
-    const spinner = button.querySelector('.spinner-border');
-    const icon = button.querySelector('.button-icon');
-    const text = button.querySelector('.button-text');
-
-    // --- 開始処理 ---
-    button.disabled = true;
-    spinner.classList.remove('d-none');
-    icon.classList.add('d-none');
-    text.textContent = '読込中...';
 
     const resources = {
         'pokemon-master-id': 'pokemons',
@@ -308,12 +290,6 @@ export async function initFormSelects() {
 
         console.log("フォームの選択肢を初期化しました。");
 
-        // --- 成功時のUI更新 ---
-        button.classList.remove('btn-secondary');
-        button.classList.add('btn-success');
-        text.textContent = '読込完了';
-        icon.className = 'button-icon bi bi-check-circle-fill'; // アイコンを変更
-
     } catch (error) {
         console.error("マスターデータの初期化に失敗しました:", error);
         alert("フォームの初期化に失敗しました。ページをリロードして再試行してください。");
@@ -325,9 +301,5 @@ export async function initFormSelects() {
         text.textContent = '再試行';
         icon.className = 'button-icon bi bi-exclamation-triangle-fill';
 
-    } finally {
-        // --- 終了処理 ---
-        spinner.classList.add('d-none');
-        icon.classList.remove('d-none');
     }
 }
