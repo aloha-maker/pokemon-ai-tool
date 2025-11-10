@@ -7,6 +7,7 @@ export class RealtimeAnalysis {
         this.socket = io();
         this.captureImage = document.getElementById('capture-image');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
+        this.confirmSelectionBtn = document.getElementById('confirm-selection-btn'); // 追加
         this.logOutput = document.getElementById('realtime-log-output');
         this.startCameraBtn = document.getElementById('start-camera-btn');
         this.startBattleBtn = document.getElementById('start-battle-btn');
@@ -23,6 +24,7 @@ export class RealtimeAnalysis {
         this.initSocketListeners();
         
         this.recognizePartyBtn?.addEventListener('click', () => this.handleRecognizeParty());
+        this.confirmSelectionBtn?.addEventListener('click', () => this.handleConfirmSelection());
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
         this.startBattleBtn?.addEventListener('click', () => this.handleStartBattle());
 
@@ -209,6 +211,16 @@ export class RealtimeAnalysis {
             console.log("Sending battle state to server on OCR start:", battleState, "with Battle ID:", battleId);
             this.socket.emit('start_ocr', battleState, battleId);
         }
+    }
+
+    handleConfirmSelection() {
+        console.log('選出完了',this.currentState);
+
+        if (this.currentState === 'running_camera_ocr') {
+            const battleState = this.gatherFullBattleState();
+            this.socket.emit('resume_ocr', battleState);
+        }
+        
     }
 
     async handleStartBattle() {

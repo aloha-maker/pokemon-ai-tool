@@ -22,7 +22,8 @@ class AppState:
             "last_updated": None,
             "battle_log" : None,
             "latest_events" : None,
-            "battle_state" : None
+            "battle_state" : None,
+            "ocr_processor" : None,
         }
 
         # カメラフレームをメモリ上で共有するためのデータとロック

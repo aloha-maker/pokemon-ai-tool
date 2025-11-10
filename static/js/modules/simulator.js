@@ -13,7 +13,7 @@ export class Simulator {
         this.party1Select = document.getElementById('sim-party1-id');
         this.party2Select = document.getElementById('sim-party2-id');
         this.startBtn = document.getElementById('start-simulation-btn');
-        this.confirmSelectionBtn = document.getElementById('confirm-selection-btn');
+        // this.confirmSelectionBtn = document.getElementById('confirm-selection-btn');
         this.nextTurnBtn = document.getElementById('next-turn-btn');
         this.logArea = document.getElementById('simulation-log-area');
         
@@ -37,9 +37,9 @@ export class Simulator {
             this.startBtn.addEventListener('click', () => this.handleStartSimulation());
         }
         
-        if (this.confirmSelectionBtn) {
-            this.confirmSelectionBtn.addEventListener('click', () => this.handleConfirmSelection());
-        }
+        // if (this.confirmSelectionBtn) {
+        //     this.confirmSelectionBtn.addEventListener('click', () => this.handleConfirmSelection());
+        // }
         
         if (this.nextTurnBtn) {
             this.nextTurnBtn.addEventListener('click', () => this.handleNextTurn());
@@ -99,42 +99,42 @@ export class Simulator {
         }
     }
 
-    async handleConfirmSelection() {
-        const party1List = document.getElementById('party1-selection-list');
-        const party2List = document.getElementById('party2-selection-list');
+    // async handleConfirmSelection() {
+    //     const party1List = document.getElementById('party1-selection-list');
+    //     const party2List = document.getElementById('party2-selection-list');
         
-        const selection1 = Array.from(party1List.querySelectorAll('input:checked')).map(cb => cb.value);
-        const selection2 = Array.from(party2List.querySelectorAll('input:checked')).map(cb => cb.value);
+    //     const selection1 = Array.from(party1List.querySelectorAll('input:checked')).map(cb => cb.value);
+    //     const selection2 = Array.from(party2List.querySelectorAll('input:checked')).map(cb => cb.value);
 
-        if (selection1.length !== 3 || selection2.length !== 3) {
-            alert('各パーティから3体のポケモンを選出してください。');
-            return;
-        }
+    //     if (selection1.length !== 3 || selection2.length !== 3) {
+    //         alert('各パーティから3体のポケモンを選出してください。');
+    //         return;
+    //     }
 
-        setButtonLoading(this.confirmSelectionBtn, true);
+    //     setButtonLoading(this.confirmSelectionBtn, true);
 
-        try {
-            const response = await fetch(`/api/simulations/${this.simulationId}/select`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ selection1, selection2 })
-            });
+    //     try {
+    //         const response = await fetch(`/api/simulations/${this.simulationId}/select`, {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ selection1, selection2 })
+    //         });
 
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || '選出の確定に失敗しました。');
-            }
+    //         if (!response.ok) {
+    //             const err = await response.json();
+    //             throw new Error(err.error || '選出の確定に失敗しました。');
+    //         }
 
-            const state = await response.json();
-            this.updateUI(state);
+    //         const state = await response.json();
+    //         this.updateUI(state);
 
-        } catch (error) {
-            console.error(error);
-            this.logArea.innerHTML = `<p class="text-danger">${error.message}</p>`;
-        } finally {
-            setButtonLoading(this.confirmSelectionBtn, false);
-        }
-    }
+    //     } catch (error) {
+    //         console.error(error);
+    //         this.logArea.innerHTML = `<p class="text-danger">${error.message}</p>`;
+    //     } finally {
+    //         setButtonLoading(this.confirmSelectionBtn, false);
+    //     }
+    // }
 
     async handleNextTurn() {
         setButtonLoading(this.nextTurnBtn, true);

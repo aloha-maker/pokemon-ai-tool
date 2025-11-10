@@ -20,34 +20,13 @@ from src.models.party_log_model import PartyLogModel
 
 from src.services.battle_state_updater_service import BattleStateUpdater
 
-def ocr_worker(socketio, state, tesseract_path, battle_state,battle_id):
+def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
     """
     バックグラウンドでOCRを定期的に実行するワーカー
     OCRProcessorを使用して高度なフェーズ管理とROI処理を行う
     """
-    print("OCRワーカーを開始します。")
-    
-    # 名前補正クラスとOCRプロセッサーの初期化（video.pyと同様）
-    try:
-        pokemon_corrector = PokemonNameCorrector(config.POKEMON_MASTER_PATH)
-        ability_corrector = AbilityNameCorrector(config.ABILITY_MASTER_PATH)
-        ocr_processor = OCRProcessor(pokemon_corrector, ability_corrector, tesseract_path=tesseract_path)
-        battle_log = BattleLog(
-            battle_id=battle_id,
-            season=34,
-            regulation='レギュレーションJ',
-            battle_format='シングル',
-            my_rank=0,
-            opponent_rank=0,
-        )
 
-        battle_state = BattleState.from_dict(battle_state)
-
-        print("✅ OCRProcessorの初期化が完了しました")
-    except Exception as e:
-        print(f"❌ OCRProcessorの初期化に失敗しました: {e}")
-        return
-
+    battle_state = BattleState.from_dict(battle_state)
     frame_count = 0
     
     while not state.background_thread_stop_event.is_set():
@@ -91,6 +70,7 @@ def ocr_worker(socketio, state, tesseract_path, battle_state,battle_id):
                         state.shared_game_state["battle_log"] = battle_log
                         state.shared_game_state["latest_events"] = battle_log.get_latest_sequence_events(as_dict=True)
                         state.shared_game_state["battle_state"] = battle_state_after
+                        state.shared_game_state["ocr_processor"] = ocr_processor
                     
                     # クライアントに状態更新を通知
                     socketio.emit('ocr_update', {
@@ -103,6 +83,7 @@ def ocr_worker(socketio, state, tesseract_path, battle_state,battle_id):
 
                     # 入力待ちなどの判断とする場合は一時停止
                     if ocr_processor.phase_manager.stop_flag == True:
+                        ocr_processor.phase_manager.stop_flag = False
                         print("🛑 フェーズが 'select' になったためOCRを一時停止します。")
                         break
                     
@@ -199,3 +180,37 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
         print(f"⚠️ 状態抽出エラー: {e}")
     
     return current_state, battle_log, battle_state
+
+
+def ocr_start(socketio, state, tesseract_path, battle_state,battle_id):
+    print("OCRワーカーを開始します。")
+    # 名前補正クラスとOCRプロセッサーの初期化（video.pyと同様）
+    try:
+        pokemon_corrector = PokemonNameCorrector(config.POKEMON_MASTER_PATH)
+        ability_corrector = AbilityNameCorrector(config.ABILITY_MASTER_PATH)
+        ocr_processor = OCRProcessor(pokemon_corrector, ability_corrector, tesseract_path=tesseract_path)
+        battle_log = BattleLog(
+                battle_id=battle_id,
+                season=34,
+                regulation='レギュレーションJ',
+                battle_format='シングル',
+                my_rank=0,
+                opponent_rank=0,
+            )
+        
+        print("✅ OCRProcessorの初期化が完了しました")
+    except Exception as e:
+        print(f"❌ OCRProcessorの初期化に失敗しました: {e}")
+        return
+
+    ocr_worker(socketio, state, battle_state,battle_log,ocr_processor)
+
+def ocr_resume(socketio, state, battle_state):
+    print("OCRワーカーを再開します。")
+    with state.game_state_lock:
+        battle_log = state.shared_game_state["battle_log"]
+        ocr_processor = state.shared_game_state["ocr_processor"]
+
+    ocr_worker(socketio, state, battle_state,battle_log,ocr_processor)
+
+    

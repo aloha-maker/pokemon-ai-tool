@@ -67,13 +67,6 @@ def register_socket_handlers(socketio):
     @socketio.on('start_ocr')
     def start_ocr(battle_state,battle_id):
         """クライアントからの要求でOCR処理のみを開始する"""
-        if current_app.state.ocr_thread and current_app.state.ocr_thread.is_alive():
-            print("既にOCRスレッドは実行中です。")
-            return
-        if not current_app.state.capture_thread or not current_app.state.capture_thread.is_alive():
-            print("OCR開始要求がありましたが、キャプチャが実行されていません。")
-            emit('analysis_stopped', {'error': 'OCRを開始するには、先にウィンドウかカメラの読み込みを開始してください。'})
-            return
         
         print("OCR処理の開始を要求されました。")
         
@@ -83,7 +76,7 @@ def register_socket_handlers(socketio):
         # Flaskアプリを取得して渡す
         app = current_app._get_current_object()
         app_state.ocr_thread = socketio.start_background_task(
-            target=ocr_worker_with_context,
+            target=ocr_starter_with_context,
             app=app,
             socketio=socketio,
             state=app_state,
@@ -92,6 +85,32 @@ def register_socket_handlers(socketio):
             battle_id=battle_id
         )
         emit('ocr_started')
+    
+    @socketio.on('resume_ocr')
+    def resume_ocr(battle_state):
+        """ユーザー入力後にOCRを再開する"""
+        app_state = current_app.state
+        tesseract_path = current_app.config.get('TESSERACT_PATH')
+
+        # shared_game_stateを更新（ユーザー入力内容を反映）
+        with app_state.game_state_lock:
+            app_state.shared_game_state["battle_state"] = battle_state
+
+        # イベントフラグをリセット
+        # app_state.background_thread_stop_event.clear()
+
+        # Flaskアプリを取得して新スレッドを起動
+        app = current_app._get_current_object()
+        app_state.ocr_thread = socketio.start_background_task(
+            target=ocr_ocr_resumer_with_context,
+            app=app,
+            socketio=socketio,
+            state=app_state,
+            tesseract_path=tesseract_path,
+            battle_state=battle_state
+        )
+
+        emit('ocr_resumed', {"message": "OCR再開しました"})
 
     @socketio.on('stop_analysis')
     def stop_analysis(data=None):
@@ -135,8 +154,15 @@ def register_socket_handlers(socketio):
         else:
             emit('suggestion_update', {"action": "待機", "reason": "盤面情報を取得中です..."})
 
-    def ocr_worker_with_context(app, socketio, state, tesseract_path, battle_state, battle_id):
+    def ocr_starter_with_context(app, socketio, state, tesseract_path, battle_state, battle_id):
         """アプリケーションコンテキスト付きでOCRワーカーを起動"""
         with app.app_context():
-            from src.workers.ocr import ocr_worker
-            ocr_worker(socketio, state, tesseract_path, battle_state, battle_id)
+            from src.workers.ocr import ocr_start
+            ocr_start(socketio, state, tesseract_path, battle_state, battle_id)
+
+
+    def ocr_ocr_resumer_with_context(app, socketio, state, tesseract_path, battle_state):
+        """アプリケーションコンテキスト付きでOCRワーカーを起動"""
+        with app.app_context():
+            from src.workers.ocr import ocr_resume
+            ocr_resume(socketio, state, battle_state)
