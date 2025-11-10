@@ -37,18 +37,16 @@ class OCRProcessor:
         self.current_battle_id = ""  # 追加
 
     def detect_phase(self, frame, width, height):
-        """現在のフェーズを判定（start画像マッチング削除版）"""
+        """現在のフェーズを判定"""
         # stayフェーズ: select ROIの検出
         if self.phase_manager.current_phase == "stay":
-            print(f"  🔍 stayフェーズ: select ROIを検出中...")
             match_result, max_val = self.image_matcher.match_single_image(
                 frame, 'select', SELECT_IMAGES_PATH, width, height
             )
             if match_result:
                 self.phase_manager.set_phase("select")
+                self.phase_manager.stop_flag = True
                 print(f"  🔄 フェーズ変更: stay → select (select ROI 閾値: {max_val:.3f})")
-            else:
-                print(f"  ⏭️ stayフェーズ継続: select ROI 検出失敗 (スコア: {max_val:.3f})")
         
         # selectフェーズ: my_pokemon_nameの有効読み取りでbattle.chooseへ
         elif self.phase_manager.current_phase == "select":

@@ -2,9 +2,10 @@
 class PhaseManager:
     def __init__(self):
         self.current_phase = "stay"
-        self.battle_sub_phase = "choose"
+        self.battle_sub_phase = "start"
         self.processed_rois = set()
         self.battle_flags = {}
+        self.stop_flag = False
     
     def should_process_roi(self, roi_name):
         """ROIが処理可能かチェック"""

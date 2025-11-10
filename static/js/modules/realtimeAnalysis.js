@@ -87,10 +87,27 @@ export class RealtimeAnalysis {
                 }
             }
 
-            if(data.phase_info['current_phase'] === 'battle' && data.phase_info['battle_sub_phase'] === 'choose') {
-                const battleState = this.gatherFullBattleState();
-                console.log("Sending full battle state for suggestion:", battleState);
-                this.socket.emit('get_suggestion', battleState);
+            const phase = data.phase_info['current_phase']
+            const sub_phase = data.phase_info['battle_sub_phase']
+
+            if(phase === 'stay') {
+                console.log('stay')
+            }else if(phase === 'select'){
+                // stay -> select に遷移した時
+                console.log('select')
+            }else if(phase === 'battle'){
+                console.log('battle')
+                if(sub_phase === 'choose'){
+                    console.log('choose')
+                    const battleState = this.gatherFullBattleState();
+                    console.log("Sending full battle state for suggestion:", battleState);
+                    this.socket.emit('get_suggestion', battleState);
+
+                }else if(sub_phase === 'act'){
+                    console.log('act')
+
+                }
+                
             }
         });
 
@@ -331,44 +348,44 @@ export class RealtimeAnalysis {
      */
     updateSideUI(containerId, sideData) {
         const displayContainer = document.getElementById(containerId + '-display');
-        if (!displayContainer) {
-            console.warn(`updateSideUI: Display container for #${containerId} not found.`);
-            return;
-        }
 
-        // アクティブなポケモンのUIを更新 (この部分は変更なし)
+        // アクティブなポケモンのUIを更新
         if (sideData.active) {
             const pokemon = sideData.active;
-            const activePokemonContainer = displayContainer.querySelector('.active-pokemon-display');
+            // const activePokemonContainer = displayContainer.querySelector('.my-active-pokemon');
 
-            if (activePokemonContainer) {
-                // ポケモン名
-                const nameEl = activePokemonContainer.querySelector('.pokemon-name');
-                if (nameEl) nameEl.textContent = pokemon.name || '---';
+            console.log('pokemon.name:',pokemon.name)
+            // ポケモン名
+            document.getElementById(containerId.substring(0, 2) + '-active-pokemon').value = pokemon.name
+
+            // if (activePokemonContainer) {
+            //     // ポケモン名
+            //     const nameEl = activePokemonContainer.querySelector('.my-active-pokemon');
+            //     if (nameEl) nameEl.textContent = pokemon.name || '---';
 
                 // HPバー
-                const hpBar = activePokemonContainer.querySelector('.hp-bar-inner');
-                if (hpBar) {
-                    const hpPercentage = (pokemon.max_hp > 0) ? (pokemon.current_hp / pokemon.max_hp) * 100 : 0;
-                    hpBar.style.width = `${hpPercentage}%`;
-                }
+                // const hpBar = activePokemonContainer.querySelector('.hp-bar-inner');
+                // if (hpBar) {
+                //     const hpPercentage = (pokemon.max_hp > 0) ? (pokemon.current_hp / pokemon.max_hp) * 100 : 0;
+                //     hpBar.style.width = `${hpPercentage}%`;
+                // }
 
                 // HPテキスト
-                const hpText = activePokemonContainer.querySelector('.hp-text');
-                if (hpText) hpText.textContent = (pokemon.current_hp !== null && pokemon.max_hp !== null) ? `${pokemon.current_hp} / ${pokemon.max_hp}` : 'HP';
+                // const hpText = activePokemonContainer.querySelector('.hp-text');
+                // if (hpText) hpText.textContent = (pokemon.current_hp !== null && pokemon.max_hp !== null) ? `${pokemon.current_hp} / ${pokemon.max_hp}` : 'HP';
 
                 // 状態異常アイコン
-                const statusIcon = activePokemonContainer.querySelector('.status-icon');
-                if (statusIcon) {
-                    if (pokemon.status) {
-                        statusIcon.src = `/static/ailment_icons/${pokemon.status}.png`;
-                        statusIcon.style.display = 'inline';
-                        statusIcon.title = pokemon.status;
-                    } else {
-                        statusIcon.style.display = 'none';
-                    }
-                }
-            }
+                // const statusIcon = activePokemonContainer.querySelector('.status-icon');
+                // if (statusIcon) {
+                //     if (pokemon.status) {
+                //         statusIcon.src = `/static/ailment_icons/${pokemon.status}.png`;
+                //         statusIcon.style.display = 'inline';
+                //         statusIcon.title = pokemon.status;
+                //     } else {
+                //         statusIcon.style.display = 'none';
+                //     }
+                // }
+            // }
         }
 
         // パーティ全体の情報を詳細に更新

@@ -69,7 +69,7 @@ def ocr_worker(socketio, state, tesseract_path, battle_state,battle_id):
                     height, width = frame_resized.shape[:2]
                     
                     # フェーズ検出
-                    phase_manager = ocr_processor.detect_phase(frame_resized, width, height)
+                    ocr_processor.detect_phase(frame_resized, width, height)
                     current_phase_info = ocr_processor.get_current_phase_info()
                     
                     # フェーズに応じたROI処理を実行
@@ -100,6 +100,11 @@ def ocr_worker(socketio, state, tesseract_path, battle_state,battle_id):
                         'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
                         'battle_state' : battle_state_after.to_dict()
                     })
+
+                    # 入力待ちなどの判断とする場合は一時停止
+                    if ocr_processor.phase_manager.stop_flag == True:
+                        print("🛑 フェーズが 'select' になったためOCRを一時停止します。")
+                        break
                     
                     if frame_count % 10 == 0:  # 10フレームごとにログ出力
                         print(f"📊 フレーム {frame_count}: フェーズ={current_phase_info['current_phase']}, 処理ROI数={processed_count}")
@@ -112,11 +117,6 @@ def ocr_worker(socketio, state, tesseract_path, battle_state,battle_id):
                 print(f"❌ OCRワーカーでエラーが発生しました: {e}")
                 import traceback
                 traceback.print_exc()
-        else:
-            # キャプチャが開始されるまで待機（初回のみメッセージ表示）
-            if frame_count == 0:
-                print("⏳ OCRワーカー: latest_frame.jpgを待機中...")
-            pass
 
         time.sleep(0.5)  # 0.5秒間隔でチェック（よりリアルタイムに）
 
