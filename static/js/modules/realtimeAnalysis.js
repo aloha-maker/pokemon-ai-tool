@@ -92,6 +92,16 @@ export class RealtimeAnalysis {
             const phase = data.phase_info['current_phase']
             const sub_phase = data.phase_info['battle_sub_phase']
 
+            // フェーズとサブフェーズのUIを更新
+            const phaseDisplay = document.getElementById('phase-display');
+            const subPhaseDisplay = document.getElementById('sub-phase-display');
+            if (phaseDisplay) {
+                phaseDisplay.value = phase || '';
+            }
+            if (subPhaseDisplay) {
+                subPhaseDisplay.value = sub_phase || '';
+            }
+
             if(phase === 'stay') {
                 console.log('stay')
             }else if(phase === 'select'){
@@ -214,13 +224,10 @@ export class RealtimeAnalysis {
     }
 
     handleConfirmSelection() {
-        console.log('選出完了',this.currentState);
-
         if (this.currentState === 'running_camera_ocr') {
             const battleState = this.gatherFullBattleState();
             this.socket.emit('resume_ocr', battleState);
         }
-        
     }
 
     async handleStartBattle() {
@@ -332,6 +339,7 @@ export class RealtimeAnalysis {
      * @param {object} battleState - サーバーから送信されたバトル状態オブジェクト。
      */
     updateUIWithBattleState(battleState) {
+
         if (!battleState) {
             console.warn("updateUIWithBattleState: battleState is null or undefined.");
             return;

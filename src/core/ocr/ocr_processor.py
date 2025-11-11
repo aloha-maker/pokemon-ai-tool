@@ -50,22 +50,27 @@ class OCRProcessor:
         
         # selectフェーズ: my_pokemon_nameの有効読み取りでbattle.chooseへ
         elif self.phase_manager.current_phase == "select":
-            print(f"  🔍 selectフェーズ: 自分のポケモン名を検出中...")
-            has_text, text, conf = self.ocr_processor.process_ocr_roi(
-                frame, 'my_pokemon_name', "", 0, "", width, height
+            print(f"  🔍 selectフェーズ: 自分のバトルカードを検出中...")
+            match_result, max_val = self.image_matcher.match_single_image(
+                frame, 'start', START_IMAGE, width, height
             )
-            
-            # 有効なポケモン名が読み取れた場合のみbattle.chooseへ遷移
-            if has_text and text and text.strip():
-                # 新しいポケモン名を記録
-                self.last_my_pokemon_name = text
-                self.phase_manager.set_phase("battle", "choose")
-                print(f"  🔄 フェーズ変更: select → battle.choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
-            else:
-                print(f"  ⏭️ selectフェーズ継続: 有効なポケモン名未検出 (テキスト: '{text if text else 'なし'}')")
+            if match_result:
+                self.phase_manager.set_phase("battle", "start")
+                print(f"  🔄 フェーズ変更: select → battle.start (select ROI 閾値: {max_val:.3f})")
         
         # battleフェーズ: サブフェーズ判定
         elif self.phase_manager.current_phase == "battle":
+            # startフェーズ: my_pokemon_nameの有効読み取りでbattle.chooseへ
+            if self.phase_manager.battle_sub_phase == "start":
+                print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
+                has_text, text, conf = self.ocr_processor.process_ocr_roi(
+                    frame, 'my_pokemon_name', "", 0, "", width, height
+                )
+                if has_text and text and text.strip():
+                    self.phase_manager.set_phase("battle", "choose")
+                    self.phase_manager.stop_flag = True
+                    print(f"  🔄 フェーズ変更: start → choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
+
             # chooseフェーズ: my_pokemon_nameの検出
             if self.phase_manager.battle_sub_phase == "choose":
                 print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
