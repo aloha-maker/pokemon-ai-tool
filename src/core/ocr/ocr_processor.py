@@ -50,26 +50,25 @@ class OCRProcessor:
         
         # selectフェーズ: my_pokemon_nameの有効読み取りでbattle.chooseへ
         elif self.phase_manager.current_phase == "select":
-            print(f"  🔍 selectフェーズ: 自分のバトルカードを検出中...")
             match_result, max_val = self.image_matcher.match_single_image(
                 frame, 'start', START_IMAGE, width, height
             )
             if match_result:
-                self.phase_manager.set_phase("battle", "start")
-                print(f"  🔄 フェーズ変更: select → battle.start (select ROI 閾値: {max_val:.3f})")
+                self.phase_manager.set_phase("battle", "act")
+                print(f"  🔄 フェーズ変更: select → battle.act (select ROI 閾値: {max_val:.3f})")
         
         # battleフェーズ: サブフェーズ判定
         elif self.phase_manager.current_phase == "battle":
-            # startフェーズ: my_pokemon_nameの有効読み取りでbattle.chooseへ
-            if self.phase_manager.battle_sub_phase == "start":
-                print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
-                has_text, text, conf = self.ocr_processor.process_ocr_roi(
-                    frame, 'my_pokemon_name', "", 0, "", width, height
-                )
-                if has_text and text and text.strip():
-                    self.phase_manager.set_phase("battle", "choose")
-                    self.phase_manager.stop_flag = True
-                    print(f"  🔄 フェーズ変更: start → choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
+            # # startフェーズ: my_pokemon_nameの有効読み取りでbattle.act
+            # if self.phase_manager.battle_sub_phase == "start":
+            #     print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
+            #     has_text, text, conf = self.ocr_processor.process_ocr_roi(
+            #         frame, 'my_pokemon_name', "", 0, "", width, height
+            #     )
+            #     if has_text and text and text.strip():
+            #         self.phase_manager.set_phase("battle", "choose")
+            #         self.phase_manager.stop_flag = True
+            #         print(f"  🔄 フェーズ変更: start → choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
 
             # chooseフェーズ: my_pokemon_nameの検出
             if self.phase_manager.battle_sub_phase == "choose":
@@ -100,14 +99,24 @@ class OCRProcessor:
                 if match_result:
                     self.phase_manager.set_phase("stay")
                     print(f"  🔄 フェーズ変更: battle.act → stay (win_lose 閾値: {max_val:.3f}, ファイル: {best_file})")
-                
-                # 新しい条件: 新しいポケモンが登場したらchooseに戻る
-                elif self._is_new_pokemon_appeared(frame, width, height):
+
+                # chooseフェーズ: my_pokemon_nameの検出
+                has_text, text, conf = self.ocr_processor.process_ocr_roi(
+                    frame, 'my_pokemon_name', "", 0, "", width, height
+                )
+                if has_text and text and text.strip():
                     self.phase_manager.set_phase("battle", "choose")
                     self.phase_manager.reset_battle_flags()
-                    print(f"  🔄 バトルサブフェーズ変更: act → choose (新しいポケモン登場)")
-                else:
-                    print(f"  ⏭️ battle.actフェーズ継続: 勝敗画面未検出 (最高スコア: {max_val:.3f})")
+                    self.phase_manager.stop_flag = True 
+                    print(f"  🔄 フェーズ変更: start → choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
+
+                # elif self._is_new_pokemon_appeared(frame, width, height):
+                #     self.phase_manager.set_phase("battle", "choose")
+                #     self.phase_manager.reset_battle_flags()
+                #     self.phase_manager.stop_flag = True
+                #     print(f"  🔄 バトルサブフェーズ変更: act → choose (新しいポケモン登場)")
+                # else:
+                #     print(f"  ⏭️ battle.actフェーズ継続: 勝敗画面未検出 (最高スコア: {max_val:.3f})")
         
         return self.phase_manager
 
@@ -276,3 +285,9 @@ class OCRProcessor:
         self.reset_phase()
         self.ocr_processor.last_my_pokemon_name = ""
         self.ocr_processor.last_opponent_pokemon_name = ""
+    
+    def set_pokemon_corrector(self, new_corrector):
+        """ポケモン名補正器を再設定"""
+        self.pokemon_corrector = new_corrector
+        self.ocr_processor.pokemon_corrector = new_corrector
+        print("✅ pokemon_corrector を再設定しました。")

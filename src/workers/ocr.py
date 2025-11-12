@@ -25,8 +25,6 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
     バックグラウンドでOCRを定期的に実行するワーカー
     OCRProcessorを使用して高度なフェーズ管理とROI処理を行う
     """
-
-    battle_state = BattleState.from_dict(battle_state)
     frame_count = 0
     
     while not state.background_thread_stop_event.is_set():
@@ -84,7 +82,7 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                     # 入力待ちなどの判断とする場合は一時停止
                     if ocr_processor.phase_manager.stop_flag == True:
                         ocr_processor.phase_manager.stop_flag = False
-                        print("🛑 フェーズが 'select' になったためOCRを一時停止します。")
+                        print("🛑 フェーズが 'select or choose' になったためOCRを一時停止します。")
                         break
                     
                     if frame_count % 10 == 0:  # 10フレームごとにログ出力
@@ -182,8 +180,9 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
     return current_state, battle_log, battle_state
 
 
-def ocr_start(socketio, state, tesseract_path, battle_state,battle_id):
+def ocr_start(socketio, state, tesseract_path, battle_state_dict,battle_id):
     print("OCRワーカーを開始します。")
+    battle_state = BattleState.from_dict(battle_state_dict)
     # 名前補正クラスとOCRプロセッサーの初期化（video.pyと同様）
     try:
         pokemon_corrector = PokemonNameCorrector(config.POKEMON_MASTER_PATH)
@@ -205,12 +204,19 @@ def ocr_start(socketio, state, tesseract_path, battle_state,battle_id):
 
     ocr_worker(socketio, state, battle_state,battle_log,ocr_processor)
 
-def ocr_resume(socketio, state, battle_state):
+def ocr_resume(socketio, state, battle_state_dict):
     print("OCRワーカーを再開します。")
+    battle_state = BattleState.from_dict(battle_state_dict)
+    # お互いのポケモン名を設定
+    my_party = [pokemon.name for pokemon in battle_state.side1.team.members]
+    opponent_party = [pokemon.name for pokemon in battle_state.side2.team.members]
+    pokemons = my_party + opponent_party
+    pokemon_corrector = PokemonNameCorrector(name_list=pokemons)
+
     with state.game_state_lock:
         battle_log = state.shared_game_state["battle_log"]
         ocr_processor = state.shared_game_state["ocr_processor"]
 
-    ocr_worker(socketio, state, battle_state,battle_log,ocr_processor)
+    ocr_processor.set_pokemon_corrector(pokemon_corrector)
 
-    
+    ocr_worker(socketio, state, battle_state,battle_log,ocr_processor)

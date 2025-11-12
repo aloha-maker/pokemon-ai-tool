@@ -347,12 +347,12 @@ export class RealtimeAnalysis {
 
         // side1 (自分側) のデータを更新
         if (battleState.side1) {
-            this.updateSideUI('my-party', battleState.side1);
+            this.updateSideUI('my', battleState.side1);
         }
 
         // side2 (相手側) のデータを更新
         if (battleState.side2) {
-            this.updateSideUI('opponent-party', battleState.side2);
+            this.updateSideUI('opponent', battleState.side2);
         }
 
         // フィールドの状態を更新
@@ -367,7 +367,7 @@ export class RealtimeAnalysis {
      * @param {object} sideData - BattleSideのデータ。
      */
     updateSideUI(containerId, sideData) {
-        const displayContainer = document.getElementById(containerId + '-display');
+        const displayContainer = document.getElementById(containerId + '-party-display');
 
         // アクティブなポケモンのUIを更新
         if (sideData.active) {
@@ -376,7 +376,7 @@ export class RealtimeAnalysis {
 
             console.log('pokemon.name:',pokemon.name)
             // ポケモン名
-            document.getElementById(containerId.substring(0, 2) + '-active-pokemon').value = pokemon.name
+            document.getElementById(containerId + '-active-pokemon').value = pokemon.name
 
             // if (activePokemonContainer) {
             //     // ポケモン名

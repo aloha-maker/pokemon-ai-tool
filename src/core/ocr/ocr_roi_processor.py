@@ -135,11 +135,11 @@ class OCRROIProcessor(BaseROIProcessor):
                 output_type=pytesseract.Output.DICT
             )
 
-            # 確信度が0以上のテキストのみ抽出
+            # 確信度が0以上のテキストのみ抽出:確信度は0~100
             text_parts = []
             confidences = []
             for i, conf in enumerate(data['conf']):
-                if int(conf) > 0 and data['text'][i].strip():
+                if int(conf) > 20 and data['text'][i].strip():
                     text_parts.append(data['text'][i].strip())
                     confidences.append(float(conf))
 
@@ -252,13 +252,13 @@ class OCRROIProcessor(BaseROIProcessor):
             "confidence": confidence
         }
 
-        # 画像保存
-        image_path = self.save_roi_image(roi_img, roi_name, video_name, frame_idx, short_hash)
-        if not image_path:
-            return False, "", confidence
+        # # 画像保存
+        # image_path = self.save_roi_image(roi_img, roi_name, video_name, frame_idx, short_hash)
+        # if not image_path:
+        #     return False, "", confidence
 
-        # テキスト保存
-        self.save_roi_text(roi_name, video_name, frame_idx, short_hash, final_text)
+        # # テキスト保存
+        # self.save_roi_text(roi_name, video_name, frame_idx, short_hash, final_text)
 
         print(f"📝 {roi_name}_{frame_idx:06d}: '{final_text}' (OCR信頼度: 最大{confidence['max']:.1f}, 平均{confidence['avg']:.1f})")
         return True, final_text, confidence
