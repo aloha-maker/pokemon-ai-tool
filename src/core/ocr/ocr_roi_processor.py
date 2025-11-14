@@ -135,13 +135,15 @@ class OCRROIProcessor(BaseROIProcessor):
                 output_type=pytesseract.Output.DICT
             )
 
-            # 確信度が0以上のテキストのみ抽出:確信度は0~100
+            # 確信度が30以上のテキストのみ抽出:確信度は0~100
             text_parts = []
             confidences = []
             for i, conf in enumerate(data['conf']):
-                if int(conf) > 20 and data['text'][i].strip():
+                if int(conf) > 30 and data['text'][i].strip():
                     text_parts.append(data['text'][i].strip())
                     confidences.append(float(conf))
+                else:
+                    print("❌️確信度が30以下：",int(conf),roi_name)
 
             text = " ".join(text_parts)
             text = self.clean_text(text)

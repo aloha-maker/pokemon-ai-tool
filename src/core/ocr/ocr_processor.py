@@ -59,19 +59,10 @@ class OCRProcessor:
         
         # battleフェーズ: サブフェーズ判定
         elif self.phase_manager.current_phase == "battle":
-            # # startフェーズ: my_pokemon_nameの有効読み取りでbattle.act
-            # if self.phase_manager.battle_sub_phase == "start":
-            #     print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
-            #     has_text, text, conf = self.ocr_processor.process_ocr_roi(
-            #         frame, 'my_pokemon_name', "", 0, "", width, height
-            #     )
-            #     if has_text and text and text.strip():
-            #         self.phase_manager.set_phase("battle", "choose")
-            #         self.phase_manager.stop_flag = True
-            #         print(f"  🔄 フェーズ変更: start → choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
 
             # chooseフェーズ: my_pokemon_nameの検出
             if self.phase_manager.battle_sub_phase == "choose":
+                # TODO：if has_text and text and text.strip()がTRUEの場合は何もしない
                 print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
                 has_text, text, conf = self.ocr_processor.process_ocr_roi(
                     frame, 'my_pokemon_name', "", 0, "", width, height
@@ -108,16 +99,7 @@ class OCRProcessor:
                     self.phase_manager.set_phase("battle", "choose")
                     self.phase_manager.reset_battle_flags()
                     self.phase_manager.stop_flag = True 
-                    print(f"  🔄 フェーズ変更: start → choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
-
-                # elif self._is_new_pokemon_appeared(frame, width, height):
-                #     self.phase_manager.set_phase("battle", "choose")
-                #     self.phase_manager.reset_battle_flags()
-                #     self.phase_manager.stop_flag = True
-                #     print(f"  🔄 バトルサブフェーズ変更: act → choose (新しいポケモン登場)")
-                # else:
-                #     print(f"  ⏭️ battle.actフェーズ継続: 勝敗画面未検出 (最高スコア: {max_val:.3f})")
-        
+                    print(f"  🔄 フェーズ変更: act → choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
         return self.phase_manager
 
     def _is_new_pokemon_appeared(self, frame, width, height):

@@ -7,7 +7,8 @@ export class RealtimeAnalysis {
         this.socket = io();
         this.captureImage = document.getElementById('capture-image');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
-        this.confirmSelectionBtn = document.getElementById('confirm-selection-btn'); // 追加
+        this.confirmSelectionBtn = document.getElementById('confirm-selection-btn');
+        this.completeSelectionBtn = document.getElementById('complete-selection-btn');
         this.logOutput = document.getElementById('realtime-log-output');
         this.startCameraBtn = document.getElementById('start-camera-btn');
         this.startBattleBtn = document.getElementById('start-battle-btn');
@@ -25,6 +26,7 @@ export class RealtimeAnalysis {
         
         this.recognizePartyBtn?.addEventListener('click', () => this.handleRecognizeParty());
         this.confirmSelectionBtn?.addEventListener('click', () => this.handleConfirmSelection());
+        this.completeSelectionBtn?.addEventListener('click', () => this.handleConfirmSelection());
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
         this.startBattleBtn?.addEventListener('click', () => this.handleStartBattle());
 

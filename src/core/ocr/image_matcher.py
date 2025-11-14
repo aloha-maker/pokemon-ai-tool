@@ -40,10 +40,6 @@ class ImageMatcher:
         
         max_val = self.calculate_match_score(roi_img, template)
         
-        # 閾値ログ出力
-        status = "✅" if max_val >= threshold else "❌"
-        print(f"  {status} {roi_name} 画像マッチング: {max_val:.3f} (閾値: {threshold})")
-        
         return max_val >= threshold, max_val
     
     def match_multiple_images(self, frame, roi_name, template_dir, width, height, threshold=0.8):
