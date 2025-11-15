@@ -122,9 +122,14 @@ export class RealtimeAnalysis {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(battleState),
                     });
-                    console.log('Suggestion received:', response);
+                    
                     const jsonResponse = await response.json();
-                    this.displaySuggestion(jsonResponse);
+                    console.log('Suggestion received:', jsonResponse);
+                    this.displaySuggestion(jsonResponse.recommendation);
+
+                    if (this.predictionManager && jsonResponse.damage_calcs) {
+                        this.predictionManager.displayDamageCalculations(jsonResponse.damage_calcs);
+                    }
 
                 }else if(sub_phase === 'act'){
                     console.log('act')

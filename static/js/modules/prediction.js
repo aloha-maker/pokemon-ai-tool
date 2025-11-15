@@ -168,173 +168,93 @@ export class PredictionManager {
             const pokemonInput = slot.querySelector('.pokemon-input');
 
                         // ポケモン名入力イベントでアイコンを更新 (自・相手共通)
-
                         if (pokemonInput && img) {
-
                             const updateIcon = () => {
-
                                 const pokemonName = pokemonInput.value.trim();
-
                                 if (pokemonName) {
-
                                     img.src = `/static/pokemon_icons/${pokemonName}.png`;
-
                                     // 画像の読み込みに失敗した場合のフォールバック
-
                                     img.onerror = () => {
-
                                         img.src = `https://placehold.co/96x96/333/ccc?text=?`;
-
                                         img.onerror = null; // エラーハンドラを一度きりにする
-
                                     };
 
                                 } else {
-
                                     const placeholderIndex = index + 1;
-
                                     img.src = `https://placehold.co/96x96/333/ccc?text=P${placeholderIndex}`;
 
                                 }
-
                                 this.updateActivePokemonSelectors(); // 追加: activeポケモンセレクタを更新
 
                             };
 
-            
-
-                            pokemonInput.addEventListener('change', updateIcon);
-
-            
+                            pokemonInput.addEventListener('change', updateIcon);    
 
                             // 初期値がある場合に備えて、イベントを発火
-
                             if (pokemonInput.value) {
-
                                 updateIcon();
-
                             }
-
                         }
 
-            
-
                         // 持ち物入力イベントでアイコンを更新
-
                         const itemInput = slot.querySelector('.item-input');
-
                         const itemIcon = slot.querySelector('.item-icon');
-
                         if (itemInput && itemIcon) {
-
                             const updateItemIcon = () => {
-
                                 const itemName = itemInput.value.trim();
-
                                 if (itemName) {
-
                                     itemIcon.src = `/static/item_icons/${itemName}.png`;
-
                                     itemIcon.onerror = () => {
-
                                         itemIcon.src = `https://placehold.co/24x24/333/ccc?text=?`;
-
                                         itemIcon.onerror = null;
-
                                     };
 
                                 } else {
-
                                     itemIcon.src = `https://placehold.co/24x24/333/ccc?text=?`;
-
                                 }
-
                             };
 
                             itemInput.addEventListener('change', updateItemIcon);
 
                             // 初期値がある場合に備えてイベントを発火
-
                             if (itemInput.value) {
-
                                 updateItemIcon();
-
                             }
-
                         }
-
-            
-
-            
 
                         // --- 1. 選出/先発のクリック処理 ---
-
                         if (img) {
-
                             img.style.cursor = 'pointer';
-
                             img.dataset.clickState = '0';
-
                             img.addEventListener('click', () => {
-
                                 const currentState = parseInt(img.dataset.clickState, 10);
-
                                 let nextState;
-
-            
-
                                 if (currentState === 0) { // 未選択 -> 選択
-
                                     nextState = 1;
-
                                     img.classList.add('pokemon-selected');
-
                                     if (icon) icon.classList.add('d-none');
-
                                 } else if (currentState === 1) { // 選択 -> 選択+先発
-
                                     nextState = 2;
-
                                     img.classList.add('pokemon-selected');
-
                                     if (icon) icon.classList.remove('d-none');
-
                                 } else { // 選択+先発 -> 未選択
-
                                     nextState = 0;
-
                                     img.classList.remove('pokemon-selected');
-
                                     if (icon) icon.classList.add('d-none');
-
                                 }
-
                                 img.dataset.clickState = nextState.toString();
-
                             });
-
                         }
 
-            
-
                         // --- 2. HPバーのドラッグ処理 ---
-
                         if (hpBarContainer) {
-
                             const updateHpDisplay = (hpPercentage) => {
-
                                 if (hpBar) {
-
                                     hpBar.style.width = `${hpPercentage}%`;
-
                                     hpBar.setAttribute('aria-valuenow', hpPercentage);
-
                                     hpBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
-
                                     if (hpPercentage > 50) {
-
                                         hpBar.classList.add('bg-success');
-
                                     } else if (hpPercentage > 20) {
 
                                         hpBar.classList.add('bg-warning');
@@ -407,22 +327,14 @@ export class PredictionManager {
 
                     const opponentActiveSelect = document.getElementById('opponent-active-pokemon');
 
-            
-
                     // セレクタをクリア
-
                     myActiveSelect.innerHTML = '<option value="">選択なし</option>';
-
                     opponentActiveSelect.innerHTML = '<option value="">選択なし</option>';
 
-            
-
                     // 自分のパーティのポケモンを取得して追加
-
                     const myPartyInputs = document.querySelectorAll('#my-party-display .pokemon-input');
 
                     myPartyInputs.forEach(input => {
-
                         const pokemonName = input.value.trim();
 
                         if (pokemonName) {
@@ -442,7 +354,6 @@ export class PredictionManager {
             
 
                     // 相手のパーティのポケモンを取得して追加
-
                     const opponentPartyInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
 
                     opponentPartyInputs.forEach(input => {
