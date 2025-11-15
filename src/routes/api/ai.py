@@ -55,7 +55,10 @@ def get_suggestion():
     # 攻撃側のアクティブポケモンが持つ全技について、相手チーム全員に対するダメージをシミュレーションする。
     damage_calculator = DamageCalculator()
     damage_calcs = damage_calculator.simulate_team_damage(battle_state)
-    results['damage_calcs'] = damage_calcs
+    results['damage_calcs'] = {'my_to_opponent' : damage_calcs,
+        'opponent_to_my' : {}
+        }
+
 
     # AIモデルで行動を予測　TODO
     # model = ActionAIModel(app_state=current_app.state)

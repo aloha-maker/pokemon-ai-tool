@@ -417,4 +417,86 @@ export class PredictionManager {
 
         container.innerHTML = html;
     }
+
+    displayDamageCalculations(damageData) {
+        const myToOpponentContainer = document.getElementById('self-to-opponent-damage-cards');
+        const opponentToMyContainer = document.getElementById('opponent-to-self-damage-cards');
+
+        if (!myToOpponentContainer || !opponentToMyContainer) {
+            console.error('Damage calculation containers not found.');
+            return;
+        }
+
+        const createDamageCardsHtml = (damageDict) => {
+            if (!damageDict || Object.keys(damageDict).length === 0) {
+                return '<p class="text-white-50 small">計算データがありません。</p>';
+            }
+
+            let html = '';
+            for (const [moveName, defendersData] of Object.entries(damageDict)) {
+                for (const [defenderName, calc] of Object.entries(defendersData)) {
+                    const minPercent = calc.percent_min;
+                    const maxPercent = calc.percent_max;
+
+                    let hitsToKO = '---';
+                    if (minPercent > 0) {
+                        const hits = Math.ceil(100 / minPercent);
+                        if (hits === 1) {
+                            hitsToKO = '確定1発';
+                        } else if (hits <= 4) {
+                            hitsToKO = `確定${hits}発`;
+                        } else {
+                            const randomHits = Math.ceil(100 / maxPercent);
+                            if (randomHits > 0 && randomHits <= 4) {
+                                hitsToKO = `乱数${randomHits}発`;
+                            }
+                        }
+                    }
+
+                    let effectivenessBadge = '';
+                    if (calc.effectiveness > 1) {
+                        effectivenessBadge = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">ばつぐん</span>`;
+                    } else if (calc.effectiveness < 1 && calc.effectiveness > 0) {
+                        effectivenessBadge = `<span class="badge bg-danger-subtle text-danger-emphasis rounded-pill">いまひとつ</span>`;
+                    } else if (calc.effectiveness === 0) {
+                        effectivenessBadge = `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">効果なし</span>`;
+                    }
+
+                    html += `
+                        <div class="card glass-card-sm mb-2">
+                            <div class="card-body p-2">
+                                <h6 class="card-title text-white mb-1">${escapeHTML(moveName)} (${escapeHTML(defenderName)})</h6>
+                                <p class="card-text mb-1">${minPercent}% ~ ${maxPercent}% (${hitsToKO})</p>
+                                ${effectivenessBadge}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            return html;
+        };
+        
+        // 自分 -> 相手
+        myToOpponentContainer.innerHTML = '<h6 class="text-white mb-2">自分 → 相手</h6>';
+        if (damageData && damageData.my_to_opponent) {
+            myToOpponentContainer.innerHTML += createDamageCardsHtml(damageData.my_to_opponent);
+        } else {
+            myToOpponentContainer.innerHTML += '<p class="text-white-50 small">計算データがありません。</p>';
+        }
+
+        // 相手 -> 自分
+        opponentToMyContainer.innerHTML = '<h6 class="text-white mb-2">相手 → 自分</h6>';
+        if (damageData && damageData.opponent_to_my) {
+            opponentToMyContainer.innerHTML += createDamageCardsHtml(damageData.opponent_to_my);
+        } else {
+            opponentToMyContainer.innerHTML += '<p class="text-white-50 small">計算データがありません。</p>';
+        }
+
+        // 戦況分析タブをアクティブにする
+        const analysisTab = document.getElementById('battle-analysis-tab');
+        if (analysisTab) {
+            const tab = new bootstrap.Tab(analysisTab);
+            tab.show();
+        }
+    }
 }
