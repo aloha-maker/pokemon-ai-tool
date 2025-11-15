@@ -1,10 +1,12 @@
 import { escapeHTML } from './utils.js';
+import { PredictionManager } from './prediction.js';
 import { createBattleState } from '../collectors/BattleState.js';
 import { gatherSideDataAsJson } from '../collectors/pokemonDataCollector.js';
 
 export class RealtimeAnalysis {
-    constructor() {
+    constructor(pokemonDetailEditor) {
         this.socket = io();
+        this.pokemonDetailEditor = pokemonDetailEditor;
         this.captureImage = document.getElementById('capture-image');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
         this.confirmSelectionBtn = document.getElementById('confirm-selection-btn');
@@ -16,6 +18,7 @@ export class RealtimeAnalysis {
         this.logBuffer = [];
         this.sequence = 0;
         this.partySaver = null;
+        this.predictionManager = new PredictionManager();
         
         this.init();
     }
@@ -128,6 +131,7 @@ export class RealtimeAnalysis {
                     this.displaySuggestion(jsonResponse.recommendation);
 
                     if (this.predictionManager && jsonResponse.damage_calcs) {
+                        console.log('ここ')
                         this.predictionManager.displayDamageCalculations(jsonResponse.damage_calcs);
                     }
 
@@ -150,9 +154,10 @@ export class RealtimeAnalysis {
     }
 
     gatherFullBattleState() {
-        console.log("Gathering full battle state...");
-        const side1Data = gatherSideDataAsJson('my-party');
-        const side2Data = gatherSideDataAsJson('opponent-party');
+        const detailedStates = this.pokemonDetailEditor.getState();
+        console.log("Gathering full battle state...",detailedStates);
+        const side1Data = gatherSideDataAsJson('my-party',detailedStates);
+        const side2Data = gatherSideDataAsJson('opponent-party',detailedStates);
         return createBattleState({ side1: side1Data, side2: side2Data });
     }
 
@@ -394,7 +399,7 @@ export class RealtimeAnalysis {
             const pokemon = sideData.active;
             // const activePokemonContainer = displayContainer.querySelector('.my-active-pokemon');
 
-            console.log('pokemon.name:',pokemon.name)
+            // console.log('pokemon.name:',pokemon.name)
             // ポケモン名
             document.getElementById(containerId + '-active-pokemon').value = pokemon.name
 

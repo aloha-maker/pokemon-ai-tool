@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     new DashboardManager();
     new PartyGenerator();
     new PredictionManager();
-    const realtimeAnalysis = new RealtimeAnalysis();
     new VideoAnalysis();
     new ROIEditor();
     new TrainedPokemonManager();
@@ -27,7 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     new Calculator();
     new Simulator();
     const pokemonDetailEditor = new PokemonDetailEditor();
-    const partySaver = new PartySaver(realtimeAnalysis, pokemonDetailEditor);
+    const realtimeAnalysis = new RealtimeAnalysis(pokemonDetailEditor);
+    const partySaver = new PartySaver(realtimeAnalysis);
     
     // フォーム選択肢の初期化はボタンクリック時に行う
     initFormSelects();

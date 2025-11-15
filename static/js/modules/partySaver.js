@@ -1,7 +1,7 @@
 export class PartySaver {
-    constructor(realtimeAnalysis, pokemonDetailEditor) {
-        this.realtimeAnalysis = realtimeAnalysis; // インスタンスを保持
-        this.pokemonDetailEditor = pokemonDetailEditor; // インスタンスを保持
+    constructor(realtimeAnalysis) {
+        this.realtimeAnalysis = realtimeAnalysis;
+        this.pokemonDetailEditor = realtimeAnalysis.pokemonDetailEditor;
         this.savePartyBtn = document.getElementById('save-party-button');
         this.resultModalEl = document.getElementById('result-modal');
         this.resultModal = this.resultModalEl ? new bootstrap.Modal(this.resultModalEl) : null;

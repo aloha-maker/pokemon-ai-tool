@@ -256,75 +256,46 @@ export class PredictionManager {
                                     if (hpPercentage > 50) {
                                         hpBar.classList.add('bg-success');
                                     } else if (hpPercentage > 20) {
-
                                         hpBar.classList.add('bg-warning');
-
                                     } else {
-
                                         hpBar.classList.add('bg-danger');
-
                                     }
-
                                 }
 
                                 if (hpText) {
-
                                     hpText.textContent = `${hpPercentage}%`;
-
                                 }
 
                                 if (img) {
-
                                     if (hpPercentage === 0) {
-
                                         img.classList.add('grayscale');
-
                                     } else {
-
                                         img.classList.remove('grayscale');
-
                                     }
-
                                 }
-
                             };
 
-            
-
                             hpBarContainer.addEventListener('mousedown', (e) => {
-
                                 this.activeDragBar = hpBarContainer;
-
                                 this.updateHpDisplayCallback = updateHpDisplay;
 
-                                
-
                                 const rect = this.activeDragBar.getBoundingClientRect();
-
                                 let newWidth = e.clientX - rect.left;
-
                                 let percentage = Math.round((newWidth / rect.width) * 100);
-
                                 percentage = Math.max(0, Math.min(100, percentage));
-
                                 this.updateHpDisplayCallback(percentage);
-
                             });
-
                         }
 
                     });
 
                     this.updateActivePokemonSelectors(); // 初期表示時にも更新
-
                 }
 
                 
 
                 updateActivePokemonSelectors() {
-
                     const myActiveSelect = document.getElementById('my-active-pokemon');
-
                     const opponentActiveSelect = document.getElementById('opponent-active-pokemon');
 
                     // セレクタをクリア
@@ -338,15 +309,10 @@ export class PredictionManager {
                         const pokemonName = input.value.trim();
 
                         if (pokemonName) {
-
                             const option = document.createElement('option');
-
                             option.value = pokemonName;
-
                             option.textContent = pokemonName;
-
                             myActiveSelect.appendChild(option);
-
                         }
 
                     });
@@ -361,17 +327,11 @@ export class PredictionManager {
                         const pokemonName = input.value.trim();
 
                         if (pokemonName) {
-
                             const option = document.createElement('option');
-
                             option.value = pokemonName;
-
                             option.textContent = pokemonName;
-
                             opponentActiveSelect.appendChild(option);
-
                         }
-
                     });
 
                 }
