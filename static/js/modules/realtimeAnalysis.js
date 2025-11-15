@@ -117,11 +117,16 @@ export class RealtimeAnalysis {
                     console.log("Sending full battle state for suggestion:", battleState);
                     this.socket.emit('get_suggestion', battleState);
 
+                    // const response = await fetch('/api/parties');
                 }else if(sub_phase === 'act'){
                     console.log('act')
-
                 }
-                
+            }
+
+            // バトルが終わったらログ情報をDBに保存
+            if(data.result !== 'unknown'){
+                console.log(data.result,'バトルログを保存します。')
+                this.partySaver.saveBattleResult(data.result)
             }
         });
 

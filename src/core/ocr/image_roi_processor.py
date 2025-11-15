@@ -54,18 +54,18 @@ class ImageROIProcessor(BaseROIProcessor):
             return False, max_val
         
         # ROI画像を抽出
-        roi_img = self.extract_roi_image(frame, roi_name, width, height)
-        if roi_img is None:
-            return False, max_val
+        # roi_img = self.extract_roi_image(frame, roi_name, width, height)
+        # if roi_img is None:
+        #     return False, max_val
         
         # 画像保存
-        image_path = self.save_roi_image(roi_img, roi_name, video_name, frame_idx, short_hash)
-        if not image_path:
-            return False, max_val
+        # image_path = self.save_roi_image(roi_img, roi_name, video_name, frame_idx, short_hash)
+        # if not image_path:
+        #     return False, max_val
         
         # テキスト保存（ファイル名からwin/loseを判定）
         result_text = os.path.splitext(best_match_file)[0]
         self.save_roi_text(roi_name, video_name, frame_idx, short_hash, result_text)
         
-        print(f"✅ {roi_name}_{frame_idx:06d}: '{result_text}' (マッチング: {max_val:.3f})")
-        return True, max_val
+        # print(f"✅ {roi_name}_{frame_idx:06d}: '{result_text}' (マッチング: {max_val:.3f})")
+        return True, max_val,best_match_file

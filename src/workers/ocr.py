@@ -59,10 +59,10 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                     )
                     
                     # 解析結果を取得
-                    current_state, battle_log, battle_state_after = _extract_state_from_ocr_processor(ocr_processor, current_phase_info, battle_log, frame_count, battle_state)
+                    battle_log, battle_state_after = _extract_state_from_ocr_processor(ocr_processor, current_phase_info, battle_log, frame_count, battle_state)
                     
                     with state.game_state_lock:
-                        state.shared_game_state["state"] = current_state
+                        # state.shared_game_state["state"] = current_state
                         state.shared_game_state["last_updated"] = time.time()
                         state.shared_game_state["phase_info"] = current_phase_info
                         state.shared_game_state["battle_log"] = battle_log
@@ -72,11 +72,12 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                     
                     # クライアントに状態更新を通知
                     socketio.emit('ocr_update', {
-                        'state': current_state,
+                        # 'state': current_state,
                         'phase_info': current_phase_info,
                         'processed_count': processed_count,
                         'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
-                        'battle_state' : battle_state_after.to_dict()
+                        'battle_state' : battle_state_after.to_dict(),
+                        'result' : battle_log.result
                     })
 
                     # 入力待ちなどの判断とする場合は一時停止
@@ -105,36 +106,36 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
     """
     OCRProcessorの内部状態からゲーム状態を抽出する
     """
-    current_state = {
-        'game_text': '',
-        'my_pokemon_1_name': '',
-        'my_pokemon_1_hp_percent': None,
-        'opponent_pokemon_1_name': '',
-        'opponent_pokemon_1_hp_percent': None,
-        'phase': phase_info['current_phase'],
-        'battle_sub_phase': phase_info.get('battle_sub_phase', ''),
-        'battle_id': '',
-        'triggered_ability': '',
-        'field_effects': None,
-        'raw_ocr_result': {}
-    }
+    # current_state = {
+    #     'game_text': '',
+    #     'my_pokemon_1_name': '',
+    #     'my_pokemon_1_hp_percent': None,
+    #     'opponent_pokemon_1_name': '',
+    #     'opponent_pokemon_1_hp_percent': None,
+    #     'phase': phase_info['current_phase'],
+    #     'battle_sub_phase': phase_info.get('battle_sub_phase', ''),
+    #     'battle_id': '',
+    #     'triggered_ability': '',
+    #     'field_effects': None,
+    #     'raw_ocr_result': {}
+    # }
     
     try:
-        # 自分のポケモン名
-        if hasattr(ocr_processor, 'last_my_pokemon_name') and ocr_processor.last_my_pokemon_name:
-            current_state['my_pokemon_1_name'] = ocr_processor.last_my_pokemon_name
+        # # 自分のポケモン名
+        # if hasattr(ocr_processor, 'last_my_pokemon_name') and ocr_processor.last_my_pokemon_name:
+        #     current_state['my_pokemon_1_name'] = ocr_processor.last_my_pokemon_name
         
-        # 相手のポケモン名  
-        if hasattr(ocr_processor, 'last_opponent_pokemon_name') and ocr_processor.last_opponent_pokemon_name:
-            current_state['opponent_pokemon_1_name'] = ocr_processor.last_opponent_pokemon_name
+        # # 相手のポケモン名  
+        # if hasattr(ocr_processor, 'last_opponent_pokemon_name') and ocr_processor.last_opponent_pokemon_name:
+        #     current_state['opponent_pokemon_1_name'] = ocr_processor.last_opponent_pokemon_name
             
         # バトルID
-        if hasattr(ocr_processor, 'current_battle_id') and ocr_processor.current_battle_id:
-            current_state['battle_id'] = ocr_processor.current_battle_id
+        # if hasattr(ocr_processor, 'current_battle_id') and ocr_processor.current_battle_id:
+        #     current_state['battle_id'] = ocr_processor.current_battle_id
             
         # OCRプロセッサーから直接OCR結果を取得
         raw_results = ocr_processor.ocr_processor.last_ocr_results
-        current_state['raw_ocr_result'] = raw_results
+        # current_state['raw_ocr_result'] = raw_results
         
         # ライブコメントなどのテキスト情報を抽出
         game_text_parts = []
@@ -142,8 +143,8 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
             if roi_name in raw_results and raw_results[roi_name].get('text'):
                 game_text_parts.append(raw_results[roi_name]['text'])
         
-        if game_text_parts:
-            current_state['game_text'] = ' '.join(game_text_parts)
+        # if game_text_parts:
+        #     current_state['game_text'] = ' '.join(game_text_parts)
             
         # 特性情報を抽出
         ability_parts = []
@@ -151,8 +152,8 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
             if roi_name in raw_results and raw_results[roi_name].get('text'):
                 ability_parts.append(raw_results[roi_name]['text'])
         
-        if ability_parts:
-            current_state['triggered_ability'] = ' '.join(ability_parts)
+        # if ability_parts:
+        #     current_state['triggered_ability'] = ' '.join(ability_parts)
 
         
         # RawBattleEventModelにセット
@@ -169,6 +170,9 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
         # battle_logにセット
         battle_log.events = raw_battle_event_model_list
 
+        # win/lose
+        battle_log.result = ocr_processor.result
+
         # battle_stateを最新化する
         updater = BattleStateUpdater(battle_state)
         battle_state = updater.apply_frame(raw_battle_event_model_list)
@@ -177,7 +181,8 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
     except Exception as e:
         print(f"⚠️ 状態抽出エラー: {e}")
     
-    return current_state, battle_log, battle_state
+    # return current_state, battle_log, battle_state
+    return battle_log, battle_state
 
 
 def ocr_start(socketio, state, tesseract_path, battle_state_dict,battle_id):

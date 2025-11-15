@@ -13,8 +13,8 @@ class OCRROIProcessor(BaseROIProcessor):
         self.ability_corrector = ability_corrector
         
         # 直前のポケモン名を保持
-        self.last_my_pokemon_name = ""
-        self.last_opponent_pokemon_name = ""
+        # self.last_my_pokemon_name = ""
+        # self.last_opponent_pokemon_name = ""
         
         # 現在のバトルIDとポケモンリスト
         self.current_battle_id = ""
@@ -67,10 +67,10 @@ class OCRROIProcessor(BaseROIProcessor):
             if corrected_text == text and text in self.pokemon_corrector.name_list:
                 # 完全一致の場合はそのまま通過
                 print(f"  ✅ 完全一致: '{text}' - 補正不要")
-                if roi_name == 'my_pokemon_name':
-                    self.last_my_pokemon_name = corrected_text
-                elif roi_name == 'opponent_pokemon_name':
-                    self.last_opponent_pokemon_name = corrected_text
+                # if roi_name == 'my_pokemon_name':
+                #     self.last_my_pokemon_name = corrected_text
+                # elif roi_name == 'opponent_pokemon_name':
+                #     self.last_opponent_pokemon_name = corrected_text
                 return corrected_text
             
             # 修正: 閾値チェック（完全一致でない場合のみ）
@@ -81,10 +81,10 @@ class OCRROIProcessor(BaseROIProcessor):
             if original_text != corrected_text:
                 print(f"  🟢 ポケモン名補正: '{original_text}' → '{corrected_text}'")
 
-            if roi_name == 'my_pokemon_name':
-                self.last_my_pokemon_name = corrected_text
-            elif roi_name == 'opponent_pokemon_name':
-                self.last_opponent_pokemon_name = corrected_text
+            # if roi_name == 'my_pokemon_name':
+            #     self.last_my_pokemon_name = corrected_text
+            # elif roi_name == 'opponent_pokemon_name':
+            #     self.last_opponent_pokemon_name = corrected_text
             return corrected_text
 
         elif roi_name in ABILITY_NAME_ROIS:
@@ -108,8 +108,8 @@ class OCRROIProcessor(BaseROIProcessor):
                 print(f"  🔵 特性名補正: '{original_text}' → '{corrected_text}'")
             return corrected_text
 
-        elif roi_name in POKEMON_NO_ROIS:
-            return self._convert_to_pokemon_no_format(text, roi_name)
+        # elif roi_name in POKEMON_NO_ROIS:
+        #     return self._convert_to_pokemon_no_format(text, roi_name)
 
         return text
 
@@ -212,24 +212,25 @@ class OCRROIProcessor(BaseROIProcessor):
 
         return cleaned
     
-    def _convert_to_pokemon_no_format(self, text, roi_name):
+    # def _convert_to_pokemon_no_format(self, text, roi_name):
         """「ポケモン名+の」形式への変換"""
-        if roi_name == 'my_tokusei_row1':
-            pokemon_name = self.last_my_pokemon_name
-        elif roi_name == 'your_tokusei_row1':
-            pokemon_name = self.last_opponent_pokemon_name
-        else:
-            return text
+        # TODO battale_stateのactiveで判断
+        # if roi_name == 'my_tokusei_row1':
+        #     pokemon_name = self.last_my_pokemon_name
+        # elif roi_name == 'your_tokusei_row1':
+        #     pokemon_name = self.last_opponent_pokemon_name
+        # else:
+        #     return text
 
-        if not pokemon_name:
-            return text
-        if text.endswith('の'):
-            return text
+        # if not pokemon_name:
+        #     return text
+        # if text.endswith('の'):
+        #     return text
 
-        converted_text = f"{pokemon_name}の"
-        if text != converted_text:
-            print(f"  💫 「〜の」形式変換: '{text}' → '{converted_text}'")
-        return converted_text
+        # converted_text = f"{pokemon_name}の"
+        # if text != converted_text:
+        #     print(f"  💫 「〜の」形式変換: '{text}' → '{converted_text}'")
+        # return converted_text
     
     def _extract_and_save_ocr_text(self, roi_img, roi_name, video_name, frame_idx, short_hash):
         """OCRテキストを抽出して保存（ポケモン名・特性名は閾値0.6未満で保存しない）"""

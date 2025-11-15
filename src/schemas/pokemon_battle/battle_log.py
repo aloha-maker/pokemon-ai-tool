@@ -139,6 +139,7 @@ class BattleLog:
         
         for event in self.events:
             event.battle_id = model.battle_id
+            event.ocr_text = event.ocr_text['text']
             db.session.add(event)
 
         db.session.commit()
