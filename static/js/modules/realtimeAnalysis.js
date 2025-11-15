@@ -80,7 +80,7 @@ export class RealtimeAnalysis {
             this.captureImage.src = "https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview";
         });
 
-        this.socket.on('ocr_update', (data) => {
+        this.socket.on('ocr_update', async (data) => {
             const latest_events = data.latest_events;
             if (this.logOutput && latest_events) {
                 this.appendRealtimeLog(latest_events);
@@ -115,9 +115,17 @@ export class RealtimeAnalysis {
                     console.log('choose')
                     const battleState = this.gatherFullBattleState();
                     console.log("Sending full battle state for suggestion:", battleState);
-                    this.socket.emit('get_suggestion', battleState);
+                    // this.socket.emit('get_suggestion', battleState);
 
-                    // const response = await fetch('/api/parties');
+                    const response = await fetch('/api/ai/get_suggestion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(battleState),
+                    });
+                    console.log('Suggestion received:', response);
+                    const jsonResponse = await response.json();
+                    this.displaySuggestion(jsonResponse);
+
                 }else if(sub_phase === 'act'){
                     console.log('act')
                 }

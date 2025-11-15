@@ -2,6 +2,7 @@
 import logging
 from flask import Blueprint, request
 from src.services.ai_service import AiService
+from src.ai.predictor import ActionAIModel
 from src.utils.response_handler import api_success, api_fail, api_error
 
 ai_bp = Blueprint('ai_api', __name__, url_prefix='/api/ai')
@@ -40,3 +41,18 @@ def generate_party():
     except Exception as e:
         logging.exception(e)
         return api_error("An internal server error occurred")
+
+@ai_bp.route('/get_suggestion', methods=['POST'])
+def get_suggestion():
+    # AIモデルで行動を予測　TODO
+    # model = ActionAIModel(app_state=current_app.state)
+    # recommendation = model.predict_action(battle_state)
+    # del model # DB接続を閉じる
+    # return recommendation
+    best_move = "はかいこうせん"
+    max_effectiveness = 100
+    return {
+            "action": "技選択",
+            "target": best_move,
+            "reason": f"最もダメージが期待できる技は「{best_move}」です (倍率: x{max_effectiveness})。"
+        }

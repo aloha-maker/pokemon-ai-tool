@@ -129,7 +129,11 @@ export class PartySaver {
                 // 相手パーティの入力情報をクリア
                 document.querySelectorAll('#opponent-party-display .pokemon-slot').forEach(slot => {
                     // ポケモン名
-                    slot.querySelector('.pokemon-input').value = '';
+                    const pokemonInput = slot.querySelector('.pokemon-input');
+                    if (pokemonInput) {
+                        pokemonInput.value = '';
+                        pokemonInput.dispatchEvent(new Event('change', { bubbles: true })); // アイコンと種族値更新のため
+                    }
 
                     // 持ち物
                     const itemInput = slot.querySelector('.item-input');

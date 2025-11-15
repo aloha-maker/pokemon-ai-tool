@@ -135,24 +135,24 @@ def register_socket_handlers(socketio):
         # Consider stopping the thread if the user disconnects
         # current_app.state.background_thread_stop_event.set()
 
-    @socketio.on('get_suggestion')
-    def handle_get_suggestion(battle_state):
-        """
-        クライアントからの要求に応じて、最新の盤面情報からAIの提案を生成する
-        """
-        # with current_app.state.game_state_lock:
-            # b_s = current_app.state.shared_game_state["battle_state"]
+    # @socketio.on('get_suggestion')
+    # def handle_get_suggestion(battle_state):
+    #     """
+    #     クライアントからの要求に応じて、最新の盤面情報からAIの提案を生成する
+    #     """
+    #     # with current_app.state.game_state_lock:
+    #         # b_s = current_app.state.shared_game_state["battle_state"]
         
-        if battle_state:
-            # AIモデルで行動を予測
-            model = ActionAIModel(app_state=current_app.state)
-            recommendation = model.predict_action(battle_state)
-            del model # DB接続を閉じる
+    #     if battle_state:
+    #         # AIモデルで行動を予測
+    #         model = ActionAIModel(app_state=current_app.state)
+    #         recommendation = model.predict_action(battle_state)
+    #         del model # DB接続を閉じる
 
-            # 結果をクライアントに送信
-            emit('suggestion_update', recommendation)
-        else:
-            emit('suggestion_update', {"action": "待機", "reason": "盤面情報を取得中です..."})
+    #         # 結果をクライアントに送信
+    #         emit('suggestion_update', recommendation)
+    #     else:
+    #         emit('suggestion_update', {"action": "待機", "reason": "盤面情報を取得中です..."})
 
     def ocr_starter_with_context(app, socketio, state, tesseract_path, battle_state, battle_id):
         """アプリケーションコンテキスト付きでOCRワーカーを起動"""
