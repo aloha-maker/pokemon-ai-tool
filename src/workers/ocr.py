@@ -29,6 +29,7 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
     
     while not state.background_thread_stop_event.is_set():
         frame_bytes = None
+        pre_pahse_info = ocr_processor.get_current_phase_info()
         with state.frame_lock:
             if state.latest_frame_bytes:
                 frame_bytes = state.latest_frame_bytes
@@ -71,14 +72,21 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                         state.shared_game_state["ocr_processor"] = ocr_processor
                     
                     # クライアントに状態更新を通知
-                    socketio.emit('ocr_update', {
-                        # 'state': current_state,
-                        'phase_info': current_phase_info,
-                        'processed_count': processed_count,
-                        'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
-                        'battle_state' : battle_state_after.to_dict(),
-                        'result' : battle_log.result
-                    })
+                    # stay → select
+                    # select → battle.act
+                    # battle.act → battle.choose
+                    # battle.choose → battle.act
+                    # battle.act → battle.act
+                    # battle.act → stay
+                    if ocr_processor.phase_manager.return_flag == True:                    
+                        socketio.emit('ocr_update', {
+                            # 'state': current_state,
+                            'phase_info': current_phase_info,
+                            'processed_count': processed_count,
+                            'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
+                            'battle_state' : battle_state_after.to_dict(),
+                            'result' : battle_log.result
+                        })
 
                     # 入力待ちなどの判断とする場合は一時停止
                     if ocr_processor.phase_manager.stop_flag == True:

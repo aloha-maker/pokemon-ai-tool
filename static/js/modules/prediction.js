@@ -336,9 +336,7 @@ export class PredictionManager {
 
                 }
 
-            
-
-                async handlePredict() {
+    async handlePredict() {
         const opponentPartyInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
         const resultArea = document.getElementById('prediction-result-area');
 

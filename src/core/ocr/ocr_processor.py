@@ -40,6 +40,7 @@ class OCRProcessor:
     def detect_phase(self, frame, width, height):
         """現在のフェーズを判定"""
         # stayフェーズ: select ROIの検出
+        self.phase_manager.return_flag = False
         if self.phase_manager.current_phase == "stay":
             match_result, max_val = self.image_matcher.match_single_image(
                 frame, 'select', SELECT_IMAGES_PATH, width, height
@@ -47,6 +48,7 @@ class OCRProcessor:
             if match_result:
                 self.phase_manager.set_phase("select")
                 self.phase_manager.stop_flag = True
+                self.phase_manager.return_flag = True
                 print(f"  🔄 フェーズ変更: stay → select (select ROI 閾値: {max_val:.3f})")
         
         # selectフェーズ: my_pokemon_nameの有効読み取りでbattle.chooseへ
@@ -56,6 +58,7 @@ class OCRProcessor:
             )
             if match_result:
                 self.phase_manager.set_phase("battle", "act")
+                self.phase_manager.return_flag = True
                 print(f"  🔄 フェーズ変更: select → battle.act (select ROI 閾値: {max_val:.3f})")
         
         # battleフェーズ: サブフェーズ判定
@@ -79,6 +82,7 @@ class OCRProcessor:
                 else:
                     self.phase_manager.set_phase("battle", "act")
                     self.phase_manager.reset_battle_flags()
+                    self.phase_manager.return_flag = True
                     print(f"  🔄 バトルサブフェーズ変更: choose → act (my_pokemon_name OCRテキストなし)")
             
             # actフェーズ: win_loseの検出でstayに戻る または 新しいポケモンでchooseに戻る
@@ -90,6 +94,7 @@ class OCRProcessor:
                 )
                 # ファイル名からwin/loseを判定
                 result_text = os.path.splitext(best_file)[0]
+                self.phase_manager.return_flag = True
                 if match_result:
                     self.phase_manager.set_phase("stay")
                     self.phase_manager.stop_flag = True

@@ -18,15 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // 各機能モジュールの初期化
     new DashboardManager();
     new PartyGenerator();
-    new PredictionManager();
     new VideoAnalysis();
     new ROIEditor();
     new TrainedPokemonManager();
     new PartyManagement();
     new Calculator();
     new Simulator();
+    const predictionManager = new PredictionManager();
     const pokemonDetailEditor = new PokemonDetailEditor();
-    const realtimeAnalysis = new RealtimeAnalysis(pokemonDetailEditor);
+    const realtimeAnalysis = new RealtimeAnalysis(pokemonDetailEditor,predictionManager);
     const partySaver = new PartySaver(realtimeAnalysis);
     
     // フォーム選択肢の初期化はボタンクリック時に行う

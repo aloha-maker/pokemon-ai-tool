@@ -4,9 +4,10 @@ import { createBattleState } from '../collectors/BattleState.js';
 import { gatherSideDataAsJson } from '../collectors/pokemonDataCollector.js';
 
 export class RealtimeAnalysis {
-    constructor(pokemonDetailEditor) {
+    constructor(pokemonDetailEditor,predictionManager) {
         this.socket = io();
         this.pokemonDetailEditor = pokemonDetailEditor;
+        this.predictionManager = predictionManager;
         this.captureImage = document.getElementById('capture-image');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
         this.confirmSelectionBtn = document.getElementById('confirm-selection-btn');
@@ -112,13 +113,13 @@ export class RealtimeAnalysis {
             }else if(phase === 'select'){
                 // stay -> select に遷移した時
                 console.log('select')
+                this.handleRecognizeParty()
+                
             }else if(phase === 'battle'){
                 console.log('battle')
                 if(sub_phase === 'choose'){
                     console.log('choose')
                     const battleState = this.gatherFullBattleState();
-                    console.log("Sending full battle state for suggestion:", battleState);
-                    // this.socket.emit('get_suggestion', battleState);
 
                     const response = await fetch('/api/ai/get_suggestion', {
                         method: 'POST',
@@ -131,7 +132,6 @@ export class RealtimeAnalysis {
                     this.displaySuggestion(jsonResponse.recommendation);
 
                     if (this.predictionManager && jsonResponse.damage_calcs) {
-                        console.log('ここ')
                         this.predictionManager.displayDamageCalculations(jsonResponse.damage_calcs);
                     }
 
@@ -345,6 +345,7 @@ export class RealtimeAnalysis {
                         opponentInputs[index].dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });
+                this.predictionManager.handlePredict();
             } else {
                 const errorMessage = data.data ? data.data.error : (data.message || '不明なエラー');
                 alert(`パーティの認識に失敗しました: ${errorMessage}`);
