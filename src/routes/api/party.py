@@ -89,3 +89,16 @@ def register_generated_party():
     except Exception as e:
         logging.exception("Error registering generated party")
         return api_error("生成されたパーティの登録に失敗しました。")
+
+@party_bp.route('/party/<int:party_id>', methods=['GET'])
+def get_party_menber(party_id):
+    """単一のパーティ情報を取得する"""
+    try:
+        party = service.get_party_menber_by_id(party_id)
+        if party:
+            return api_success(party)
+        else:
+            return api_fail({"message": "Party not found"}, 404)
+    except Exception as e:
+        logging.exception(f"Error getting party {party_id}")
+        return api_error("パーティ情報の取得に失敗しました。")

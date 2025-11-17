@@ -3,6 +3,8 @@ from typing import List, Dict, Any
 import time
 from src.database.manager import DatabaseManager
 from src.services.trained_pokemon_service import TrainedPokemonService
+from src.schemas.pokemon_battle.party import Party
+from src.models.party_model import PartyModel
 
 class PartyService:
     """パーティに関するビジネスロジックを担当する"""
@@ -244,3 +246,10 @@ class PartyService:
             "members": new_pokemon_ids
         }
         self.create(party_to_add)
+
+
+    def get_party_menber_by_id(self, party_id: int):
+        party = Party.load_from_db(party_id)
+        
+        return party.to_dict()
+        
