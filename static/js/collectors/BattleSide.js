@@ -13,10 +13,9 @@ export function createBattleSide(sideData) {
         party
     } = sideData;
 
-    // アクティブなポケモンを決定（仮にパーティの先頭とする）
-    const activePokemon = (party.members && party.members.length > 0) 
-        ? party.members[0] 
-        : null;
+    // アクティブなポケモンを決定
+    const key = partyType.replace("-party", "");
+    const activePokemon = document.getElementById(key + '-active-pokemon').value;
 
     // BattleSideオブジェクトを構築
     return {
@@ -24,17 +23,22 @@ export function createBattleSide(sideData) {
         team: party,
         active: activePokemon,
         
-        // UIに存在しない項目はデフォルト値を設定
+        // 壁 (screens) の取得: チェックボックスなので checked を見る
         screens: {
-            reflect: false,
-            light_screen: false,
-            aurora_veil: false,
+            reflect: document.getElementById(key + '-reflect').checked,
+            light_screen: document.getElementById(key + '-light-screen').checked,
+            aurora_veil: document.getElementById(key + '-aurora-veil').checked,
         },
+    
+        // 設置技・その他 (side_conditions) の取得
         side_conditions: {
-            spikes: 0,
-            toxic_spikes: 0,
-            stealth_rock: false,
-            tailwind: false,
+            // 数値入力は value を取得し、整数(int)に変換する (空欄やNaN対策で || 0 を入れると安全)
+            spikes: parseInt(document.getElementById(key + '-spikes').value, 10) || 0,
+            toxic_spikes: parseInt(document.getElementById(key + '-toxic-spikes').value, 10) || 0,
+            
+            // チェックボックス
+            stealth_rock: document.getElementById(key + '-stealth-rock').checked,
+            tailwind: document.getElementById(key + '-tailwind').checked,
         }
     };
 }

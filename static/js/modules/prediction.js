@@ -292,8 +292,6 @@ export class PredictionManager {
                     this.updateActivePokemonSelectors(); // 初期表示時にも更新
                 }
 
-                
-
                 updateActivePokemonSelectors() {
                     const myActiveSelect = document.getElementById('my-active-pokemon');
                     const opponentActiveSelect = document.getElementById('opponent-active-pokemon');

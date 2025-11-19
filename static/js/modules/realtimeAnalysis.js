@@ -399,40 +399,8 @@ export class RealtimeAnalysis {
         // アクティブなポケモンのUIを更新
         if (sideData.active) {
             const pokemon = sideData.active;
-            // const activePokemonContainer = displayContainer.querySelector('.my-active-pokemon');
-
-            // console.log('pokemon.name:',pokemon.name)
             // ポケモン名
             document.getElementById(containerId + '-active-pokemon').value = pokemon.name
-
-            // if (activePokemonContainer) {
-            //     // ポケモン名
-            //     const nameEl = activePokemonContainer.querySelector('.my-active-pokemon');
-            //     if (nameEl) nameEl.textContent = pokemon.name || '---';
-
-                // HPバー
-                // const hpBar = activePokemonContainer.querySelector('.hp-bar-inner');
-                // if (hpBar) {
-                //     const hpPercentage = (pokemon.max_hp > 0) ? (pokemon.current_hp / pokemon.max_hp) * 100 : 0;
-                //     hpBar.style.width = `${hpPercentage}%`;
-                // }
-
-                // HPテキスト
-                // const hpText = activePokemonContainer.querySelector('.hp-text');
-                // if (hpText) hpText.textContent = (pokemon.current_hp !== null && pokemon.max_hp !== null) ? `${pokemon.current_hp} / ${pokemon.max_hp}` : 'HP';
-
-                // 状態異常アイコン
-                // const statusIcon = activePokemonContainer.querySelector('.status-icon');
-                // if (statusIcon) {
-                //     if (pokemon.status) {
-                //         statusIcon.src = `/static/ailment_icons/${pokemon.status}.png`;
-                //         statusIcon.style.display = 'inline';
-                //         statusIcon.title = pokemon.status;
-                //     } else {
-                //         statusIcon.style.display = 'none';
-                //     }
-                // }
-            // }
         }
 
         // パーティ全体の情報を詳細に更新
@@ -450,23 +418,6 @@ export class RealtimeAnalysis {
                         iconEl.classList.add('fainted');
                     } else {
                         iconEl.classList.remove('fainted');
-                    }
-                }
-
-                // 2. HPバーの更新
-                const hpBar = memberContainer.querySelector('.party-hp-bar-inner');
-                if (hpBar) {
-                    const hpPercentage = (pokemon.max_hp > 0) ? (pokemon.current_hp / pokemon.max_hp) * 100 : 0;
-                    hpBar.style.width = `${hpPercentage}%`;
-                    
-                    // HP残量に応じて色を更新
-                    hpBar.classList.remove('hp-high', 'hp-medium', 'hp-low');
-                    if (hpPercentage > 50) {
-                        hpBar.classList.add('hp-high');
-                    } else if (hpPercentage > 20) {
-                        hpBar.classList.add('hp-medium');
-                    } else {
-                        hpBar.classList.add('hp-low');
                     }
                 }
 
