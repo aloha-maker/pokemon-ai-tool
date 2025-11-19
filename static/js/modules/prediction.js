@@ -82,7 +82,7 @@ export class PredictionManager {
         }
 
         try {
-            const response = await fetch(`/api/parties/${partyId}`);
+            const response = await fetch(`/api/party/${partyId}`);
             if (!response.ok) throw new Error('パーティ情報の取得に失敗しました。');
             const responseData = await response.json();
 
@@ -111,12 +111,12 @@ export class PredictionManager {
             party.members.forEach((member, index) => {
                 if (index < myPartySlots.length) {
                     const slot = myPartySlots[index];
-                    slot.querySelector('.pokemon-input').value = member.pokemon_name || '';
+                    slot.querySelector('.pokemon-input').value = member.name || '';
 
-                    // アイコンを更新
+                    // アイコンを更新　TODO ヘルパークラスでできる
                     const img = slot.querySelector('img');
                     if (img) {
-                        const pokemonName = member.pokemon_name;
+                        const pokemonName = member.name;
                         if (pokemonName) {
                             img.src = `/static/pokemon_icons/${pokemonName}.png`;
                             // 画像の読み込みに失敗した場合のフォールバック
@@ -132,14 +132,14 @@ export class PredictionManager {
                     
                     const itemInput = slot.querySelector('.item-input');
                     if (itemInput) {
-                        itemInput.value = member.item_name || '';
+                        itemInput.value = member.item || ''; // TODO IDから変換
                         // アイコン更新のためにchangeイベントを発火
                         itemInput.dispatchEvent(new Event('change'));
                     }
 
                     const teraSelect = slot.querySelector('.tera-type-select');
                     if (teraSelect) {
-                        teraSelect.value = member.tera_type_id || '';
+                        teraSelect.value = member.tera_type || ''; // TODO nullになっているので処理確認
                         teraSelect.dispatchEvent(new Event('change')); // To update icon
                     }
                 }

@@ -65,8 +65,10 @@ export class PokemonDetailEditor {
         // --- 追加 ---
         this.teraTypeSelect = document.getElementById('details-tera-type-select');
         this.itemInput = document.getElementById('details-item-input');
+        this.natureSelect = document.getElementById("details-nature-select");
         this.typesList = [];
         this.itemsList = [];
+        this.naturesList = [];
         // --- ここまで ---
 
         this.abilityInput = document.getElementById('details-ability-input');
@@ -79,18 +81,91 @@ export class PokemonDetailEditor {
         this.currentSlot = null;
 
         this.partyState = Array(12).fill(null).map(() => ({
-            ability_id: null,
-            item_id: null,
-            tera_type_id: null,
-            nature: 'まじめ', // デフォルト値
-            ev: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 }, // デフォルト値
-            moves: [
-                { id: null, pp: null },
-                { id: null, pp: null },
-                { id: null, pp: null },
-                { id: null, pp: null },
-            ]
+            // サーバーの members[*].ability （文字列ID）
+            ability: null, // 例: "289"
+        
+            // 種族値
+            base_stats: {
+                hp: 0,
+                atk: 0,
+                def: 0,
+                spa: 0,
+                spd: 0,
+                spe: 0
+            },
+        
+            // ランク補正
+            boosts: {
+                atk: 0,
+                def: 0,
+                spa: 0,
+                spd: 0,
+                spe: 0
+            },
+        
+            // 実数値
+            calculated_stats: {
+                hp: 0,
+                atk: 0,
+                def: 0,
+                spa: 0,
+                spd: 0,
+                spe: 0
+            },
+        
+            current_hp: 0,
+        
+            // 努力値
+            ev: {
+                hp: 0,
+                atk: 0,
+                def: 0,
+                spa: 0,
+                spd: 0,
+                spe: 0
+            },
+        
+            // サーバーの members[*].item （文字列ID）
+            item: null, // 例: "683"
+        
+            // 個体値
+            iv: {
+                hp: 31,
+                atk: 31,
+                def: 31,
+                spa: 31,
+                spd: 31,
+                spe: 31
+            },
+        
+            level: 50,
+            max_hp: 0,
+        
+            // 技配列（4つ分）
+            moves: Array(4).fill(null).map(() => ({
+                accuracy: null,      // 例: 100
+                category: null,      // "physical" | "special" | "status"
+                contact: false,
+                crit_rate: null,     // クリ率（そのまま入れるなら number）
+                effect: null,
+                name: "",            // 技名（日本語）
+                power: 0,
+                pp: null,
+                type: null           // "electric" など
+            })),
+        
+            // ポケモン名（日本語）
+            name: "",
+        
+            // 性格名（日本語）: サーバーと同じく文字列で保持
+            nature: "まじめ",
+        
+            status: null,      // 例: "par", "brn" など想定
+            tera_type: null,   // 例: "electric" など（現状 null）
+            types: []          // 例: ["electric", "dragon"]
         }));
+        
+        
 
         this.init();
     }
@@ -153,9 +228,10 @@ export class PokemonDetailEditor {
     // --- 新規メソッド ---
     async loadMasterData() {
         try {
-            const [typesRes, itemsRes] = await Promise.all([
+            const [typesRes, itemsRes, naturesRes] = await Promise.all([
                 fetch('/api/master/types'),
-                fetch('/api/master/items')
+                fetch('/api/master/items'),
+                fetch('/api/master/natures')
             ]);
             const typesData = await typesRes.json();
             if (typesData.status === 'success') {
@@ -164,6 +240,10 @@ export class PokemonDetailEditor {
             const itemsData = await itemsRes.json();
             if (itemsData.status === 'success') {
                 this.itemsList = itemsData.data.items;
+            }
+            const naturesData = await naturesRes.json();
+            if (naturesData.status === 'success') {
+                this.naturesList = naturesData.data.natures;
             }
         } catch (error) {
             console.error("Failed to load master data:", error);
@@ -178,6 +258,15 @@ export class PokemonDetailEditor {
             option.value = type.id; // IDをvalueに設定
             option.textContent = type.name_ja;
             this.teraTypeSelect.appendChild(option);
+        });
+
+        // Populate Tera Type select
+        this.natureSelect.innerHTML = '<option value="">性格を選択</option>';
+        this.naturesList.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.id; // IDをvalueに設定
+            option.textContent = type.name_ja;
+            this.natureSelect.appendChild(option);
         });
 
         // Populate Item datalist
@@ -208,36 +297,47 @@ export class PokemonDetailEditor {
             abilityDatalist.appendChild(option);
         });
     }
-
     updateStateFromLoadedParty(members) {
-        members.forEach((member, index) => {
-            if (index < this.partyState.length) {
-                this.partyState[index] = {
-                    item_id: member.held_item_id,
-                    tera_type_id: member.tera_type_id,
-                    ability_id: member.ability_id,
-                    nature: member.nature_name || 'まじめ', // nature_name を想定
-                    ev: {
-                        hp: member.ev_hp || 0,
-                        atk: member.ev_atk || 0,
-                        def: member.ev_def || 0,
-                        spa: member.ev_spa || 0,
-                        spd: member.ev_spd || 0,
-                        spe: member.ev_spe || 0,
-                    },
-                    moves: [
-                        { id: member.move1_id, pp: member.move1_pp },
-                        { id: member.move2_id, pp: member.move2_pp },
-                        { id: member.move3_id, pp: member.move3_pp },
-                        { id: member.move4_id, pp: member.move4_pp },
-                    ]
-                };
-                // --- UIも更新 ---
-                this.updateSlotUI(index);
-            }
-        });
-        console.log('PokemonDetailEditor state updated from loaded party:', this.partyState);
+        for (let i = 0; i < members.length; i++) {
+            const m = members[i];
+            const slot = this.partyState[i];
+    
+            if (!m) continue;
+    
+            slot.ability = m.ability ?? null;
+            slot.base_stats = { ...m.base_stats };
+            slot.boosts = { ...m.boosts };
+            slot.calculated_stats = { ...m.calculated_stats };
+            slot.current_hp = m.current_hp ?? 0;
+            slot.ev = { ...m.ev };
+            slot.item = m.item ?? null;
+            slot.iv = { ...m.iv };
+            slot.level = m.level ?? 50;
+            slot.max_hp = m.max_hp ?? 0;
+    
+            // moves（4つ分）
+            slot.moves = m.moves.map(move => ({
+                accuracy: move.accuracy ?? null,
+                category: move.category ?? null,
+                contact: move.contact ?? false,
+                crit_rate: move.crit_rate ?? null,
+                effect: move.effect ?? null,
+                name: move.name ?? "",
+                power: move.power ?? 0,
+                pp: move.pp ?? 0,
+                type: move.type ?? null
+            }));
+    
+            slot.name = m.name ?? "";
+            slot.nature = m.nature ?? "1";
+            slot.status = m.status ?? null;
+            slot.tera_type = m.tera_type ?? null;
+            slot.types = m.types ? [...m.types] : [];
+
+            this.updateSlotUI(i);
+        }
     }
+    
 
     async openModalFor(slot) {
         const pokemonName = slot.querySelector('.pokemon-input').value.trim();
@@ -309,53 +409,38 @@ export class PokemonDetailEditor {
             this.movesList = await getAllMoves();
         }
         
-        // Load state
         const state = this.partyState[this.currentSlot];
-        console.log('Loading state for slot', this.currentSlot, state);
         if (state) {
-            // --- Item and Tera Type ---
-            this.teraTypeSelect.value = state.tera_type_id || '';
-            const item = this.itemsList.find(i => i.id == state.item_id);
+            // Item / Tera / Nature
+            this.teraTypeSelect.value = state.tera_type || '';
+            this.natureSelect.value = state.nature || '';
+            const item = this.itemsList.find(i => i.id == state.item);
             this.itemInput.value = item ? item.name_ja : '';
-            // --- ここまで ---
 
-            const ability = this.abilitiesList.find(a => a.id == state.ability_id);
+            // Ability
+            const ability = this.abilitiesList.find(a => a.id == state.ability);
             this.abilityInput.value = ability ? (ability.name_ja || ability.name) : '';
-            console.log(`Set ability input to: ${this.abilityInput.value}`);
 
-            // --- Nature and EVs ---
-            document.getElementById('details-nature-select').value = state.nature || 'まじめ';
+            // EVs
             document.getElementById('details-ev-hp').value = state.ev.hp || 0;
             document.getElementById('details-ev-atk').value = state.ev.atk || 0;
             document.getElementById('details-ev-def').value = state.ev.def || 0;
             document.getElementById('details-ev-spa').value = state.ev.spa || 0;
             document.getElementById('details-ev-spd').value = state.ev.spd || 0;
             document.getElementById('details-ev-spe').value = state.ev.spe || 0;
-            // --- ここまで ---
-            
+
+            // 技とPP
             this.moveInputs.forEach((input, i) => {
                 const ppInput = this.ppInputs[i];
-                let move = null;
-
-                // 技名を設定
-                if (state.moves[i] && state.moves[i].id) {
-                    move = this.movesList.find(m => m.id == state.moves[i].id);
-                    input.value = move ? (move.name_ja || move.name) : '';
+                const move = state.moves[i];
+                if (move) {
+                    input.value = move.name || '';
+                    ppInput.value = (move.pp !== undefined && move.pp !== null) 
+                        ? move.pp 
+                        : (move.power ? calculateMaxPP(move.power) : 8);
                 } else {
                     input.value = '';
-                }
-
-                // PPを設定
-                if (state.moves[i] && state.moves[i].pp !== null && state.moves[i].pp !== undefined) {
-                    // 1. 保存済みのPPがあればそれを最優先
-                    ppInput.value = state.moves[i].pp;
-                } else if (move) {
-                    // 2. 保存済みPPがなく、技がセットされているなら、技マスタの最大PPをセット
-                    const maxPP = calculateMaxPP(move.pp);
-                    ppInput.value = maxPP;
-                } else {
-                    // 3. 技もセットされていなければ、デフォルト値（元の実装に合わせて8）
-                    ppInput.value = '8';
+                    ppInput.value = 8;
                 }
             });
         }
@@ -364,47 +449,87 @@ export class PokemonDetailEditor {
     }
 
     saveDetails() {
-        const state = this.partyState[this.currentSlot];
-        
-        // --- Item and Tera Type ---
-        const itemName = this.itemInput.value.trim();
-        const item = this.itemsList.find(i => i.name_ja === itemName);
-        state.item_id = item ? item.id : null;
+        // state からサーバー送信用 payload を作る
+        const members = this.partyState.map(slot => ({
+            ability: slot.ability,
+            base_stats: { ...slot.base_stats },
+            boosts: { ...slot.boosts },
+            calculated_stats: { ...slot.calculated_stats },
+            current_hp: slot.current_hp,
+            ev: { ...slot.ev },
+            item: slot.item,
+            iv: { ...slot.iv },
+            level: slot.level,
+            max_hp: slot.max_hp,
+            moves: slot.moves.map(m => ({
+                accuracy: m.accuracy,
+                category: m.category,
+                contact: m.contact,
+                crit_rate: m.crit_rate,
+                effect: m.effect,
+                name: m.name,
+                power: m.power,
+                pp: m.pp,
+                type: m.type
+            })),
+            name: slot.name,
+            nature: slot.nature,
+            status: slot.status,
+            tera_type: slot.tera_type,
+            types: [...slot.types]
+        }));
+    
+        this.updateSlotUI(this.currentSlot);
+        this.modal.hide();
+    }
+    
 
-        state.tera_type_id = this.teraTypeSelect.value ? parseInt(this.teraTypeSelect.value, 10) : null;
-        // --- ここまで ---
-
+    saveDetails() {
+        const s = this.partyState[this.currentSlot];
+    
+        // ポケモン名 / ID（既存処理と同じ）
+        const name = document.querySelector('#details-pokemon-name').textContent;
+        s.pokemon_name = name;
+        s.pokemon_id = getPokemonIdByName(name); // 非同期なら await 必要
+    
+        // ability
         const abilityName = this.abilityInput.value.trim();
         const ability = this.abilitiesList.find(a => (a.name_ja || a.name) === abilityName);
-        state.ability_id = ability ? ability.id : null;
+        s.ability_id = ability?.id ?? null;
+    
+        // item & tera
+        const itemName = this.itemInput.value.trim();
+        const item = this.itemsList.find(i => i.name_ja === itemName);
+        s.held_item_id = item?.id ?? null;
+    
+        s.tera_type_id = this.teraTypeSelect.value ? Number(this.teraTypeSelect.value) : null;
 
-        // --- Nature and EVs ---
-        state.nature = document.getElementById('details-nature-select').value;
-        state.ev = {
-            hp: parseInt(document.getElementById('details-ev-hp').value, 10) || 0,
-            atk: parseInt(document.getElementById('details-ev-atk').value, 10) || 0,
-            def: parseInt(document.getElementById('details-ev-def').value, 10) || 0,
-            spa: parseInt(document.getElementById('details-ev-spa').value, 10) || 0,
-            spd: parseInt(document.getElementById('details-ev-spd').value, 10) || 0,
-            spe: parseInt(document.getElementById('details-ev-spe').value, 10) || 0,
+        // nature
+        s.nature = this.natureSelect.value ? Number(this.natureSelect.value) : null;
+    
+        // EVs
+        s.ev = {
+            hp: +document.getElementById('details-ev-hp').value || 0,
+            atk: +document.getElementById('details-ev-atk').value || 0,
+            def: +document.getElementById('details-ev-def').value || 0,
+            spa: +document.getElementById('details-ev-spa').value || 0,
+            spd: +document.getElementById('details-ev-spd').value || 0,
+            spe: +document.getElementById('details-ev-spe').value || 0,
         };
-        // --- ここまで ---
-
+    
+        // moves
         this.moveInputs.forEach((input, i) => {
             const moveName = input.value.trim();
             const move = this.movesList.find(m => (m.name_ja || m.name) === moveName);
-            state.moves[i].id = move ? move.id : null;
-            state.moves[i].pp = this.ppInputs[i].value;
+    
+            s.moves[i].id = move?.id ?? null;
+            s.moves[i].pp = Number(this.ppInputs[i].value) || null;
         });
-
-        console.log('Saved state for slot', this.currentSlot, this.partyState[this.currentSlot]);
-        
-        // --- UIを更新 ---
+    
         this.updateSlotUI(this.currentSlot);
-        // --- ここまで ---
-
         this.modal.hide();
     }
+    
 
     async updateSlotUI(slotIndex) {
         const slot = this.pokemonSlots[slotIndex];
@@ -420,7 +545,7 @@ export class PokemonDetailEditor {
         // Update Item
         const itemNameSpan = slot.querySelector('.item-name');
         const itemIcon = slot.querySelector('.item-icon');
-        const item = this.itemsList.find(i => i.id === state.item_id);
+        const item = this.itemsList.find(i => i.id === Number(state.item));
         if (item && itemNameSpan && itemIcon) {
             itemNameSpan.textContent = item.name_ja;
             itemNameSpan.classList.remove('text-muted');
@@ -440,7 +565,7 @@ export class PokemonDetailEditor {
         // Update Tera Type
         const teraTypeNameSpan = slot.querySelector('.tera-type-name');
         const teraTypeIcon = slot.querySelector('.tera-type-icon');
-        const teraType = this.typesList.find(t => t.id === state.tera_type_id);
+        const teraType = this.typesList.find(t => t.id === Number(state.tera_type));
         if (teraType && teraTypeNameSpan && teraTypeIcon) {
             teraTypeNameSpan.textContent = teraType.name_ja;
             teraTypeNameSpan.classList.remove('text-muted');
