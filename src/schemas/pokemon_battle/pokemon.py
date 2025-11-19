@@ -38,6 +38,7 @@ class Pokemon:
         self.item: Optional[str] = item
         self.types: List[TypeName] = types
         self.tera_type: Optional[TypeName] = tera_type
+        self.status: Optional[str] = status # 状態異常
 
         # ステータス補正段階(-6~+6)
         self.boosts: Dict[StatName, int] = {
@@ -50,16 +51,6 @@ class Pokemon:
 
         # 技リスト
         self.moves: List[Move] = []
-
-        # ステータス計算
-        self.status: Dict[StatName, int] = {
-            "hp": self.max_hp
-            , "atk": self.calculate_stat("atk")
-            , "def": self.calculate_stat("def")
-            , "spa": self.calculate_stat("spa")
-            , "spd": self.calculate_stat("spd")
-            , "spe": self.calculate_stat("spe")
-        }
 
     def calculate_hp(self) -> int:
         """HPの実数値を計算"""

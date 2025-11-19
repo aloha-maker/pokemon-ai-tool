@@ -79,93 +79,7 @@ export class PokemonDetailEditor {
         this.ppBtns = document.querySelectorAll('.pp-btn');
         this.saveBtn = document.getElementById('save-pokemon-details-btn');
         this.currentSlot = null;
-
-        this.partyState = Array(12).fill(null).map(() => ({
-            // サーバーの members[*].ability （文字列ID）
-            ability: null, // 例: "289"
-        
-            // 種族値
-            base_stats: {
-                hp: 0,
-                atk: 0,
-                def: 0,
-                spa: 0,
-                spd: 0,
-                spe: 0
-            },
-        
-            // ランク補正
-            boosts: {
-                atk: 0,
-                def: 0,
-                spa: 0,
-                spd: 0,
-                spe: 0
-            },
-        
-            // 実数値
-            calculated_stats: {
-                hp: 0,
-                atk: 0,
-                def: 0,
-                spa: 0,
-                spd: 0,
-                spe: 0
-            },
-        
-            current_hp: 0,
-        
-            // 努力値
-            ev: {
-                hp: 0,
-                atk: 0,
-                def: 0,
-                spa: 0,
-                spd: 0,
-                spe: 0
-            },
-        
-            // サーバーの members[*].item （文字列ID）
-            item: null, // 例: "683"
-        
-            // 個体値
-            iv: {
-                hp: 31,
-                atk: 31,
-                def: 31,
-                spa: 31,
-                spd: 31,
-                spe: 31
-            },
-        
-            level: 50,
-            max_hp: 0,
-        
-            // 技配列（4つ分）
-            moves: Array(4).fill(null).map(() => ({
-                accuracy: null,      // 例: 100
-                category: null,      // "physical" | "special" | "status"
-                contact: false,
-                crit_rate: null,     // クリ率（そのまま入れるなら number）
-                effect: null,
-                name: "",            // 技名（日本語）
-                power: 0,
-                pp: null,
-                type: null           // "electric" など
-            })),
-        
-            // ポケモン名（日本語）
-            name: "",
-        
-            // 性格名（日本語）: サーバーと同じく文字列で保持
-            nature: "まじめ",
-        
-            status: null,      // 例: "par", "brn" など想定
-            tera_type: null,   // 例: "electric" など（現状 null）
-            types: []          // 例: ["electric", "dragon"]
-        }));
-        
-        
+        this.partyState = Array(12).fill(null).map(() => this.createEmptySlot());
 
         this.init();
     }
@@ -225,7 +139,38 @@ export class PokemonDetailEditor {
         });
     }
 
-    // --- 新規メソッド ---
+    // 空のスロットを作成する共通メソッド
+    createEmptySlot() {
+        return {
+            ability: null,
+            base_stats: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+            boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+            calculated_stats: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+            current_hp: 0,
+            ev: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+            item: null,
+            iv: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+            level: 50,
+            max_hp: 0,
+            moves: Array(4).fill(null).map(() => ({
+                accuracy: null,
+                category: null,
+                contact: false,
+                crit_rate: null,
+                effect: null,
+                name: "",
+                power: 0,
+                pp: null,
+                type: null
+            })),
+            name: "",
+            nature: "",
+            status: null,
+            tera_type: null,
+            types: []
+        };
+    }
+
     async loadMasterData() {
         try {
             const [typesRes, itemsRes, naturesRes] = await Promise.all([
@@ -446,43 +391,7 @@ export class PokemonDetailEditor {
         }
 
         this.modal.show();
-    }
-
-    saveDetails() {
-        // state からサーバー送信用 payload を作る
-        const members = this.partyState.map(slot => ({
-            ability: slot.ability,
-            base_stats: { ...slot.base_stats },
-            boosts: { ...slot.boosts },
-            calculated_stats: { ...slot.calculated_stats },
-            current_hp: slot.current_hp,
-            ev: { ...slot.ev },
-            item: slot.item,
-            iv: { ...slot.iv },
-            level: slot.level,
-            max_hp: slot.max_hp,
-            moves: slot.moves.map(m => ({
-                accuracy: m.accuracy,
-                category: m.category,
-                contact: m.contact,
-                crit_rate: m.crit_rate,
-                effect: m.effect,
-                name: m.name,
-                power: m.power,
-                pp: m.pp,
-                type: m.type
-            })),
-            name: slot.name,
-            nature: slot.nature,
-            status: slot.status,
-            tera_type: slot.tera_type,
-            types: [...slot.types]
-        }));
-    
-        this.updateSlotUI(this.currentSlot);
-        this.modal.hide();
-    }
-    
+    }    
 
     saveDetails() {
         const s = this.partyState[this.currentSlot];
@@ -500,9 +409,9 @@ export class PokemonDetailEditor {
         // item & tera
         const itemName = this.itemInput.value.trim();
         const item = this.itemsList.find(i => i.name_ja === itemName);
-        s.held_item_id = item?.id ?? null;
+        s.item = item?.id ?? null;
     
-        s.tera_type_id = this.teraTypeSelect.value ? Number(this.teraTypeSelect.value) : null;
+        s.tera_type = this.teraTypeSelect.value ? Number(this.teraTypeSelect.value) : null;
 
         // nature
         s.nature = this.natureSelect.value ? Number(this.natureSelect.value) : null;

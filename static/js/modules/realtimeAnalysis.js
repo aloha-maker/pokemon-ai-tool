@@ -154,6 +154,7 @@ export class RealtimeAnalysis {
     }
 
     gatherFullBattleState() {
+        // バトル環境設定の状態（field,side.active,side.screen,side.side_conditions）を取得
         const detailedStates = this.pokemonDetailEditor.getState();
         console.log("Gathering full battle state...",detailedStates);
         const side1Data = gatherSideDataAsJson('my-party',detailedStates);

@@ -100,7 +100,7 @@ export class PartySaver {
         // ログバッファとBattleStateを取得してペイロードに追加
         if (this.realtimeAnalysis) {
             data.raw_events = this.realtimeAnalysis.getLogBuffer();
-            data.battle_state = this.realtimeAnalysis.gatherFullBattleState();
+            data.battle_state = this.realtimeAnalysis.gatherFullBattleState(); 
         } else {
             data.raw_events = [];
             data.battle_state = null;
