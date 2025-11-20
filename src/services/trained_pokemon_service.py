@@ -2,6 +2,12 @@
 from typing import List, Dict, Any
 import time
 from src.database.manager import DatabaseManager
+from src.extensions import db
+from src.models.trained_pokemon_moedl import TrainedPokemonModel
+from src.models.natures_model import NatureModel
+from src.models.type_model import TypeModel
+from src.models.item_model import ItemModel
+from src.models.abilities_model import AbilityModel
 
 class TrainedPokemonService:
     """育成済みポケモンに関するビジネスロジックを担当する"""
@@ -146,10 +152,22 @@ class TrainedPokemonService:
                 db.conn.rollback()
                 raise e
 
-    def delete(self, pokemon_id: int) -> int:
+    def delete(self, id: int) -> int:
         """育成済みポケモンを削除する"""
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            cursor.execute("DELETE FROM trained_pokemons WHERE id = ?", (pokemon_id,))
-            db.conn.commit()
-            return cursor.rowcount
+        try:
+            model = TrainedPokemonModel.query.get(id)
+            print(model)
+            if model:
+                db.session.delete(model)
+                db.session.commit()
+                return True
+            return False
+            
+        except Exception as e:
+            db.session.rollback()
+            raise e
+        # with DatabaseManager() as db:
+        #     cursor = db.get_cursor()
+        #     cursor.execute("DELETE FROM trained_pokemons WHERE id = ?", (pokemon_id,))
+        #     db.conn.commit()
+        #     return cursor.rowcount
