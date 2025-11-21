@@ -88,11 +88,14 @@ export class TrainedPokemonManager {
                 return;
             }
 
+            console.log(pokemons)
+
             pokemons.forEach(p => {
+                
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${p.id}</td>
-                    <td>${escapeHTML(p.pokemon_name) || 'N/A'}</td>
+                    <td>${escapeHTML(p.name) || 'N/A'}</td>
                     <td>${escapeHTML(p.nickname) || ''}</td>
                     <td>${p.level}</td>
                     <td>${escapeHTML(p.tera_type_name) || 'N/A'}</td>
@@ -171,7 +174,7 @@ export class TrainedPokemonManager {
 
         if (pokemon) {
             document.getElementById('pokemon-id').value = pokemon.id || '';
-            console.log(this.pokemonList.data);
+            console.log("編集",pokemon);
             
             const pokemonInfo = this.pokemonList.find(p => p.id == pokemon.pokemon_id);
             const pokemonName = pokemonInfo ? pokemonInfo.name_ja : '';
@@ -183,27 +186,28 @@ export class TrainedPokemonManager {
 
             document.getElementById('nickname').value = pokemon.nickname || '';
             document.getElementById('level').value = pokemon.level || 50;
-            document.getElementById('tera-type-id').value = pokemon.tera_type_id || '';
+            document.getElementById('tera-type-id').value = pokemon.tera_type || '';
 
-            const itemInfo = this.itemList.find(i => i.id == pokemon.held_item_id);
+            const itemInfo = this.itemList.find(i => i.id == pokemon.item);
             document.getElementById('held-item-input').value = itemInfo ? itemInfo.name_ja : '';
 
-            const abilityInfo = this.abilityList.find(a => a.id == pokemon.ability_id);
+            const abilityInfo = this.abilityList.find(a => a.id == pokemon.ability);
             document.getElementById('ability-input').value = abilityInfo ? abilityInfo.name_ja : '';
 
-            document.getElementById('nature-id').value = pokemon.nature_id || '';
+            document.getElementById('nature-id').value = pokemon.nature || '';
             
-            document.getElementById('ev-hp').value = pokemon.ev_hp || 0;
-            document.getElementById('ev-atk').value = pokemon.ev_atk || 0;
-            document.getElementById('ev-def').value = pokemon.ev_def || 0;
-            document.getElementById('ev-spa').value = pokemon.ev_spa || 0;
-            document.getElementById('ev-spd').value = pokemon.ev_spd || 0;
-            document.getElementById('ev-spe').value = pokemon.ev_spe || 0;
+            document.getElementById('ev-hp').value = pokemon.ev.hp || 0;
+            document.getElementById('ev-atk').value = pokemon.ev.atk || 0;
+            document.getElementById('ev-def').value = pokemon.ev.def || 0;
+            document.getElementById('ev-spa').value = pokemon.ev.spa || 0;
+            document.getElementById('ev-spd').value = pokemon.ev.spd || 0;
+            document.getElementById('ev-spe').value = pokemon.ev.spe || 0;
 
-            for (let i = 1; i <= 4; i++) {
-                const moveInfo = this.movesList.find(m => m.id == pokemon[`move${i}_id`]);
-                document.getElementById(`move${i}-input`).value = moveInfo ? moveInfo.name_ja : '';
-            }
+            pokemon.moves.forEach((move, i) => {
+                const moveInfo = this.movesList.find(m => m.id == move.id);
+                document.getElementById(`move${i + 1}-input`).value = moveInfo ? moveInfo.name_ja : '';
+            });
+
         } else {
             // Clear datalists when adding a new pokemon
             updatePokemonDatalists('', this.pokemonList);

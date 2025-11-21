@@ -10,6 +10,7 @@ from src.models.move_model import MoveModel
 class Move:
     def __init__(
         self,
+        id: int,
         name: str,
         power: Optional[int | str],
         move_type: TypeName,
@@ -20,6 +21,7 @@ class Move:
         contact: bool = False,
         effect: Optional[str] = None,
     ):
+        self.id:int = id
         self.name: str = name
 
         # --- 🔧 安全な威力変換 ---
@@ -54,6 +56,7 @@ class Move:
         contact = False  # ここは技の特性に基づいて設定
         
         return cls(
+            id=move_model.id,
             name=move_model.name_ja,
             power=power,
             move_type=move_model.type,
@@ -85,6 +88,7 @@ class Move:
         Moveインスタンスを辞書形式に変換する
         """
         return {
+            "id": self.id,
             "name": self.name,
             "power": self.power,
             "type": self.type,

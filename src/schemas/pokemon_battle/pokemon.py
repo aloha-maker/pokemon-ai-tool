@@ -6,6 +6,10 @@ from .move import Move
 from src.models.pokemon_model import PokemonModel
 from src.models.trained_pokemon_moedl import TrainedPokemonModel
 from src.models.move_model import MoveModel
+from src.models.natures_model import NatureModel
+from src.models.abilities_model import AbilityModel
+from src.models.item_model import ItemModel
+from src.models.type_model import TypeModel
 
 
 # =========================
@@ -15,7 +19,10 @@ from src.models.move_model import MoveModel
 class Pokemon:
     def __init__(
         self,
+        id: int,
+        pokemon_id: int,
         name: str,
+        nickname: str,
         level: int,
         base_stats: Dict[StatName, int],
         iv: Dict[StatName, int],
@@ -28,7 +35,10 @@ class Pokemon:
         status: Optional[str] = None,
         current_hp: Optional[int] = None,
     ):
+        self.id: int = id
+        self.pokemon_id: int = pokemon_id
         self.name: str = name
+        self.nickname: str = nickname
         self.level: int = level
         self.base_stats: Dict[StatName, int] = base_stats
         self.iv: Dict[StatName, int] = iv
@@ -51,6 +61,13 @@ class Pokemon:
 
         # 技リスト
         self.moves: List[Move] = []
+
+        # ===== 論理名の自動取得 =====
+        self.nature_name = NatureModel.query.get(nature).name_ja
+        self.ability_name = AbilityModel.query.get(ability).name_ja
+        self.item_name = ItemModel.query.get(item).name_ja if item else None
+        self.tera_type_name = TypeModel.query.get(tera_type).name_ja if tera_type else None
+        # ==========================
 
     def calculate_hp(self) -> int:
         """HPの実数値を計算"""
@@ -124,7 +141,10 @@ class Pokemon:
 
         # --- インスタンス生成 ---
         pokemon = cls(
+            id=trained.id,
+            pokemon_id=base_model.id,
             name=base_model.name_ja,
+            nickname=trained.nickname,
             level=trained.level,
             base_stats=base_stats,
             iv=iv,
@@ -170,12 +190,12 @@ class Pokemon:
             types.append(base_model.type2)
 
         pokemon = cls(
+            pokemon_id=base_model.id,
             name=base_model.name_ja,
             level=level,
             base_stats=base_stats,
             iv=iv,
             ev=ev,
-            
             nature=None,
             ability=None,
             item=None,
@@ -245,16 +265,23 @@ class Pokemon:
         Pokemonインスタンスを辞書形式に変換する
         """
         return {
+            "id": self.id,
+            "pokemon_id": self.pokemon_id,
             "name": self.name,
+            "nickname": self.nickname,
             "level": self.level,
             "base_stats": self.base_stats,
             "iv": self.iv,
             "ev": self.ev,
             "nature": self.nature,
+            "nature_name": self.nature_name,
             "ability": self.ability,
+            "ability_name": self.ability_name,
             "item": self.item,
+            "item_name": self.item_name,
             "types": self.types,
             "tera_type": self.tera_type,
+            "tera_type_name": self.tera_type_name,
             "status": self.status,
             "boosts": self.boosts,
             "max_hp": self.max_hp,

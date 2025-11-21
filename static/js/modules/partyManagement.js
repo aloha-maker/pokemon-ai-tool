@@ -61,7 +61,7 @@ export class PartyManagement {
             this.allTrainedPokemons.forEach(p => {
                 const option = document.createElement('option');
                 option.value = p.id;
-                option.textContent = `${p.nickname} (ID: ${p.id}:${p.pokemon_name})`;
+                option.textContent = `${p.nickname} (ID: ${p.id}:${p.name})`;
                 select.appendChild(option);
             });
             select.value = currentValue;
