@@ -3,30 +3,20 @@ from typing import List, Dict, Any
 from src.extensions import db
 
 from src.schemas.pokemon_battle import Pokemon
-
-from src.models.trained_pokemon_moedl import TrainedPokemonModel
-from src.models.natures_model import NatureModel
-from src.models.type_model import TypeModel
-from src.models.item_model import ItemModel
-from src.models.abilities_model import AbilityModel
+from src.models import TrainedPokemonModel,NatureModel,TypeModel,ItemModel,AbilityModel
 
 class TrainedPokemonService:
-    """育成済みポケモンに関するビジネスロジックを担当する"""
+    """育成済みポケモンに関するビジネスロジックを担当する"""    
     def get_by_id(self, pokemon_id: int) -> Dict[str, Any] | None:
         """IDで単一の育成済みポケモンを取得する"""
         trained_pokemon = TrainedPokemonModel.query.get(pokemon_id)
-        pokemon = Pokemon.from_trained_model(trained_pokemon)
-        return pokemon.to_dict()
+        if not trained_pokemon:
+            return None
+        return Pokemon.from_trained_model(trained_pokemon).to_dict()
 
     def get_all(self) -> List[Dict[str, Any]]:
-        """すべての育成済みポケモンを取得する"""
-        trainde_pokemon_list = []
-        trainde_pokemon_model_list = TrainedPokemonModel.query.all()
-        for trainde_pokemon_model in trainde_pokemon_model_list:
-            trainde_pokemon = self.get_by_id(trainde_pokemon_model.id)
-            trainde_pokemon_list.append(trainde_pokemon)
-        print(trainde_pokemon_list)
-        return trainde_pokemon_list    
+        trained_pokemon_list = TrainedPokemonModel.query.all()
+        return [Pokemon.from_trained_model(model).to_dict() for model in trained_pokemon_list]   
 
     def create(self, data: Dict[str, Any]) -> int:
         """育成済みポケモンを新規追加する"""
@@ -42,7 +32,7 @@ class TrainedPokemonService:
             db.session.rollback()
             raise e
 
-    def update(self, pokemon_id: int, data: Dict[str, Any]) -> int:
+    def update(self, pokemon_id: int, data: Dict[str, Any]) -> bool:
         """育成済みポケモンを更新する"""
         try:
             pokemon = TrainedPokemonModel.query.get(pokemon_id)
@@ -57,10 +47,10 @@ class TrainedPokemonService:
             db.session.rollback()
             raise e
 
-    def delete(self, id: int) -> int:
+    def delete(self, pokemon_id: int) -> bool:
         """育成済みポケモンを削除する"""
         try:
-            model = TrainedPokemonModel.query.get(id)
+            model = TrainedPokemonModel.query.get(pokemon_id)
             if model:
                 db.session.delete(model)
                 db.session.commit()
