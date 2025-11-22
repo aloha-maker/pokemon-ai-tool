@@ -61,7 +61,6 @@ class TrainedPokemonService:
         """育成済みポケモンを削除する"""
         try:
             model = TrainedPokemonModel.query.get(id)
-            print(model)
             if model:
                 db.session.delete(model)
                 db.session.commit()

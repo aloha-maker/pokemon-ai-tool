@@ -2,15 +2,17 @@
 from typing import List, Dict, Any
 import time
 from src.database.manager import DatabaseManager
-from src.services.trained_pokemon_service import TrainedPokemonService
+from src.extensions import db
+
+from src.schemas.pokemon_battle import Party
+from src.schemas.pokemon_battle import Pokemon
+
 from src.schemas.pokemon_battle.party import Party
 from src.models.party_model import PartyModel
+from src.models.partyMember_model import PartyMemberModel
 
 class PartyService:
     """パーティに関するビジネスロジックを担当する"""
-
-    def __init__(self, trained_pokemon_service: TrainedPokemonService = None):
-        self.trained_pokemon_service = trained_pokemon_service or TrainedPokemonService()
 
     def get_all(self) -> List[Dict[str, Any]]:
         """すべてのパーティを、メンバー情報を含めて取得する"""
@@ -158,46 +160,39 @@ class PartyService:
 
     def update(self, party_id: int, data: Dict[str, Any]) -> int:
         """パーティを更新する"""
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            try:
-                cursor.execute(
-                    "UPDATE parties SET name = ?, description = ?, updated_at = ? WHERE id = ?",
-                    (data['name'], data.get('description', ''), time.strftime('%Y-%m-%d %H:%M:%S'), party_id)
-                )
-                update_rowcount = cursor.rowcount # UPDATEの結果を保存
-                
-                cursor.execute("DELETE FROM party_members WHERE party_id = ?", (party_id,))
-                
-                members = data.get('members', [])
-                if members:
-                    member_values = [
-                        (party_id, member_id, index)
-                        for index, member_id in enumerate(members)
-                        if member_id is not None
-                    ]
-                    cursor.executemany(
-                        "INSERT INTO party_members (party_id, trained_pokemon_id, member_index) VALUES (?, ?, ?)",
-                        member_values
-                    )
-                
-                db.conn.commit()
-                return update_rowcount # 保存した値を返す
-            except Exception as e:
-                db.conn.rollback()
-                raise e
+        try:
+            party = PartyModel.query.get(party_id)
+            if not party:
+                return False
+            PartyModel.query.filter_by(id=party_id).update({
+                "name": data["name"],
+                "description": data.get("description")
+            })
+            # メンバー情報を更新            
+            for index, member in enumerate(data["members"]):
+                PartyMemberModel.query.filter_by(party_id=party_id,member_index=index).update({
+                    "trained_pokemon_id": member,
+                })
+            db.session.commit()
+            return True
+
+        except Exception as e:
+            db.session.rollback()
+            raise e
 
     def delete(self, party_id: int) -> int:
         """パーティを削除する"""
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            try:
-                cursor.execute("DELETE FROM parties WHERE id = ?", (party_id,))
-                db.conn.commit()
-                return cursor.rowcount
-            except Exception as e:
-                db.conn.rollback()
-                raise e
+        try:
+            model = PartyModel.query.get(party_id)
+            if model:
+                db.session.delete(model)
+                db.session.commit()
+                return True
+            return False
+            
+        except Exception as e:
+            db.session.rollback()
+            raise e
 
     def get_pokemon_names(self, party_id: int) -> List[str]:
         """指定されたパーティIDのポケモンの名前（日本語）のリストを取得する。"""
@@ -214,39 +209,6 @@ class PartyService:
             cursor.execute(query, (party_id,))
             rows = cursor.fetchall()
             return [row['name_ja'] for row in rows]
-
-    def register_generated_party(self, party_data: List[Dict[str, Any]], party_name: str) -> None:
-        """AIが生成したパーティを育成済みポケモンとパーティの両方に登録する"""
-        if not party_data or not party_name or len(party_data) != 6:
-            raise ValueError("Invalid party data provided. Party must contain 6 Pokemon and a name.")
-
-        new_pokemon_ids = []
-        
-        for p in party_data:
-            trained_pokemon_data = {
-                "pokemon_id": p.get('pokemon_id'),
-                "nickname": p.get('name', 'Unknown'),
-                "level": 50,
-                "tera_type_id": p.get('tera_type_id'),
-                "ability_id": p.get('ability_id'),
-                "nature_id": p.get('nature_id'),
-                "held_item_id": p.get('item_id'),
-                "move1_id": p['moves'][0]['id'] if len(p.get('moves', [])) > 0 else None,
-                "move2_id": p['moves'][1]['id'] if len(p.get('moves', [])) > 1 else None,
-                "move3_id": p['moves'][2]['id'] if len(p.get('moves', [])) > 2 else None,
-                "move4_id": p['moves'][3]['id'] if len(p.get('moves', [])) > 3 else None,
-                **p.get('evs', {})
-            }
-            new_id = self.trained_pokemon_service.create(trained_pokemon_data)
-            new_pokemon_ids.append(new_id)
-        
-        party_to_add = {
-            "name": party_name,
-            "description": "AIにより自動生成されたパーティです。",
-            "members": new_pokemon_ids
-        }
-        self.create(party_to_add)
-
 
     def get_party_menber_by_id(self, party_id: int):
         party = Party.load_from_db(party_id)
