@@ -11,7 +11,6 @@ from src.extensions import db
 from src.models import BattleModel,PartyLogModel,RawBattleEventModel
 
 from src.extensions import executor
-from src.database.manager import DatabaseManager
 from src.schemas.pokemon_battle.battle_log import BattleLog
 
 # OCR関連のモジュールをインポート
@@ -54,15 +53,9 @@ class BattleService:
         """
         指定された日付の最新のバトルIDを取得する (例: BATTLE-20231027-005)
         """
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            pattern = f'BATTLE-{date_str}-%'
-            cursor.execute(
-                "SELECT battle_id FROM battles WHERE battle_id LIKE ? ORDER BY battle_id DESC LIMIT 1",
-                (pattern,)
-            )
-            row = cursor.fetchone()
-            return row['battle_id'] if row else None
+        pattern = f'BATTLE-{date_str}-%'
+        log = BattleModel.query.filter(BattleModel.battle_id.like(pattern)).order_by(BattleModel.battle_id.desc()).first()
+        return log.battle_id if log else None
 
     def add_battle_log_from_video(self, video_task_id: str, turn_data: dict) -> int:
         """
@@ -70,30 +63,23 @@ class BattleService:
         video_task_id とターンごとのデータ(turn_data)を受け取る。
         戻り値は追加されたレコードのID。
         """
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-
-            # battle_data をJSON文字列に変換
-            battle_data_json = json.dumps(turn_data, ensure_ascii=False, indent=2)
-
-            # TODO: 動画からパーティを特定する機能が実装されるまで、暫定的に1をセットする
-            my_party_id = 1 
-
-            # 新しいログを挿入
-            cursor.execute(
-                "INSERT INTO battle_logs (video_task_id, battle_data, result, my_party_id) VALUES (?, ?, ?, ?)",
-                (
-                    video_task_id,
-                    battle_data_json,
-                    'unknown', # 解析直後は結果不明
-                    my_party_id
-                )
-            )
-            db.conn.commit()
-            return cursor.lastrowid
+        # battle_data をJSON文字列に変換
+        battle_data_json = json.dumps(turn_data, ensure_ascii=False, indent=2)
+        try:
+            # BattleLogインスタンスを作成
+            battle_log = BattleLog.from_dict(battle_data_json)
+            
+            # 一括保存（BattleLogのsave_to_dbメソッドを使用）
+            self.delete_battle(battle_data_json['battle_id'])
+            battle_log.save_to_db()
+        
+            return battle_log
+            
+        except Exception as e:
+            db.session.rollback()
+            raise e
 
     # --- Video Analysis Methods --- #
-
     def submit_video_analysis(self, video_file) -> str:
         """動画ファイルを保存し、非同期の解析タスクを開始する"""
         if not video_file or video_file.filename == '':
@@ -128,53 +114,16 @@ class BattleService:
 
     def get_battle_log_by_id(self, log_id: int) -> dict:
         """IDを指定して対戦ログを取得する。"""
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            cursor.execute("SELECT * FROM battle_logs WHERE id = ?", (log_id,))
-            row = cursor.fetchone()
-            if not row:
-                return None
-            
-            log_data = dict(row)
-            # battle_data と opponent_party はJSON文字列なのでパースする
-            if log_data.get('battle_data'):
-                try:
-                    log_data['battle_data'] = json.loads(log_data['battle_data'])
-                except (json.JSONDecodeError, TypeError):
-                    log_data['battle_data'] = {}
-            if log_data.get('opponent_party'):
-                try:
-                    log_data['opponent_party'] = json.loads(log_data['opponent_party'])
-                except (json.JSONDecodeError, TypeError):
-                    log_data['opponent_party'] = {}
-                
-            return log_data
+        log = BattleLog.query.get(log_id)
+        return log.to_dict()
 
     def get_all_battle_logs(self) -> list[dict]:
         """
         すべての対戦履歴をDBから取得する。
         JSONデータはパースして返す。
         """
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            cursor.execute("SELECT * FROM battle_logs ORDER BY created_at DESC")
-            rows = cursor.fetchall()
-            
-            logs = []
-            for row in rows:
-                log_data = dict(row)
-                if log_data.get('battle_data'):
-                    try:
-                        log_data['battle_data'] = json.loads(log_data['battle_data'])
-                    except (json.JSONDecodeError, TypeError):
-                        log_data['battle_data'] = {}
-                if log_data.get('opponent_party'):
-                    try:
-                        log_data['opponent_party'] = json.loads(log_data['opponent_party'])
-                    except (json.JSONDecodeError, TypeError):
-                        log_data['opponent_party'] = {}
-                logs.append(log_data)
-            return logs
+        battle_logs = BattleLog.query.order_by(BattleLog.battle_id).all()
+        return battle_logs.to_dict()
 
     def _analyze_video_task(self, task_id: str, filepath: str):
         """バックグラウンドで実行される動画解析タスク"""
