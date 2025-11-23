@@ -38,10 +38,13 @@ def add_party():
         if not data:
             return api_fail({"message": "No data provided"})
         
-        new_id = service.create(data)
-        return api_success({"id": new_id, "message": "Party added successfully"}, 201)
+        created = service.create(data)
+        if created:
+            return api_success({"message": "Party added successfully"}, 201)
+        else:
+            return api_fail({"message": "Party not found"}, 404)
     except Exception as e:
-        logging.exception("Error adding new party")
+        logging.exception(f"Unexpected error adding party: {e}")
         return api_error("パーティの登録に失敗しました。")
 
 @party_bp.route('/<int:party_id>', methods=['PUT'])
@@ -52,8 +55,8 @@ def update_party(party_id):
         if not data:
             return api_fail({"message": "No data provided"})
         
-        updated_rows = service.update(party_id, data)
-        if updated_rows > 0:
+        updated = service.update(party_id, data)
+        if updated:
             return api_success({"message": f"Party {party_id} updated successfully"})
         else:
             return api_fail({"message": "Party not found or data unchanged"}, 404)
@@ -65,27 +68,11 @@ def update_party(party_id):
 def delete_party(party_id):
     """パーティを削除する"""
     try:
-        deleted_rows = service.delete(party_id)
-        if deleted_rows > 0:
-            return api_success({"message": f"Party {party_id} deleted successfully"})
+        deleted = service.delete(party_id)
+        if deleted:
+            return api_success({"message": f"Party {party_id} updated successfully"})
         else:
-            return api_fail({"message": "Party not found"}, 404)
+            return api_fail({"message": "Party not found or data unchanged"}, 404)
     except Exception as e:
         logging.exception(f"Error deleting party {party_id}")
         return api_error("パーティの削除に失敗しました。")
-
-@party_bp.route('/register-generated-party', methods=['POST'])
-def register_generated_party():
-    """生成されたパーティを育成済みポケモンとパーティとしてDBに登録する"""
-    try:
-        data = request.json
-        party_data = data.get('party')
-        party_name = data.get('party_name')
-
-        service.register_generated_party(party_data, party_name)
-        return api_success({"message": f"パーティ「{party_name}」を登録しました。"}, 201)
-    except ValueError as e:
-        return api_fail({"message": str(e)})
-    except Exception as e:
-        logging.exception("Error registering generated party")
-        return api_error("生成されたパーティの登録に失敗しました。")

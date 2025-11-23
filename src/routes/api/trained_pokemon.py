@@ -52,8 +52,8 @@ def update_trained_pokemon(pokemon_id):
         if not data:
             return api_fail({"message": "No data provided"})
 
-        updated_rows = service.update(pokemon_id, data)
-        if updated_rows > 0:
+        updated = service.update(pokemon_id, data)
+        if updated:
             return api_success({"message": f"Pokemon {pokemon_id} updated successfully"})
         else:
             return api_fail({"message": "Pokemon not found or data unchanged"}, 404)
@@ -65,8 +65,8 @@ def update_trained_pokemon(pokemon_id):
 def delete_trained_pokemon(pokemon_id):
     """育成済みポケモンを削除する"""
     try:
-        deleted_rows = service.delete(pokemon_id)
-        if deleted_rows > 0:
+        deleted = service.delete(pokemon_id)
+        if deleted:
             return api_success({"message": f"Pokemon {pokemon_id} deleted successfully"})
         else:
             return api_fail({"message": "Pokemon not found"}, 404)

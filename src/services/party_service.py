@@ -1,33 +1,23 @@
 # src/services/party_service.py
 from typing import List, Dict, Any
-import time
 from src.extensions import db
 
 from src.schemas.pokemon_battle import Party
-from src.schemas.pokemon_battle import Pokemon
-
-from src.schemas.pokemon_battle.party import Party
-from src.models.party_model import PartyModel
-from src.models.partyMember_model import PartyMemberModel
+from src.models.party_model import PartyModel,PartyMemberModel
 
 class PartyService:
     """パーティに関するビジネスロジックを担当する"""
     def get_all(self) -> List[Dict[str, Any]]:
         """すべてのパーティを、メンバー情報を含めて取得する"""
-        parties_dict = []
         party_list = PartyModel.query.all()
-        for p in party_list:
-            party = self.get_by_id(p.id)
-            parties_dict.append(party)
-
-        return parties_dict
+        return [Party.load_from_db(p.id).to_dict() for p in party_list]
 
     def get_by_id(self, party_id: int) -> Dict[str, Any] | None:
         """IDで指定したパーティの情報を、メンバーと技詳細を含めて効率的に取得する。"""
         party = Party.load_from_db(party_id)
         return party.to_dict()
 
-    def create(self, data: Dict[str, Any]) -> int:
+    def create(self, data: Dict[str, Any]) -> bool:
         """新しいパーティを作成する"""
         try:
             party = PartyModel(
@@ -40,36 +30,38 @@ class PartyService:
             members = data.get('members', [])
             if members:
                 for index, member_id in enumerate(members):
-                    membar = PartyMemberModel(
+                    member = PartyMemberModel(
                         party_id=party.id,
                         trained_pokemon_id=member_id,
                         member_index=index
                     )
-                    db.session.add(membar)
+                    db.session.add(member)
             
             db.session.commit()
 
-            return party.id  # 作成したIDを返す
+            return True
 
         except Exception as e:
             db.session.rollback()
             raise e
 
-    def update(self, party_id: int, data: Dict[str, Any]) -> int:
+    def update(self, party_id: int, data: Dict[str, Any]) -> bool:
         """パーティを更新する"""
         try:
             party = PartyModel.query.get(party_id)
             if not party:
                 return False
-            PartyModel.query.filter_by(id=party_id).update({
-                "name": data["name"],
-                "description": data.get("description")
-            })
+            party.name = data["name"]
+            party.description = data.get("description")
             # メンバー情報を更新            
-            for index, member in enumerate(data["members"]):
-                PartyMemberModel.query.filter_by(party_id=party_id,member_index=index).update({
-                    "trained_pokemon_id": member,
-                })
+            PartyMemberModel.query.filter_by(party_id=party_id).delete()
+            for index, member_id in enumerate(data["members"]):
+                member = PartyMemberModel(
+                    party_id=party_id,
+                    trained_pokemon_id=member_id,
+                    member_index=index
+                )
+                db.session.add(member)
             db.session.commit()
             return True
 
