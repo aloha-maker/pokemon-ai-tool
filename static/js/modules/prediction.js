@@ -65,7 +65,7 @@ export class PredictionManager {
             this.myPartySelect.innerHTML = '<option selected value="">登録済みパーティから選ぶ...</option>';
             parties.forEach(party => {
                 const option = document.createElement('option');
-                option.value = party.id;
+                option.value = party.party_id;
                 option.textContent = party.name;
                 this.myPartySelect.appendChild(option);
             });
@@ -76,13 +76,14 @@ export class PredictionManager {
 
     async loadPartyToForm() {
         const partyId = this.myPartySelect.value;
+        console.log(partyId)
         if (!partyId) {
             alert('パーティを選択してください。');
             return;
         }
 
         try {
-            const response = await fetch(`/api/party/${partyId}`);
+            const response = await fetch(`/api/parties/${partyId}`);
             if (!response.ok) throw new Error('パーティ情報の取得に失敗しました。');
             const responseData = await response.json();
 

@@ -91,8 +91,9 @@ export class PartyManagement {
                 partyCard.className = 'col-lg-6 mb-3';
                 let membersHtml = '<ul class="list-group list-group-flush small">';
                 party.members.forEach(member => {
-                    membersHtml += `<li class="list-group-item bg-transparent">${escapeHTML(member.nickname || member.pokemon_name)}</li>`;
+                    membersHtml += `<li class="list-group-item bg-transparent">${escapeHTML(member.nickname || "")}:${escapeHTML(member.name)}</li>`;
                 });
+                
                 if (party.members.length < 6) {
                     for(let i = party.members.length; i < 6; i++) {
                         membersHtml += `<li class="list-group-item bg-transparent text-muted">-</li>`;
@@ -108,8 +109,8 @@ export class PartyManagement {
                             ${membersHtml}
                         </div>
                         <div class="card-footer bg-transparent border-top-0 text-end p-2">
-                            <button class="btn btn-sm btn-outline-light edit-party-btn" data-id="${party.id}"><i class="bi bi-pencil"></i></button>
-                            <button class="btn btn-sm btn-outline-danger delete-party-btn" data-id="${party.id}"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-sm btn-outline-light edit-party-btn" data-id="${party.party_id}"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger delete-party-btn" data-id="${party.party_id}"><i class="bi bi-trash"></i></button>
                         </div>
                     </div>
                 `;
@@ -190,12 +191,12 @@ export class PartyManagement {
             }
             const party = responseData.data;
 
-            this.partyIdField.value = party.id;
+            this.partyIdField.value = party.party_id;
             this.partyNameField.value = party.name;
             this.partyDescriptionField.value = party.description;
             
             this.memberSelects.forEach((select, index) => {
-                const member = party.members.find(m => m.member_index === index);
+                const member = party.members[index]
                 select.value = member ? member.id : '';
             });
 

@@ -4,10 +4,10 @@ from src.services.party_service import PartyService
 from src.utils.response_handler import api_success, api_fail, api_error
 import logging
 
-party_bp = Blueprint('party_api', __name__, url_prefix='/api')
+party_bp = Blueprint('party_api', __name__, url_prefix='/api/parties')
 service = PartyService()
 
-@party_bp.route('/parties', methods=['GET'])
+@party_bp.route('', methods=['GET'])
 def get_parties():
     """パーティ一覧を取得する"""
     try:
@@ -17,7 +17,7 @@ def get_parties():
         logging.exception("Error getting all parties")
         return api_error("パーティ一覧の取得に失敗しました。")
 
-@party_bp.route('/parties/<int:party_id>', methods=['GET'])
+@party_bp.route('/<int:party_id>', methods=['GET'])
 def get_party(party_id):
     """単一のパーティ情報を取得する"""
     try:
@@ -30,7 +30,7 @@ def get_party(party_id):
         logging.exception(f"Error getting party {party_id}")
         return api_error("パーティ情報の取得に失敗しました。")
 
-@party_bp.route('/parties', methods=['POST'])
+@party_bp.route('', methods=['POST'])
 def add_party():
     """新しいパーティを登録する"""
     try:
@@ -44,7 +44,7 @@ def add_party():
         logging.exception("Error adding new party")
         return api_error("パーティの登録に失敗しました。")
 
-@party_bp.route('/parties/<int:party_id>', methods=['PUT'])
+@party_bp.route('/<int:party_id>', methods=['PUT'])
 def update_party(party_id):
     """パーティ情報を更新する"""
     try:
@@ -61,7 +61,7 @@ def update_party(party_id):
         logging.exception(f"Error updating party {party_id}")
         return api_error("パーティの更新に失敗しました。")
 
-@party_bp.route('/parties/<int:party_id>', methods=['DELETE'])
+@party_bp.route('/<int:party_id>', methods=['DELETE'])
 def delete_party(party_id):
     """パーティを削除する"""
     try:
@@ -89,16 +89,3 @@ def register_generated_party():
     except Exception as e:
         logging.exception("Error registering generated party")
         return api_error("生成されたパーティの登録に失敗しました。")
-
-@party_bp.route('/party/<int:party_id>', methods=['GET'])
-def get_party_menber(party_id):
-    """単一のパーティ情報を取得する"""
-    try:
-        party = service.get_party_menber_by_id(party_id)
-        if party:
-            return api_success(party)
-        else:
-            return api_fail({"message": "Party not found"}, 404)
-    except Exception as e:
-        logging.exception(f"Error getting party {party_id}")
-        return api_error("パーティ情報の取得に失敗しました。")
