@@ -33,6 +33,7 @@ def get_pokemon_abilities(pokemon_id):
     """ポケモンの特性取得API"""
     try:
         abilities = service.get_abilities_by_pokemon_id(pokemon_id)
+        
         if abilities is None:
             return api_fail({"error": f"ポケモンID '{pokemon_id}' が見つからないか、特性がありません。"}, 404)
         return api_success({"abilities": abilities})

@@ -46,11 +46,6 @@ class PartyGenerator:
                     weaknesses[attack_type] += 1
         return weaknesses
 
-    def _choose_ability(self, p_data: dict) -> dict:
-        """ポケモンに紐づく正しい特性の中からランダムに1つ選択する"""
-        possible_abilities = self.master_data_service.get_abilities_by_pokemon_id(p_data['id'])
-        return random.choice(possible_abilities)
-
     def _choose_item(self, p_data: dict, role: str) -> dict:
         role_items = {
             "高速アタッカー": ["こだわりスカーフ", "いのちのたま", "きあいのタスキ"],
@@ -213,7 +208,7 @@ class PartyGenerator:
             role = p_data['role']
             nature = self._choose_nature(p_data, role)
             item = self._choose_item(p_data, role)
-            ability = self._choose_ability(p_data)
+            # ability = self._choose_ability(p_data)
             evs = self._generate_evs(role, nature)
             moves = self._choose_moves(p_data)
             
@@ -225,8 +220,8 @@ class PartyGenerator:
                 "name": p_data['name_ja'],
                 "item_id": item['id'],
                 "item_name": item['name_ja'],
-                "ability_id": ability['id'],
-                "ability_name": ability['name_ja'],
+                # "ability_id": ability['id'],
+                # "ability_name": ability['name_ja'],
                 "nature_id": nature['id'],
                 "nature_name": nature['name_ja'],
                 "tera_type_id": tera_type['id'],

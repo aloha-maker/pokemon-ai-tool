@@ -18,7 +18,6 @@ def predict():
     try:
         result = service.predict_best_team(
             my_party=data.get('my_party'),
-            my_party_id=data.get('my_party_id'),
             opponent_party=data.get('opponent_party')
         )
         return api_success(result)

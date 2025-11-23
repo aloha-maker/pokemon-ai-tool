@@ -16,7 +16,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_recycle': 300,
-        'echo': True  # デバッグ用にSQLを表示
+        'echo': False  # True:デバッグ用にSQLを表示
     }
 
 

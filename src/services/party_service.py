@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 from src.extensions import db
 
 from src.schemas.pokemon_battle import Party
-from src.models.party_model import PartyModel,PartyMemberModel
+from src.models import PartyModel,PartyMemberModel
 
 class PartyService:
     """パーティに関するビジネスロジックを担当する"""

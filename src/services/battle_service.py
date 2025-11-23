@@ -8,15 +8,10 @@ from threading import Lock
 from typing import List, Dict, Optional
 
 from src.extensions import db
-from src.models.battle_model import BattleModel
-from src.models.party_log_model import PartyLogModel
-from src.models.raw_battle_event_model import RawBattleEventModel
+from src.models import BattleModel,PartyLogModel,RawBattleEventModel
 
 from src.extensions import executor
 from src.database.manager import DatabaseManager
-from src.services.dashboard_service import DashboardService
-from src.services.master_data_service import MasterDataService
-
 from src.schemas.pokemon_battle.battle_log import BattleLog
 
 # OCR関連のモジュールをインポート
@@ -37,39 +32,6 @@ class BattleService:
         self.tasks_lock = Lock()
 
     # --- Battle History Methods --- #
-
-    def get_battle_history_and_stats(self) -> dict:
-        """対戦履歴と統計情報をまとめて取得する"""
-        raw_history = self.get_battle_history()
-        # 統計情報はDashboardServiceから取得
-        dashboard_service = DashboardService()
-        stats = dashboard_service.get_battle_stats()
-        return {"raw_history": raw_history, "stats": stats}
-
-    def get_battle_history(self, limit: int = 50) -> list[dict]:
-        """対戦履歴の一覧を取得する。"""
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            cursor.execute("SELECT * FROM battle_logs ORDER BY created_at DESC LIMIT ?", (limit,))
-            rows = cursor.fetchall()
-            
-            # JSONデータをパースして返す
-            logs = []
-            for row in rows:
-                log_data = dict(row)
-                if log_data.get('battle_data'):
-                    try:
-                        log_data['battle_data'] = json.loads(log_data['battle_data'])
-                    except (json.JSONDecodeError, TypeError):
-                        log_data['battle_data'] = {} # パース失敗時は空のdict
-                if log_data.get('opponent_party'):
-                    try:
-                        log_data['opponent_party'] = json.loads(log_data['opponent_party'])
-                    except (json.JSONDecodeError, TypeError):
-                        log_data['opponent_party'] = {} # パース失敗時は空のdict
-                logs.append(log_data)
-            return logs
-
     def generate_new_battle_id(self) -> str:
         """新しい連番のバトルIDを生成する"""
         now = datetime.datetime.now()

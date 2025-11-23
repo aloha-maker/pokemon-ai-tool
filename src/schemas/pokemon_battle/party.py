@@ -98,30 +98,6 @@ class Party:
 
         return party_model
 
-    def save_to_db(self) -> None:
-        """
-        PartyインスタンスをDBに保存する
-        """
-        from src.database.manager import db
-        
-        party_model = self.to_model()
-        
-        db.session.add(party_model)
-        db.session.commit()
-        
-        # メンバー情報を保存
-        for index, pokemon in enumerate(self.members):
-            # ここでは仮の実装。実際にはTrainedPokemonModelの保存も必要
-            member_model = PartyMemberModel(
-                party_id=party_model.id,
-                trained_pokemon_id=1,  # 仮の値。実際にはpokemonから取得
-                member_index=index
-            )
-            db.session.add(member_model)
-        
-        db.session.commit()
-        self.party_id = party_model.id
-
     @classmethod
     def load_from_db(cls, party_id: int) -> Optional["Party"]:
         """

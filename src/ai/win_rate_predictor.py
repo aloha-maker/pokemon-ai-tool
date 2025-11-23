@@ -1,20 +1,17 @@
 import itertools
 import os
 from ..core.type_chart import get_effectiveness
-from ..services.master_data_service import MasterDataService
+from src.models import PokemonModel
 
 class WinRatePredictor:
     """
     対戦前の選出フェーズで、有利な選出を予測・推薦するクラス。
     """
-    def __init__(self):
-        self.master_data_service = MasterDataService()
-
     def _get_pokemon_types(self, pokemon_name):
         """データベースからポケモン名に対応するタイプを取得する"""
-        pokemon = self.master_data_service.get_pokemon_by_name(pokemon_name)
+        pokemon = PokemonModel.query.filter_by(name_ja=pokemon_name).first()
         if pokemon:
-            return [t for t in [pokemon['type1'], pokemon['type2']] if t]
+            return [t for t in [pokemon.type1, pokemon.type2] if t]
         return []
 
     def _calculate_matchup_score(self, my_types, opponent_types):
@@ -45,9 +42,6 @@ class WinRatePredictor:
         Returns:
             dict: 最適な選出チームとスコア、またはエラーメッセージ
         """
-        if len(my_party_names) != 6 or len(opponent_party_names) != 6:
-            return {"error": "パーティはそれぞれ6体入力してください。"}
-
         my_party_types = {name: self._get_pokemon_types(name) for name in my_party_names}
         opponent_party_types = {name: self._get_pokemon_types(name) for name in opponent_party_names}
 

@@ -1,29 +1,20 @@
 import os
 from ..core.type_chart import get_effectiveness
-from ..services.master_data_service import MasterDataService
 from .log_analyzer import LogAnalyzer
 from src.schemas.pokemon_battle.battle_state import BattleState
-
+from src.models import MoveModel
 
 class ActionAIModel:
     """
     ルールベースで行動を予測するAIモデルのプロトタイプ。
     """
     def __init__(self, app_state):
-        self.master_data_service = MasterDataService()
         self.log_analyzer = LogAnalyzer(app_state=app_state)
-
-    def _get_pokemon_types(self, pokemon_name):
-        """ポケモン名からタイプを取得する"""
-        pokemon = self.master_data_service.get_pokemon_by_name(pokemon_name)
-        if pokemon:
-            return [t for t in [pokemon['type1'], pokemon['type2']] if t]
-        return []
 
     def _get_move_type(self, move_name):
         """技名からタイプを取得する"""
-        move = self.master_data_service.get_move_by_name(move_name)
-        return move['type'] if move else None
+        move = MoveModel.query.filter_by(name_ja=move_name).first()
+        return move.type if move else None
 
     def _parse_hp(self, hp_string: str) -> dict | None:
         """HPの文字列（例: '123/456'）をパースして辞書を返す"""
