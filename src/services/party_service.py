@@ -131,32 +131,57 @@ class PartyService:
 
     def create(self, data: Dict[str, Any]) -> int:
         """新しいパーティを作成する"""
-        with DatabaseManager() as db:
-            cursor = db.get_cursor()
-            try:
-                cursor.execute(
-                    "INSERT INTO parties (name, description) VALUES (?, ?)",
-                    (data['name'], data.get('description', ''))
-                )
-                party_id = cursor.lastrowid
-                
-                members = data.get('members', [])
-                if members:
-                    member_values = [
-                        (party_id, member_id, index)
-                        for index, member_id in enumerate(members)
-                        if member_id is not None
-                    ]
-                    cursor.executemany(
-                        "INSERT INTO party_members (party_id, trained_pokemon_id, member_index) VALUES (?, ?, ?)",
-                        member_values
+        try:
+            party = PartyModel(
+                name=data['name'],
+                description=data.get('description', '')
+            )
+            db.session.add(party)
+            db.session.flush()
+
+            members = data.get('members', [])
+            if members:
+                for index, member_id in enumerate(members):
+                    membar = PartyMemberModel(
+                        party_id=party.id,
+                        trained_pokemon_id=member_id,
+                        member_index=index
                     )
+                    db.session.add(membar)
+            
+            db.session.commit()
+
+            return party.id  # 作成したIDを返す
+
+        except Exception as e:
+            db.session.rollback()
+            raise e
+        # with DatabaseManager() as db:
+        #     cursor = db.get_cursor()
+        #     try:
+        #         cursor.execute(
+        #             "INSERT INTO parties (name, description) VALUES (?, ?)",
+        #             (data['name'], data.get('description', ''))
+        #         )
+        #         party_id = cursor.lastrowid
                 
-                db.conn.commit()
-                return party_id
-            except Exception as e:
-                db.conn.rollback()
-                raise e
+        #         members = data.get('members', [])
+        #         if members:
+        #             member_values = [
+        #                 (party_id, member_id, index)
+        #                 for index, member_id in enumerate(members)
+        #                 if member_id is not None
+        #             ]
+        #             cursor.executemany(
+        #                 "INSERT INTO party_members (party_id, trained_pokemon_id, member_index) VALUES (?, ?, ?)",
+        #                 member_values
+        #             )
+                
+        #         db.conn.commit()
+        #         return party_id
+        #     except Exception as e:
+        #         db.conn.rollback()
+        #         raise e
 
     def update(self, party_id: int, data: Dict[str, Any]) -> int:
         """パーティを更新する"""
