@@ -1,12 +1,9 @@
 import { escapeHTML } from './utils.js';
-import { PredictionManager } from './prediction.js';
-import { createBattleState } from '../collectors/BattleState.js';
-import { gatherSideDataAsJson } from '../collectors/pokemonDataCollector.js';
 
 export class RealtimeAnalysis {
-    constructor(pokemonDetailEditor,predictionManager) {
+    constructor(battleStateManager,predictionManager) {
         this.socket = io();
-        this.pokemonDetailEditor = pokemonDetailEditor;
+        this.battleStateManager = battleStateManager;
         this.predictionManager = predictionManager;
         this.captureImage = document.getElementById('capture-image');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
@@ -19,7 +16,6 @@ export class RealtimeAnalysis {
         this.logBuffer = [];
         this.sequence = 0;
         this.partySaver = null;
-        this.predictionManager = new PredictionManager();
         
         this.init();
     }
@@ -119,7 +115,7 @@ export class RealtimeAnalysis {
                 console.log('battle')
                 if(sub_phase === 'choose'){
                     console.log('choose')
-                    const battleState = this.gatherFullBattleState();
+                    const battleState = this.battleStateManager.getBattleState();
 
                     const response = await fetch('/api/ai/get_suggestion', {
                         method: 'POST',
@@ -151,15 +147,6 @@ export class RealtimeAnalysis {
             console.log('Suggestion received:', data);
             this.displaySuggestion(data);
         });
-    }
-
-    gatherFullBattleState() {
-        // バトル環境設定の状態（field,side.active,side.screen,side.side_conditions）を取得
-        const detailedStates = this.pokemonDetailEditor.getState();
-        console.log("Gathering full battle state...",detailedStates);
-        const side1Data = gatherSideDataAsJson('my-party',detailedStates);
-        const side2Data = gatherSideDataAsJson('opponent-party',detailedStates);
-        return createBattleState({ side1: side1Data, side2: side2Data });
     }
 
     appendRealtimeLog(latest_events) {
@@ -241,7 +228,7 @@ export class RealtimeAnalysis {
 
     handleStartOcr() {
         if (this.currentState === 'running_camera') {
-            const battleState = this.gatherFullBattleState();
+            const battleState = this.battleStateManager.getBattleState();
             const battleId = this.battleIdDisplay ? this.battleIdDisplay.value : null; // バトルIDを取得
 
             console.log("Sending battle state to server on OCR start:", battleState, "with Battle ID:", battleId);
@@ -251,7 +238,8 @@ export class RealtimeAnalysis {
 
     handleConfirmSelection() {
         if (this.currentState === 'running_camera_ocr') {
-            const battleState = this.gatherFullBattleState();
+            const battleState = this.battleStateManager.getBattleState();
+            console.log(battleState)
             this.socket.emit('resume_ocr', battleState);
         }
     }

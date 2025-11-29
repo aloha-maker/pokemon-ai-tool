@@ -63,8 +63,8 @@ class Pokemon:
         self.moves: List[Move] = []
 
         # ===== 論理名の自動取得 =====
-        self.nature_name = NatureModel.query.get(nature).name_ja
-        self.ability_name = AbilityModel.query.get(ability).name_ja
+        self.nature_name = NatureModel.query.get(nature).name_ja if nature else None
+        self.ability_name = AbilityModel.query.get(ability).name_ja if ability else None
         self.item_name = ItemModel.query.get(item).name_ja if item else None
         self.tera_type_name = TypeModel.query.get(tera_type).name_ja if tera_type else None
         # ==========================
@@ -190,6 +190,8 @@ class Pokemon:
             types.append(base_model.type2)
 
         pokemon = cls(
+            id=0,
+            nickname=None,
             pokemon_id=base_model.id,
             name=base_model.name_ja,
             level=level,
@@ -232,6 +234,9 @@ class Pokemon:
         # まずPokemonModelからname_jaを検索
         pokemon_name = data["name"]
         base_model = PokemonModel.query.filter_by(name_ja=pokemon_name).first()
+        if base_model is None:
+            print(f"PokemonModel not found for name: {pokemon_name}")
+            return None
         
         # 種族データから基本インスタンスを生成
         pokemon = cls.from_pokemon_model(base_model=base_model, level=data.get("level", 50))

@@ -1,7 +1,7 @@
 export class PartySaver {
-    constructor(realtimeAnalysis) {
-        this.realtimeAnalysis = realtimeAnalysis;
-        this.pokemonDetailEditor = realtimeAnalysis.pokemonDetailEditor;
+    constructor(battleStateManager,pokemonDetailEditor) {
+        this.battleStateManager = battleStateManager;
+        this.pokemonDetailEditor = this.pokemonDetailEditor;
         this.savePartyBtn = document.getElementById('save-party-button');
         this.resultModalEl = document.getElementById('result-modal');
         this.resultModal = this.resultModalEl ? new bootstrap.Modal(this.resultModalEl) : null;
@@ -41,7 +41,7 @@ export class PartySaver {
     gatherBattleData() {
         const myPartySelect = document.getElementById('my-party-select');
         const myPartyId = myPartySelect.value;
-        const detailedStates = this.pokemonDetailEditor.getState();
+        const detailedStates = this.battleStateManager.getBattleState();
 
         const processParty = (containerSelector, partyIndexOffset) => {
             const slots = document.querySelectorAll(`${containerSelector} .pokemon-slot`);
@@ -99,10 +99,8 @@ export class PartySaver {
 
         // ログバッファとBattleStateを取得してペイロードに追加
         if (this.realtimeAnalysis) {
-            data.raw_events = this.realtimeAnalysis.getLogBuffer();
-            data.battle_state = this.realtimeAnalysis.gatherFullBattleState(); 
+            data.battle_state = this.battleStateManager.getBattleState();
         } else {
-            data.raw_events = [];
             data.battle_state = null;
         }
 

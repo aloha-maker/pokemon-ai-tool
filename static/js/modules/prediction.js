@@ -76,7 +76,6 @@ export class PredictionManager {
 
     async loadPartyToForm() {
         const partyId = this.myPartySelect.value;
-        console.log(partyId)
         if (!partyId) {
             alert('パーティを選択してください。');
             return;

@@ -75,11 +75,26 @@ class Move:
         辞書形式のデータからMoveインスタンスを生成する。
         (to_dictの逆操作)
         """
-
-        move_id = data["name"]
-        # move_model = MoveModel.query.filter_by(name_ja=move_name).first()
-        move_model = MoveModel.query.filter_by(id=move_id).first()
-        move = cls.from_model(move_model=move_model)
+        print(data)
+        move_name = data["name"]
+        move_model = MoveModel.query.filter_by(name_ja=move_name).first()
+        # move_model = MoveModel.query.filter_by(id=move_id).first()
+        move = None
+        if move_model:
+            move = cls.from_model(move_model=move_model)
+        else:
+            move = cls(
+                id=None,
+                name=None,
+                power=None,
+                move_type=None,
+                category=None,
+                accuracy=None,
+                pp=None,
+                crit_rate=1/24,  # デフォルト値
+                contact=None,
+                effect=None
+            )
 
         return move
 

@@ -78,13 +78,17 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                     # battle.choose → battle.act
                     # battle.act → battle.act
                     # battle.act → stay
-                    if ocr_processor.phase_manager.return_flag == True:                    
+                    if ocr_processor.phase_manager.return_flag == True:
+                        battle_state_after_dict = None
+                        if current_phase_info['current_phase'] not in ('stay','select'):
+                            battle_state_after_dict = battle_state_after.to_dict()
+
                         socketio.emit('ocr_update', {
                             # 'state': current_state,
                             'phase_info': current_phase_info,
                             'processed_count': processed_count,
                             'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
-                            'battle_state' : battle_state_after.to_dict(),
+                            'battle_state' : battle_state_after_dict,
                             'result' : battle_log.result
                         })
 

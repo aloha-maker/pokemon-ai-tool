@@ -139,7 +139,7 @@ class Party:
     def to_dict(self) -> Dict:
         """
         Partyインスタンスを辞書形式に変換する
-        """
+        """          
         return {
             "party_id": self.party_id,
             "name": self.name,

@@ -1,5 +1,5 @@
 // formHelpers.js - フォーム関連のヘルパー関数
-
+// 
 export function populateSelect(elementId, data, defaultOptionText, options = {}) {
     const select = document.getElementById(elementId);
     if (!select) return;
@@ -293,13 +293,5 @@ export async function initFormSelects() {
     } catch (error) {
         console.error("マスターデータの初期化に失敗しました:", error);
         alert("フォームの初期化に失敗しました。ページをリロードして再試行してください。");
-
-        // --- 失敗時のUI更新 ---
-        button.disabled = false; // 再試行可能にする
-        button.classList.remove('btn-secondary');
-        button.classList.add('btn-danger');
-        text.textContent = '再試行';
-        icon.className = 'button-icon bi bi-exclamation-triangle-fill';
-
     }
 }

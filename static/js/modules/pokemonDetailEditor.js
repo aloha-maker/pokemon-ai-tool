@@ -1,5 +1,3 @@
-import { populateSelect } from './formHelpers.js';
-
 function calculateMaxPP(basePP) {
     const pp = Number(basePP);
     if (isNaN(pp)) return 0;
@@ -56,7 +54,7 @@ async function getAllAbilities() {
 }
 
 export class PokemonDetailEditor {
-    constructor() {
+    constructor(battleStateManager) {
         this.modal = new bootstrap.Modal(document.getElementById('pokemon-details-modal'));
         this.pokemonSlots = document.querySelectorAll('.pokemon-slot');
         this.modalElement = document.getElementById('pokemon-details-modal');
@@ -81,6 +79,7 @@ export class PokemonDetailEditor {
         this.currentSlot = null;
         
         this.partyState = Array(12).fill(null).map(() => this.createEmptySlot());
+        this.battleStateManager = battleStateManager;
         this.init();
     }
 
@@ -279,6 +278,8 @@ export class PokemonDetailEditor {
             slot.tera_type = m.tera_type ?? null;
             slot.types = m.types ? [...m.types] : [];
 
+            // BattleStateManagerで状態を更新
+            this.battleStateManager.setDetails(i, slot);
             this.updateSlotUI(i);
         }
     }
@@ -403,11 +404,6 @@ export class PokemonDetailEditor {
     saveDetails() {
         const s = this.partyState[this.currentSlot];
     
-        // ポケモン名 / ID（既存処理と同じ）
-        const name = document.querySelector('#details-pokemon-name').textContent;
-        s.pokemon_name = name;
-        s.pokemon_id = getPokemonIdByName(name); // 非同期なら await 必要
-    
         // ability
         const abilityName = this.abilityInput.value.trim();
         const ability = this.abilitiesList.find(a => (a.name_ja || a.name) === abilityName);
@@ -432,6 +428,15 @@ export class PokemonDetailEditor {
             spd: +document.getElementById('details-ev-spd').value || 0,
             spe: +document.getElementById('details-ev-spe').value || 0,
         };
+
+        // boosts
+        s.boosts = {
+            atk: +document.getElementById('details-boost-atk').value || 0,
+            def: +document.getElementById('details-boost-def').value || 0,
+            spa: +document.getElementById('details-boost-spa').value || 0,
+            spd: +document.getElementById('details-boost-spd').value || 0,
+            spe: +document.getElementById('details-boost-spe').value || 0,
+        };
     
         // moves
         this.moveInputs.forEach((input, i) => {
@@ -441,6 +446,9 @@ export class PokemonDetailEditor {
             s.moves[i].id = move?.id ?? null;
             s.moves[i].pp = Number(this.ppInputs[i].value) || null;
         });
+
+        // BattleStateManagerで状態を更新
+        this.battleStateManager.setDetails(this.currentSlot, s);
     
         this.updateSlotUI(this.currentSlot);
         this.modal.hide();
