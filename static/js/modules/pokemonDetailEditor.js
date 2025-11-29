@@ -79,8 +79,8 @@ export class PokemonDetailEditor {
         this.ppBtns = document.querySelectorAll('.pp-btn');
         this.saveBtn = document.getElementById('save-pokemon-details-btn');
         this.currentSlot = null;
+        
         this.partyState = Array(12).fill(null).map(() => this.createEmptySlot());
-
         this.init();
     }
 
@@ -373,6 +373,13 @@ export class PokemonDetailEditor {
             document.getElementById('details-ev-spa').value = state.ev.spa || 0;
             document.getElementById('details-ev-spd').value = state.ev.spd || 0;
             document.getElementById('details-ev-spe').value = state.ev.spe || 0;
+
+            // 能力変化
+            document.getElementById('details-boost-atk').value = state.boosts.atk || 0;
+            document.getElementById('details-boost-def').value = state.boosts.def || 0;
+            document.getElementById('details-boost-spa').value = state.boosts.spa || 0;
+            document.getElementById('details-boost-spd').value = state.boosts.spd || 0;
+            document.getElementById('details-boost-spe').value = state.boosts.spe || 0;
 
             // 技とPP
             this.moveInputs.forEach((input, i) => {
