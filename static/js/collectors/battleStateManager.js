@@ -432,21 +432,6 @@ export class BattleStateManager {
         return true;
     }
     
-    // パーティ全体の取得
-    getParty() {
-        return this.state.party;
-    }
-    
-    // プレイヤーのパーティのみ取得 (0-5)
-    getPlayerParty() {
-        return this.state.party.slice(0, 6);
-    }
-    
-    // 相手のパーティのみ取得 (6-11)
-    getOpponentParty() {
-        return this.state.party.slice(6, 12);
-    }
-    
     // パーティ全体の更新
     updateParty(partyData) {
         if (!Array.isArray(partyData)) {

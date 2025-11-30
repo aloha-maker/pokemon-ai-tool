@@ -381,6 +381,7 @@ export class RealtimeAnalysis {
      * @param {string} containerId - 'my-party' または 'opponent-party'。
      * @param {object} sideData - BattleSideのデータ。
      */
+    // TODO UIの更新状況強の最新化
     updateSideUI(containerId, sideData) {
         const displayContainer = document.getElementById(containerId + '-party-display');
 

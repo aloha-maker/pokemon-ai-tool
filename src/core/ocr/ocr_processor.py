@@ -31,9 +31,6 @@ class OCRProcessor:
         if tesseract_path:
             pytesseract.pytesseract.tesseract_cmd = tesseract_path
         
-        # 直前のポケモン名を保持（act→choose遷移用）
-        # self.last_my_pokemon_name = ""
-        # self.last_opponent_pokemon_name = ""
         self.current_battle_id = ""
         self.result = "unknown"
 
@@ -73,11 +70,6 @@ class OCRProcessor:
                 )
                 
                 if has_text and text and text.strip():
-                    # 新しいポケモン名を記録
-                    # if text != self.last_my_pokemon_name:
-                    #     self.last_my_pokemon_name = text
-                    #     print(f"  📝 自分のポケモン名: '{text}' (信頼度: 最大{conf['max']:.1f})")
-                    
                     print(f"  ⏭️ battle.chooseフェーズ継続: ポケモン名検出中")
                 else:
                     self.phase_manager.set_phase("battle", "act")
@@ -111,20 +103,6 @@ class OCRProcessor:
                     self.phase_manager.stop_flag = True 
                     print(f"  🔄 フェーズ変更: act → choose (ポケモン名: '{text}', 信頼度: 最大{conf['max']:.1f})")
         return self.phase_manager
-
-    # def _is_new_pokemon_appeared(self, frame, width, height):
-    #     """新しいポケモンが登場したか判定（シンプル版）"""
-    #     has_text, new_name, conf = self.ocr_processor.process_ocr_roi(
-    #         frame, 'my_pokemon_name', "", 0, "", width, height
-    #     )
-        
-    #     # シンプル化: my_pokemon_nameが読み取れた場合のみTrue
-    #     if has_text and new_name and new_name.strip():
-    #         print(f"  🆕 新しいポケモン登場: '{new_name}'")
-    #         self.last_my_pokemon_name = new_name
-    #         return True
-        
-    #     return False
     
     def process_phase_rois(self, frame, video_name, frame_idx, short_hash, width, height):
         """フェーズ別ROI処理のルーティング"""

@@ -69,16 +69,13 @@ class Move:
         )
 
     @classmethod
-    # def from_dict(cls, data: Dict) -> "Move":
     def from_dict(cls, data) -> "Move":
         """
         辞書形式のデータからMoveインスタンスを生成する。
         (to_dictの逆操作)
         """
-        print(data)
         move_name = data["name"]
         move_model = MoveModel.query.filter_by(name_ja=move_name).first()
-        # move_model = MoveModel.query.filter_by(id=move_id).first()
         move = None
         if move_model:
             move = cls.from_model(move_model=move_model)

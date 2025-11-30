@@ -117,56 +117,22 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
 def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, frame_count, battle_state):
     """
     OCRProcessorの内部状態からゲーム状態を抽出する
-    """
-    # current_state = {
-    #     'game_text': '',
-    #     'my_pokemon_1_name': '',
-    #     'my_pokemon_1_hp_percent': None,
-    #     'opponent_pokemon_1_name': '',
-    #     'opponent_pokemon_1_hp_percent': None,
-    #     'phase': phase_info['current_phase'],
-    #     'battle_sub_phase': phase_info.get('battle_sub_phase', ''),
-    #     'battle_id': '',
-    #     'triggered_ability': '',
-    #     'field_effects': None,
-    #     'raw_ocr_result': {}
-    # }
-    
-    try:
-        # # 自分のポケモン名
-        # if hasattr(ocr_processor, 'last_my_pokemon_name') and ocr_processor.last_my_pokemon_name:
-        #     current_state['my_pokemon_1_name'] = ocr_processor.last_my_pokemon_name
-        
-        # # 相手のポケモン名  
-        # if hasattr(ocr_processor, 'last_opponent_pokemon_name') and ocr_processor.last_opponent_pokemon_name:
-        #     current_state['opponent_pokemon_1_name'] = ocr_processor.last_opponent_pokemon_name
-            
-        # バトルID
-        # if hasattr(ocr_processor, 'current_battle_id') and ocr_processor.current_battle_id:
-        #     current_state['battle_id'] = ocr_processor.current_battle_id
-            
+    """    
+    try:            
         # OCRプロセッサーから直接OCR結果を取得
         raw_results = ocr_processor.ocr_processor.last_ocr_results
-        # current_state['raw_ocr_result'] = raw_results
         
         # ライブコメントなどのテキスト情報を抽出
         game_text_parts = []
         for roi_name in ['live_comment_row1', 'live_comment_row2']:
             if roi_name in raw_results and raw_results[roi_name].get('text'):
                 game_text_parts.append(raw_results[roi_name]['text'])
-        
-        # if game_text_parts:
-        #     current_state['game_text'] = ' '.join(game_text_parts)
             
         # 特性情報を抽出
         ability_parts = []
         for roi_name in ['my_tokusei_row1', 'my_tokusei_row2', 'your_tokusei_row1', 'your_tokusei_row2']:
             if roi_name in raw_results and raw_results[roi_name].get('text'):
                 ability_parts.append(raw_results[roi_name]['text'])
-        
-        # if ability_parts:
-        #     current_state['triggered_ability'] = ' '.join(ability_parts)
-
         
         # RawBattleEventModelにセット
         raw_battle_event_model_list = []
