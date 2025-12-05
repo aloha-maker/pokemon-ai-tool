@@ -229,14 +229,6 @@ class OCRProcessor:
                 )
                 if success:
                     processed_count += 1
-            
-            # elif roi_name == 'win_lose':
-            #     success, _ = self.image_processor.process_win_lose_roi(
-            #         frame, roi_name, video_name, frame_idx, short_hash, width, height,
-            #         WIN_LOSE_IMAGES_DIR, 0.8
-            #     )
-            #     if success:
-            #         processed_count += 1
         
         return processed_count
     
@@ -247,14 +239,10 @@ class OCRProcessor:
     def reset_phase(self):
         """フェーズをリセット"""
         self.phase_manager.set_phase("stay")
-        # self.last_my_pokemon_name = ""
-        # self.last_opponent_pokemon_name = ""
     
     def reset_for_new_video(self):
         """新しい動画処理用に状態をリセット"""
         self.reset_phase()
-        # self.ocr_processor.last_my_pokemon_name = ""
-        # self.ocr_processor.last_opponent_pokemon_name = ""
     
     def set_pokemon_corrector(self, new_corrector):
         """ポケモン名補正器を再設定"""

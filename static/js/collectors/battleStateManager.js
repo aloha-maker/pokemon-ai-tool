@@ -45,7 +45,7 @@ const EMPTY_SIDE_STATE = {
         members: Array(6).fill(null), // createEmptySlotで初期化
         party_id: null
     },
-    active: null,
+    active: null, // createEmptySlotで初期化
     screens: {
         reflect: null,
         light_screen: null,
@@ -94,6 +94,8 @@ export class BattleStateManager {
         const side = JSON.parse(JSON.stringify(EMPTY_SIDE_STATE));
         // membersをcreateEmptySlotで初期化
         side.team.members = Array(6).fill(null).map(() => this.createEmptySlot());
+        // activeもcreateEmptySlotで初期化
+        side.active = this.createEmptySlot();
         return side;
     }
 
@@ -110,11 +112,11 @@ export class BattleStateManager {
     }
 
     /**
-     * サイドごとのデータ（チーム、アクティブ、壁、設置技）をマッピングします。
+     * サイドごとのデータ(チーム、アクティブ、壁、設置技)をマッピングします。
      * HTMLから読み取った情報を既存の状態にマージすることで、データの損失を防ぎます。
      * @param {object} sideState - 更新対象のBattleState側のサイド状態
      * @param {Array<object>} sourceParty - HTMLから取得したデータソースのパーティメンバー配列
-     * @param {object} sourceEnv - HTMLから取得した環境データ（自サイドまたは相手サイド）
+     * @param {object} sourceEnv - HTMLから取得した環境データ(自サイドまたは相手サイド)
      * @param {string} constantName - CONSTANTSからチーム名を取得するためのキー
      */
     _mapSideData(sideState, sourceParty, sourceEnv, constantName) {
@@ -145,7 +147,18 @@ export class BattleStateManager {
             });
         };
 
-        sideState.active = sourceEnv.activePokemon;
+        // activePokemonの値を使って、該当するポケモンをactiveにコピー
+        const activePokemonValue = sourceEnv.activePokemon;
+        if (activePokemonValue) {
+            // activePokemonValueがポケモン名やIDなどの場合、membersから該当するものを検索
+            const activeMember = sideState.team.members.find(
+                m => m.name === activePokemonValue || m.id === activePokemonValue
+            );
+            if (activeMember) {
+                // activeに該当ポケモンの情報をコピー
+                Object.assign(sideState.active, activeMember);
+            }
+        }
 
         // スクリーン条件のマッピング
         mapAndAssign(sideState.screens, sourceEnv);
@@ -190,7 +203,7 @@ export class BattleStateManager {
     }
 
     // html -> js
-    // すべてのポケモンスロットの設定を取得（自パーティと相手パーティを区別）
+    // すべてのポケモンスロットの設定を取得(自パーティと相手パーティを区別)
     getAllPokemonSlotConfigs() {
         const myPartyConfigs = this.getPartySlotConfigs('my-party');
         const opponentPartyConfigs = this.getPartySlotConfigs('opponent-party');
@@ -280,7 +293,7 @@ export class BattleStateManager {
     }
 
     /**
-     * ポケモン詳細モーダルからの入力値（能力値、技など）をバトル状態に設定します。
+     * ポケモン詳細モーダルからの入力値(能力値、技など)をバトル状態に設定します。
      * ロジックを統合し、インデックスの分岐処理を効率化しました。
      * @param {number} index - 0から11までのスロットインデックス
      * @param {object} detail - 詳細データ
@@ -329,7 +342,7 @@ export class BattleStateManager {
             moves: detail.moves, // moves配列全体を上書き
         });
 
-        // side1 (自パーティ) にのみ存在するboostsの代入（元のコードの差分を尊重）
+        // side1 (自パーティ) にのみ存在するboostsの代入(元のコードの差分を尊重)
         if (index >= 0 && index <= 5) {
             p.boosts = detail.boosts;
         }

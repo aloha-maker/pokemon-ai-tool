@@ -1,19 +1,40 @@
 import pandas as pd
+from typing import List
 from difflib import SequenceMatcher
+from src.extensions import db
+from src.models.pokemon_model import PokemonModel
 
 class NameCorrector:
-    def __init__(self, master_file_path=None, name_column=None, name_list=None):
+    DEFAULT_THRESHOLD = 0.6
+    
+    def __init__(
+        self
+        , master_file_path=None
+        , name_column=None
+        , name_list=None):
         """
         master_file_path（CSV/Excel）または name_list（配列）のどちらかで初期化可能
         """
         self.master_file_path = master_file_path
         self.name_column = name_column
+
         if name_list is not None:
-            # 配列で直接マスタリストを設定
-            self.name_list = list(set(name_list))  # 重複削除
+            self.name_list = self._normalize_from_db(name_list)
+        elif master_file_path:
+            self.name_list = self._load_name_list()
         else:
-            # ファイルが指定されていれば読み込む
-            self.name_list = self._load_name_list() if master_file_path else []
+            self.name_list = []
+    
+    def _normalize_from_db(self, names: List[str]) -> List[str]:
+        """DBから正規化された名前リストを取得"""
+        try:
+            results = db.session.query(PokemonModel.name_ja).filter(
+                PokemonModel.name_ja.in_(names)
+            ).all()
+            return [r.name_ja for r in results]
+        except Exception as e:
+            print(f"DB正規化エラー: {e}")
+            return []
     
     def _load_name_list(self):
         """マスタファイルから名前リストを読み込む"""
