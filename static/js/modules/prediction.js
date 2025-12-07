@@ -16,7 +16,8 @@ export class PredictionManager {
         }
     }
 
-    init() {
+    async init() {
+        await this.loadMasterData();
         this.initMyPartySelector();
         this.predictButton.addEventListener('click', () => this.handlePredict());
         
@@ -26,6 +27,37 @@ export class PredictionManager {
         
         if (this.myPartyDisplay) {
             this.initPartyDisplay(this.myPartyDisplay);
+        }
+        const opponentPartyDisplay = document.getElementById('opponent-party-display');
+        if (opponentPartyDisplay) {
+            this.initPartyDisplay(opponentPartyDisplay);
+        }
+
+        // Add document-level listeners once
+        document.addEventListener('mousemove', (e) => {
+            if (this.activeDragBar && this.updateHpDisplayCallback) {
+                const rect = this.activeDragBar.getBoundingClientRect();
+                let newWidth = e.clientX - rect.left;
+                let percentage = Math.round((newWidth / rect.width) * 100);
+                percentage = Math.max(0, Math.min(100, percentage));
+                this.updateHpDisplayCallback(percentage);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            this.activeDragBar = null;
+            this.updateHpDisplayCallback = null;
+        });
+    }
+
+    async loadMasterData() {
+        try {
+            const response = await fetch('/api/master/items');
+            if (!response.ok) throw new Error('持ち物マスターの取得に失敗しました。');
+            this.items = await response.json();
+        } catch (error) {
+            console.error(error);
+            // エラーが発生しても他の機能は続行させる
         }
         const opponentPartyDisplay = document.getElementById('opponent-party-display');
         if (opponentPartyDisplay) {
