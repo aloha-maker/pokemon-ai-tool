@@ -32,8 +32,7 @@ class PhaseManager:
         """フェーズを設定"""
         old_phase = self.current_phase
         self.current_phase = phase
-        if sub_phase:
-            self.battle_sub_phase = sub_phase
+        self.battle_sub_phase = sub_phase
         
         # フェーズ変更時に処理済みROIをクリア
         if phase == "stay":

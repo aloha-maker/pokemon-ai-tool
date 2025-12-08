@@ -26,10 +26,10 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
     OCRProcessorを使用して高度なフェーズ管理とROI処理を行う
     """
     frame_count = 0
+    last_pahse_info = {'current_phase': None, 'battle_sub_phase': None}
     
     while not state.background_thread_stop_event.is_set():
         frame_bytes = None
-        pre_pahse_info = ocr_processor.get_current_phase_info()
         with state.frame_lock:
             if state.latest_frame_bytes:
                 frame_bytes = state.latest_frame_bytes
@@ -63,28 +63,50 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                     battle_log, battle_state_after = _extract_state_from_ocr_processor(ocr_processor, current_phase_info, battle_log, frame_count, battle_state)
                     
                     with state.game_state_lock:
-                        # state.shared_game_state["state"] = current_state
                         state.shared_game_state["last_updated"] = time.time()
                         state.shared_game_state["phase_info"] = current_phase_info
                         state.shared_game_state["battle_log"] = battle_log
                         state.shared_game_state["latest_events"] = battle_log.get_latest_sequence_events(as_dict=True)
                         state.shared_game_state["battle_state"] = battle_state_after
                         state.shared_game_state["ocr_processor"] = ocr_processor
+
+                    # フェーズ遷移判定
+                    should_emit = False
+
+                    # フェーズが変わった場合の処理
+                    if current_phase_info['current_phase'] == 'select':
+                        if last_pahse_info['current_phase'] == 'stay':
+                            # stay → select のときのみ
+                            should_emit = True
+                        elif last_pahse_info['current_phase'] == None:
+                            print("last_pahse_info",last_pahse_info['current_phase'])
+                            should_emit = False
                     
-                    # クライアントに状態更新を通知
+                    elif current_phase_info['battle_sub_phase'] == 'act' and current_phase_info['battle_sub_phase'] == 'choose':
+                        # act → choose のときのみ
+                        should_emit = True
+                    
+                    # stayの場合は1度だけ送信
+                    elif current_phase_info['current_phase'] == 'stay' and last_pahse_info['current_phase'] == 'stay':
+                        should_emit = False
+
+                    else:
+                        should_emit = True
+
                     # stay → select
                     # select → battle.act
                     # battle.act → battle.choose
                     # battle.choose → battle.act
                     # battle.act → battle.act
                     # battle.act → stay
-                    if ocr_processor.phase_manager.return_flag == True:
+                    # if ocr_processor.phase_manager.return_flag == True: TODO return_flagはいらないかも
+                    if should_emit:
                         battle_state_after_dict = None
                         if current_phase_info['current_phase'] not in ('stay','select'):
                             battle_state_after_dict = battle_state_after.to_dict()
 
+                        # クライアントに状態更新を通知
                         socketio.emit('ocr_update', {
-                            # 'state': current_state,
                             'phase_info': current_phase_info,
                             'processed_count': processed_count,
                             'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
@@ -92,10 +114,12 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                             'result' : battle_log.result
                         })
 
+                    # 送信したフェーズを記録
+                    last_pahse_info = current_phase_info
+
                     # 入力待ちなどの判断とする場合は一時停止
                     if ocr_processor.phase_manager.stop_flag == True:
-                        ocr_processor.phase_manager.stop_flag = False
-                        print("🛑 フェーズが 'select or choose' になったためOCRを一時停止します。")
+                        print("🛑 フェーズが 'stay or select or choose' になったためOCRを一時停止します。")
                         break
                     
                     if frame_count % 10 == 0:  # 10フレームごとにログ出力

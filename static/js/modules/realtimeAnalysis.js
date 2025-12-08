@@ -104,17 +104,14 @@ export class RealtimeAnalysis {
                 subPhaseDisplay.value = sub_phase || '';
             }
 
+            console.log('phase',phase)
+            console.log('sub_phase',sub_phase)
+
             if(phase === 'stay') {
-                console.log('stay')
             }else if(phase === 'select'){
-                // stay -> select に遷移した時
-                console.log('select')
                 this.handleRecognizeParty()
-                
             }else if(phase === 'battle'){
-                console.log('battle')
                 if(sub_phase === 'choose'){
-                    console.log('choose')
                     const battleState = this.battleStateManager.getBattleState();
 
                     const response = await fetch('/api/ai/get_suggestion', {
@@ -124,22 +121,25 @@ export class RealtimeAnalysis {
                     });
                     
                     const jsonResponse = await response.json();
-                    console.log('Suggestion received:', jsonResponse);
+                    console.log('Suggestion received:', jsonResponse); // サーバー内部で予期せぬエラーが発生しました。
                     this.displaySuggestion(jsonResponse.recommendation);
 
                     if (this.predictionManager && jsonResponse.damage_calcs) {
                         this.predictionManager.displayDamageCalculations(jsonResponse.damage_calcs);
                     }
-
                 }else if(sub_phase === 'act'){
-                    console.log('act')
                 }
             }
 
             // バトルが終わったらログ情報をDBに保存
+            // バトル終了判定条件を TODO act → stayに変更
             if(data.result !== 'unknown'){
                 console.log(data.result,'バトルログを保存します。')
                 this.partySaver.saveBattleResult(data.result)
+                this.handleStartBattle()
+                await this.fetchAndSetNewBattleId();
+                const battleState = this.battleStateManager.getBattleState();
+                this.socket.emit('start_ocr', battleState, this.battleIdDisplay.value);
             }
         });
 

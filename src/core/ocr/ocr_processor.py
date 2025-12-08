@@ -37,6 +37,7 @@ class OCRProcessor:
     def detect_phase(self, frame, width, height):
         """現在のフェーズを判定"""
         # stayフェーズ: select ROIの検出
+        self.phase_manager.stop_flag = False
         self.phase_manager.return_flag = False
         if self.phase_manager.current_phase == "stay":
             match_result, max_val = self.image_matcher.match_single_image(
