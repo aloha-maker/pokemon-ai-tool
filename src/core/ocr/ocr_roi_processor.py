@@ -67,10 +67,6 @@ class OCRROIProcessor(BaseROIProcessor):
             if corrected_text == text and text in self.pokemon_corrector.name_list:
                 # 完全一致の場合はそのまま通過
                 print(f"  ✅ 完全一致: '{text}' - 補正不要")
-                # if roi_name == 'my_pokemon_name':
-                #     self.last_my_pokemon_name = corrected_text
-                # elif roi_name == 'opponent_pokemon_name':
-                #     self.last_opponent_pokemon_name = corrected_text
                 return corrected_text
             
             # 修正: 閾値チェック（完全一致でない場合のみ）
@@ -80,11 +76,6 @@ class OCRROIProcessor(BaseROIProcessor):
 
             if original_text != corrected_text:
                 print(f"  🟢 ポケモン名補正: '{original_text}' → '{corrected_text}'")
-
-            # if roi_name == 'my_pokemon_name':
-            #     self.last_my_pokemon_name = corrected_text
-            # elif roi_name == 'opponent_pokemon_name':
-            #     self.last_opponent_pokemon_name = corrected_text
             return corrected_text
 
         elif roi_name in ABILITY_NAME_ROIS:
@@ -107,9 +98,6 @@ class OCRROIProcessor(BaseROIProcessor):
             if original_text != corrected_text:
                 print(f"  🔵 特性名補正: '{original_text}' → '{corrected_text}'")
             return corrected_text
-
-        # elif roi_name in POKEMON_NO_ROIS:
-        #     return self._convert_to_pokemon_no_format(text, roi_name)
 
         return text
 

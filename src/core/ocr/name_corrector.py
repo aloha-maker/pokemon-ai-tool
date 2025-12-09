@@ -2,7 +2,7 @@ import pandas as pd
 from typing import List
 from difflib import SequenceMatcher
 from src.extensions import db
-from src.models.pokemon_model import PokemonModel
+from src.models import PokemonModel,AbilityModel
 
 class NameCorrector:
     DEFAULT_THRESHOLD = 0.6
@@ -25,22 +25,49 @@ class NameCorrector:
         else:
             self.name_list = []
     
-    def _normalize_from_db(self, names: List[str]) -> List[str]:
+    def _normalize_from_pokemons_db(self, names: List[str]) -> List[str]:
         """DBから正規化された名前リストを取得"""
         try:
             subquery = (
                 db.session.query(PokemonModel.base_id)
                 .filter(PokemonModel.name_ja.in_(names))
             )
-            print('subquery',subquery)
 
             results = (
                 db.session.query(PokemonModel.name_ja)
                 .filter(PokemonModel.id.in_(subquery))
                 .all()
             )
-            print('results',results)
             return [r.name_ja for r in results]
+        except Exception as e:
+            print(f"DB正規化エラー: {e}")
+            return []
+    
+    def _normalize_from_abilities_db(self, poke_names: List[str]) -> List[str]:
+        """DBから正規化された名前リストを取得"""
+        try:
+            # 1. abilities を取得
+            rows = (
+                db.session.query(PokemonModel.abilities)
+                .filter(PokemonModel.name_ja.in_(poke_names))
+                .all()
+            )
+
+            # 2. カンマ区切りを分解して数値化
+            ability_ids = set()
+
+            for (ability_str,) in rows:
+                if ability_str:
+                    for p in ability_str.split(","):
+                        ability_ids.add(int(p))
+
+            # 3. abilities テーブルから対応するIDを取得
+            result_abilities = (
+                db.session.query(AbilityModel)
+                .filter(AbilityModel.id.in_(ability_ids))
+                .all()
+            )
+            return [r.name_ja for r in result_abilities]
         except Exception as e:
             print(f"DB正規化エラー: {e}")
             return []
@@ -83,7 +110,6 @@ class NameCorrector:
         
         # 閾値チェック（0.6以上のみ適用）
         if best_similarity >= threshold:
-            print("self.name_list:",self.name_list)
             print(f"  📊 検索: '{text}' → '{best_match}' (類似度: {best_similarity:.2f})")
             return best_match
         else:
@@ -129,11 +155,14 @@ class PokemonNameCorrector(NameCorrector):
     def __init__(self, pokemon_master_path=None, name_list=None):
         poke_name_list = []
         if name_list is not None:
-            poke_name_list = self._normalize_from_db(name_list)
+            poke_name_list = self._normalize_from_pokemons_db(name_list)
         # CSVか配列のどちらかで初期化できるようにする
         super().__init__(master_file_path=pokemon_master_path, name_column='name_ja', name_list=poke_name_list)
 
 
 class AbilityNameCorrector(NameCorrector):
-    def __init__(self, ability_master_path):
-        super().__init__(ability_master_path, 'name_ja')
+    def __init__(self, ability_master_path=None, poke_name_list=None):
+        abilities_name_list = []
+        if poke_name_list is not None:
+            abilities_name_list = self._normalize_from_abilities_db(poke_name_list)
+        super().__init__(master_file_path=ability_master_path, name_column='name_ja', name_list=abilities_name_list)

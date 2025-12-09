@@ -15,6 +15,8 @@ from .config import (
 
 from flask import current_app
 
+TERA_MATCHING_THRESHOLD = 0.7
+
 class OCRProcessor:
     def __init__(self, pokemon_corrector, ability_corrector, tesseract_path):
         self.pokemon_corrector = pokemon_corrector
@@ -205,33 +207,51 @@ class OCRProcessor:
     def _process_battle_act_rois(self, frame, video_name, frame_idx, short_hash, width, height):
         """battle actフェーズの処理"""
         processed_count = 0
-        for roi_name in BATTLE_ACT_ROIS:
-            if roi_name in ['live_comment_row1', 'live_comment_row2', 
-                           'my_tokusei_row1', 'my_tokusei_row2',
-                           'your_tokusei_row1', 'your_tokusei_row2']:
-                success, text, conf = self.ocr_processor.process_ocr_roi(
-                    frame, roi_name, video_name, frame_idx, short_hash, width, height
-                )
-                if success:
-                    processed_count += 1
-            
-            elif roi_name == 'terastal':
-                success, _ = self.special_processor.process_tera_roi(
-                    frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                    TERA_ICONS_DIR, None, 0.7
-                )
-                if success:
-                    processed_count += 1
-            
-            elif roi_name == 'terastal_me':
-                success, _ = self.special_processor.process_tera_roi(
-                    frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                    TERA_ME_ICONS_DIR, "自分のテラスタル", 0.8
-                )
-                if success:
-                    processed_count += 1
+        
+        # 特性の処理（row2が成功した場合のみrow1も処理）
+        processed_count += self._process_ocr_pair(
+            frame, ['my_tokusei_row2', 'my_tokusei_row1'],
+            video_name, frame_idx, short_hash, width, height
+        )
+        
+        processed_count += self._process_ocr_pair(
+            frame, ['your_tokusei_row2', 'your_tokusei_row1'],
+            video_name, frame_idx, short_hash, width, height
+        )
+        
+        # 実況テキスト（row1が成功した場合のみrow2も処理）
+        processed_count += self._process_ocr_pair(
+            frame, ['live_comment_row1', 'live_comment_row2'],
+            video_name, frame_idx, short_hash, width, height
+        )
+        
+        # テラスタル
+        tera_rois = ['terastal', 'terastal_me']
+        for roi_name in tera_rois:
+            success, _ = self.special_processor.process_tera_roi(
+                frame, roi_name, video_name, frame_idx, short_hash, width, height,
+                TERA_ICONS_DIR, None, TERA_MATCHING_THRESHOLD
+            )
+            if success:
+                processed_count += 1
         
         return processed_count
+
+    def _process_ocr_pair(self, frame, roi_names, video_name, frame_idx, short_hash, width, height):
+        """ROIペアを順次処理（最初が成功した場合のみ2番目も処理）"""
+        count = 0
+        success, _, _ = self.ocr_processor.process_ocr_roi(
+            frame, roi_names[0], video_name, frame_idx, short_hash, width, height
+        )
+        if success:
+            count += 1
+            if len(roi_names) > 1:
+                success, _, _ = self.ocr_processor.process_ocr_roi(
+                    frame, roi_names[1], video_name, frame_idx, short_hash, width, height
+                )
+                if success:
+                    count += 1
+        return count
     
     def get_current_phase_info(self):
         """現在のフェーズ情報を取得"""
@@ -250,3 +270,9 @@ class OCRProcessor:
         self.pokemon_corrector = new_corrector
         self.ocr_processor.pokemon_corrector = new_corrector
         print("✅ pokemon_corrector を再設定しました。")
+    
+    def set_ability_corrector(self, new_corrector):
+        """特性名補正器を再設定"""
+        self.ability_corrector = new_corrector
+        self.ocr_processor.ability_corrector = new_corrector
+        print("✅ ability_corrector を再設定しました。")

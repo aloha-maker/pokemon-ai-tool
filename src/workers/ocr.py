@@ -182,7 +182,6 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
     except Exception as e:
         print(f"⚠️ 状態抽出エラー: {e}")
     
-    # return current_state, battle_log, battle_state
     return battle_log, battle_state
 
 
@@ -213,16 +212,18 @@ def ocr_start(socketio, state, tesseract_path, battle_state_dict,battle_id):
 def ocr_resume(socketio, state, battle_state_dict):
     print("OCRワーカーを再開します。")
     battle_state = BattleState.from_dict(battle_state_dict)
-    # お互いのポケモン名を設定
+    # お互いのポケモン名・特性を設定
     my_party = [pokemon.name for pokemon in battle_state.side1.team.members]
     opponent_party = [pokemon.name for pokemon in battle_state.side2.team.members]
     pokemons = my_party + opponent_party
     pokemon_corrector = PokemonNameCorrector(name_list=pokemons)
-
+    ability_corrector = AbilityNameCorrector(poke_name_list=pokemons)
+    
     with state.game_state_lock:
         battle_log = state.shared_game_state["battle_log"]
         ocr_processor = state.shared_game_state["ocr_processor"]
 
     ocr_processor.set_pokemon_corrector(pokemon_corrector)
+    ocr_processor.set_ability_corrector(ability_corrector)
 
     ocr_worker(socketio, state, battle_state,battle_log,ocr_processor)
