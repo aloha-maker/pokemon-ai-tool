@@ -79,7 +79,6 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                             # stay → select のときのみ
                             should_emit = True
                         elif last_pahse_info['current_phase'] == None:
-                            print("last_pahse_info",last_pahse_info['current_phase'])
                             should_emit = False
                     
                     elif current_phase_info['battle_sub_phase'] == 'act' and current_phase_info['battle_sub_phase'] == 'choose':

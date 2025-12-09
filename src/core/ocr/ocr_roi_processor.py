@@ -142,8 +142,8 @@ class OCRROIProcessor(BaseROIProcessor):
                 if int(conf) > 30 and data['text'][i].strip():
                     text_parts.append(data['text'][i].strip())
                     confidences.append(float(conf))
-                else:
-                    print("❌️確信度が30以下：",int(conf),roi_name)
+                # else:
+                #     print("❌️確信度が30以下：",int(conf),roi_name)
 
             text = " ".join(text_parts)
             text = self.clean_text(text)

@@ -84,11 +84,11 @@ class ImageMatcher:
                 print(f"    ... 他{len(all_scores) - 5}件")
         
         # 閾値ログ出力
-        if best_match_score > 0:
-            status = "✅" if best_match_score >= threshold else "❌"
-            print(f"  {status} {roi_name} 最高マッチング: {best_match_score:.3f} (ファイル: {best_match_file}, 閾値: {threshold})")
-        else:
-            print(f"  ❌ {roi_name}: 有効なマッチングが見つかりませんでした")
+        # if best_match_score > 0:
+        #     status = "✅" if best_match_score >= threshold else "❌"
+        #     print(f"  {status} {roi_name} 最高マッチング: {best_match_score:.3f} (ファイル: {best_match_file}, 閾値: {threshold})")
+        # else:
+        #     print(f"  ❌ {roi_name}: 有効なマッチングが見つかりませんでした")
         
         return best_match_score >= threshold, best_match_score, best_match_file
     

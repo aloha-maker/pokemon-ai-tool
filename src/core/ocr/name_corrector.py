@@ -19,7 +19,7 @@ class NameCorrector:
         self.name_column = name_column
 
         if name_list is not None:
-            self.name_list = self._normalize_from_db(name_list)
+            self.name_list = name_list
         elif master_file_path:
             self.name_list = self._load_name_list()
         else:
@@ -28,9 +28,18 @@ class NameCorrector:
     def _normalize_from_db(self, names: List[str]) -> List[str]:
         """DBから正規化された名前リストを取得"""
         try:
-            results = db.session.query(PokemonModel.name_ja).filter(
-                PokemonModel.name_ja.in_(names)
-            ).all()
+            subquery = (
+                db.session.query(PokemonModel.base_id)
+                .filter(PokemonModel.name_ja.in_(names))
+            )
+            print('subquery',subquery)
+
+            results = (
+                db.session.query(PokemonModel.name_ja)
+                .filter(PokemonModel.id.in_(subquery))
+                .all()
+            )
+            print('results',results)
             return [r.name_ja for r in results]
         except Exception as e:
             print(f"DB正規化エラー: {e}")
@@ -118,8 +127,11 @@ class NameCorrector:
 
 class PokemonNameCorrector(NameCorrector):
     def __init__(self, pokemon_master_path=None, name_list=None):
+        poke_name_list = []
+        if name_list is not None:
+            poke_name_list = self._normalize_from_db(name_list)
         # CSVか配列のどちらかで初期化できるようにする
-        super().__init__(master_file_path=pokemon_master_path, name_column='name_ja', name_list=name_list)
+        super().__init__(master_file_path=pokemon_master_path, name_column='name_ja', name_list=poke_name_list)
 
 
 class AbilityNameCorrector(NameCorrector):
