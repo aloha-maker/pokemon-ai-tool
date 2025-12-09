@@ -366,9 +366,6 @@ export class PredictionManager {
         const opponentPartyInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
         const resultArea = document.getElementById('prediction-result-area');
 
-        // const detailedStates = this.pokemonDetailEditor.getState();
-        // console.log(detailedStates)
-
         // TODO:相手パーティのポケモンIDを取得するようにする
         const opponent_party = Array.from(opponentPartyInputs)
             .map(input => input.value)

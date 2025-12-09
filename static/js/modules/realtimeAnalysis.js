@@ -29,35 +29,18 @@ export class RealtimeAnalysis {
         this.completeSelectionBtn?.addEventListener('click', () => this.handleConfirmSelection());
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
         this.startBattleBtn?.addEventListener('click', () => this.handleStartBattle());
-
-        if (this.battleIdDisplay) {
-            const savePartyBtn = document.getElementById('save-party-button');
-            if (savePartyBtn) {
-                savePartyBtn.disabled = !this.battleIdDisplay.value;
-                this.battleIdDisplay.addEventListener('input', () => {
-                    savePartyBtn.disabled = !this.battleIdDisplay.value;
-                });
-            }
-        }
     }
 
     setPartySaver(partySaver) {
         this.partySaver = partySaver;
-    }    
+    }
 
     initSocketListeners() {
         this.socket.on('connect', () => {
             console.log('WebSocket connected!');
         });
 
-        this.socket.on('analysis_started', (data) => {
-            console.log('Analysis started by server.');
-            this.setUIState('running_window');
-            if (data.video_feed_url) {
-                this.captureImage.src = data.video_feed_url;
-            }
-        });
-
+        // パーティ取得ボタン押下
         this.socket.on('camera_started', (data) => {
             console.log('Camera stream started by server.');
             this.setUIState('running_camera');
@@ -97,21 +80,29 @@ export class RealtimeAnalysis {
             // フェーズとサブフェーズのUIを更新
             const phaseDisplay = document.getElementById('phase-display');
             const subPhaseDisplay = document.getElementById('sub-phase-display');
-            if (phaseDisplay) {
-                phaseDisplay.value = phase || '';
-            }
-            if (subPhaseDisplay) {
-                subPhaseDisplay.value = sub_phase || '';
-            }
+            phaseDisplay.value = phase || '';
+            subPhaseDisplay.value = sub_phase || '';
 
             console.log('phase',phase)
             console.log('sub_phase',sub_phase)
 
             if(phase === 'stay') {
+                // パーティ取得,選出完了,選択完了ボタン　非活性
+                this.recognizePartyBtn.disabled = true;
+                this.confirmSelectionBtn.disabled = true;
+                this.completeSelectionBtn.disabled = true;
             }else if(phase === 'select'){
+                // パーティ取得,選出完了ボタン　活性
+                this.recognizePartyBtn.disabled = false;
+                this.confirmSelectionBtn.disabled = false;
                 this.handleRecognizeParty()
             }else if(phase === 'battle'){
+                // パーティ取得,選出完了ボタン　非活性
+                this.recognizePartyBtn.disabled = true;
+                this.confirmSelectionBtn.disabled = true;
                 if(sub_phase === 'choose'){
+                    // 選択完了ボタン　活性
+                    this.completeSelectionBtn.disabled = false;
                     const battleState = this.battleStateManager.getBattleState();
 
                     const response = await fetch('/api/ai/get_suggestion', {
@@ -128,6 +119,8 @@ export class RealtimeAnalysis {
                         this.predictionManager.displayDamageCalculations(jsonResponse.damage_calcs);
                     }
                 }else if(sub_phase === 'act'){
+                    // 選択完了ボタン　非活性
+                    this.completeSelectionBtn.disabled = true;
                 }
             }
 
@@ -140,6 +133,7 @@ export class RealtimeAnalysis {
                 await this.fetchAndSetNewBattleId();
                 const battleState = this.battleStateManager.getBattleState();
                 this.socket.emit('start_ocr', battleState, this.battleIdDisplay.value);
+                this.resetResultArea();
             }
         });
 
@@ -147,6 +141,24 @@ export class RealtimeAnalysis {
             console.log('Suggestion received:', data);
             this.displaySuggestion(data);
         });
+    }
+
+    resetResultArea() {
+        const resultArea = document.getElementById('prediction-result-area');
+        resultArea.innerHTML = `
+            <div class="text-center pt-5 h-100">
+                <button id="predict-button" class="btn btn-lg btn-primary neon-border">
+                    <span class="spinner-border spinner-border-sm d-none" role="status"
+                        aria-hidden="true"></span>
+                    予測を開始
+                </button>
+            </div>
+        `;
+        
+        // ボタンの参照を再取得して、イベントリスナーを再設定する必要があります
+        this.predictButton = document.getElementById('predict-button');
+        // 必要に応じてイベントリスナーを再アタッチ
+        this.predictButton.addEventListener('click', () => this.predictionManager.handlePredict());
     }
 
     appendRealtimeLog(latest_events) {
@@ -239,7 +251,7 @@ export class RealtimeAnalysis {
     handleConfirmSelection() {
         if (this.currentState === 'running_camera_ocr') {
             const battleState = this.battleStateManager.getBattleState();
-            console.log(battleState)
+            console.log('battleState',battleState)
             this.socket.emit('resume_ocr', battleState);
         }
     }

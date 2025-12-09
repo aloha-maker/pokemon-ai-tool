@@ -2,40 +2,7 @@ export class PartySaver {
     constructor(battleStateManager,pokemonDetailEditor) {
         this.battleStateManager = battleStateManager;
         this.pokemonDetailEditor = this.pokemonDetailEditor;
-        this.savePartyBtn = document.getElementById('save-party-button');
-        this.resultModalEl = document.getElementById('result-modal');
-        this.resultModal = this.resultModalEl ? new bootstrap.Modal(this.resultModalEl) : null;
-        this.resultButtons = document.querySelectorAll('#result-modal [data-result]');
         this.alertContainer = document.querySelector('.container-fluid');
-
-        if (this.savePartyBtn && this.resultModal) {
-            this.init();
-        }
-    }
-
-    init() {
-        this.savePartyBtn.addEventListener('click', () => {
-            // 先にパーティ情報が入力されているかチェック
-            const data = this.gatherBattleData();
-            if (!data.my_party_id) {
-                this.showAlert('自パーティが選択されていません。', 'warning');
-                return;
-            }
-            if (data.opponent_party.length === 0) {
-                this.showAlert('相手パーティが入力されていません。', 'warning');
-                return;
-            }
-            // 問題なければモーダル表示
-            this.resultModal.show();
-        });
-
-        this.resultButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const result = e.currentTarget.dataset.result; // 'win' or 'lose'
-                this.saveBattleResult(result);
-                this.resultModal.hide();
-            });
-        });
     }
 
     gatherBattleData() {

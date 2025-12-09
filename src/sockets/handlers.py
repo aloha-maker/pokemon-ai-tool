@@ -21,31 +21,6 @@ def register_socket_handlers(socketio):
             current_app.state.ocr_thread = None
         emit('my_response', {'data': 'Connected'})
 
-    @socketio.on('start_analysis')
-    def start_analysis(data):
-        """クライアントからの要求でウィンドウキャプチャとOCRを開始する"""
-        window_title = data.get('window_title')
-
-        if not window_title:
-            emit('analysis_stopped', {'error': 'ウィンドウが選択されていません。'})
-            return
-
-        if current_app.state.capture_thread and current_app.state.capture_thread.is_alive() or current_app.state.ocr_thread and current_app.state.ocr_thread.is_alive():
-            print("既に何らかの解析スレッドが実行中です。")
-            emit('analysis_stopped', {'error': '他の解析が実行中です。先に停止してください。'})
-            return
-
-        print(f"ウィンドウ解析の開始を要求されました。対象: {window_title}")
-        app_state = current_app.state
-        app_state.background_thread_stop_event.clear()
-        
-        app_state.capture_thread = socketio.start_background_task(target=window_capture_worker, socketio=socketio, window_title=window_title, state=app_state)
-        tesseract_path = current_app.config.get('TESSERACT_PATH')
-        app_state.ocr_thread = socketio.start_background_task(target=ocr_worker, socketio=socketio, state=app_state, tesseract_path=tesseract_path)
-        
-        video_feed_url = f'/video_feed?window_title={quote(window_title)}'
-        emit('analysis_started', {'video_feed_url': video_feed_url, 'ocr_started': True})
-
     @socketio.on('start_camera')
     def start_camera(data):
         """クライアントからの要求でカメラキャプチャとストリームを開始する (OCRは開始しない)"""
