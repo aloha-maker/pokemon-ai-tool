@@ -62,11 +62,6 @@ def create_app(config_name=None):
     executor.init_app(app)
     socketio = SocketIO(app)    
 
-    # --- favicon.ico のリクエストを処理 ---
-    @app.route('/favicon.ico')
-    def favicon():
-        return '', 204
-
     # --- Blueprintの登録 ---
     app.register_blueprint(views_bp)
     app.register_blueprint(streaming_bp)
@@ -106,4 +101,3 @@ def create_app(config_name=None):
 if __name__ == '__main__':
     app, socketio = create_app()
     socketio.run(app, host='0.0.0.0', port=8000, allow_unsafe_werkzeug=True)
-    # mac1疎通確認
