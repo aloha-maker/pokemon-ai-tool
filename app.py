@@ -106,3 +106,4 @@ def create_app(config_name=None):
 if __name__ == '__main__':
     app, socketio = create_app()
     socketio.run(app, host='0.0.0.0', port=8000, allow_unsafe_werkzeug=True)
+    # mac1疎通確認
