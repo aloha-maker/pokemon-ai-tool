@@ -1,4 +1,3 @@
-# C:\pokemon-ai-tool\src\models\raw_battle_event_model.py
 from src.extensions import db 
 
 class RawBattleEventModel(db.Model):

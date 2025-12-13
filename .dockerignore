@@ -10,10 +10,30 @@ __pycache__/
 venv/
 .env
 
+# Database
+*.db
+*.sqlite3
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
 # IDE
 .idea/
 .vscode/
 
+# Local environment variables
+.env
+
 # Other
 .DS_Store
 .prompt/
+.img/
+dataset/
+videos/
+static/captures/
+static/pokemon_icons/
+.traindata
+tests/
+new_env/
+static/item_icons/rusted-sword.png

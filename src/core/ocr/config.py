@@ -1,13 +1,17 @@
 import os
 import json
 
+# basedir = os.path.abspath(os.path.dirname(__file__))
+# 1. 環境変数 'APP_ROOT' を取得。なければ '/app' (Dockerのデフォルト) を使用。
+APP_ROOT = os.environ.get('APP_ROOT', '/app')
+
 # ディレクトリ設定
-INPUT_DIR = r'C:\pokemon-ai-tool\.traindata\video\input_videos'
-OUTPUT_DIR = r'C:\pokemon-ai-tool\.traindata\text2img'
-PROCESSED_DIR = r'C:\pokemon-ai-tool\.traindata\video\processed_videos'
-ROI_FILE = r'C:\pokemon-ai-tool\instance\roi_config.json'
-POKEMON_MASTER_PATH = r'C:\pokemon-ai-tool\data\master_data\pokemons.csv'
-ABILITY_MASTER_PATH = r'C:\pokemon-ai-tool\data\master_data\abilities.csv'
+INPUT_DIR = os.path.join(APP_ROOT, '.traindata', 'video', 'input_videos')
+OUTPUT_DIR = os.path.join(APP_ROOT, '.traindata', 'text2img')
+PROCESSED_DIR = os.path.join(APP_ROOT, '.traindata', 'video', 'processed_videos')
+ROI_FILE = os.path.join(APP_ROOT, 'instance', 'roi_config.json')
+POKEMON_MASTER_PATH = os.path.join(APP_ROOT, 'data', 'master_data', 'pokemons.csv')
+ABILITY_MASTER_PATH = os.path.join(APP_ROOT, 'data', 'master_data', 'abilities.csv')
 
 EXTRACT_PER_SECOND = 1.2  # 1秒に3枚抽出
 
@@ -32,12 +36,12 @@ BATTLE_ACT_ROIS = ['live_comment_row1', 'live_comment_row2', 'my_tokusei_row1',
                    'your_tokusei_row2', 'win_lose']
 
 # 画像マッチング用パス（STAY_TEXT_IMAGEを削除）
-START_IMAGE = r'C:\pokemon-ai-tool\static\others\start.png'
-SELECT_IMAGES_PATH = r'C:\pokemon-ai-tool\static\others\select.png'
-WIN_LOSE_IMAGES_DIR = r'C:\pokemon-ai-tool\static\others\win_lose'
-TERA_ICONS_DIR = r'C:\pokemon-ai-tool\static\Terastal_icons'
-TERA_ME_ICONS_DIR = r'C:\pokemon-ai-tool\static\Terastal_icons\me'
-AILMENT_ICONS_DIR = r'C:\pokemon-ai-tool\static\ailment_icons'
+START_IMAGE = os.path.join(APP_ROOT, 'static', 'others', 'start.png')
+SELECT_IMAGES_PATH = os.path.join(APP_ROOT, 'static', 'others', 'select.png')
+WIN_LOSE_IMAGES_DIR = os.path.join(APP_ROOT, 'static', 'others', 'win_lose')
+TERA_ICONS_DIR = os.path.join(APP_ROOT, 'static', 'Terastal_icons')
+TERA_ME_ICONS_DIR = os.path.join(APP_ROOT, 'static', 'Terastal_icons','me')
+AILMENT_ICONS_DIR = os.path.join(APP_ROOT, 'static', 'ailment_icons')
 
 # ROI設定読み込み
 with open(ROI_FILE, "r", encoding="utf-8") as f:

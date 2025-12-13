@@ -3,6 +3,8 @@ import os
 import json
 import time
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 class DatabaseManager:
     """
     データベースへの接続と操作を管理するクラス。
@@ -20,7 +22,7 @@ class DatabaseManager:
             if db_url and db_url.startswith('sqlite:///'):
                 self.db_path = db_url.replace('sqlite:///', '')
             else:
-                self.db_path = r'C:\pokemon-ai-tool\data\pokemon_ai.db'
+                self.db_path = os.path.join(basedir, 'data', 'pokemon_ai.db')
         else:
             self.db_path = db_path
         self.conn = None

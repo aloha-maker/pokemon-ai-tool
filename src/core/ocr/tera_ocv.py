@@ -2,6 +2,8 @@ import cv2
 import os
 import json
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 def identify_tera_from_cropped_image(cropped_image_path, icons_dir, threshold=0.8):
     """
     すでに切り取られたテラスタルアイコン画像が、どのテラスタルタイプに最も一致するかを判別する。
@@ -16,7 +18,7 @@ def identify_tera_from_cropped_image(cropped_image_path, icons_dir, threshold=0.
              閾値を超えるアイコンが見つからない場合は None を返す。
     """
     # --- 1. テラスタルタイプ名の翻訳データを読み込み ---
-    tera_json_path = r'C:\pokemon-ai-tool\instance\type.json'
+    tera_json_path = os.path.join(basedir, 'instance', 'type.json')
     try:
         with open(tera_json_path, 'r', encoding='utf-8') as f:
             tera_data = json.load(f)
@@ -94,32 +96,3 @@ def identify_tera_from_cropped_image(cropped_image_path, icons_dir, threshold=0.
     else:
         print(f"[情報] 閾値を超えるテラスタルタイプは見つかりませんでした。(最高信頼度: {best_match['score']:.2%})")
         return None
-
-# --- このスクリプトを直接実行した際のテスト処理 ---
-if __name__ == '__main__':
-    # テスト用の、すでに切り取られたテラスタルアイコン画像のパス
-    # このパスを判別したい画像のパスに変更してください
-    test_cropped_image_path = r'C:\pokemon-ai-tool\.img\cropped_tera_icon.jpg'
-    
-    # テラスタルアイコンが保存されているフォルダのパス
-    tera_icons_directory = r'C:\pokemon-ai-tool\static\Terastal_icons'
-    
-    # --------------------------------------------------------------------
-    # テキストログ出力
-    # --------------------------------------------------------------------
-    print("--- テラスタルタイプの判別処理を開始 ---")
-    
-    # テラスタルタイプの特定を実行
-    tera_name = identify_tera_from_cropped_image(
-        test_cropped_image_path,
-        tera_icons_directory,
-        threshold=0.8
-    )
-
-    # 最終的な結果を標準出力（テキストログ）に出力
-    if tera_name:
-        print(f"判別結果: {tera_name}")
-    else:
-        print("判別結果: テラスタルタイプなし")
-        
-    print("--- 判別処理を終了 ---")

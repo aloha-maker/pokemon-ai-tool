@@ -1,4 +1,3 @@
-# C:\pokemon-ai-tool\src\models\battle_model.py
 from src.extensions import db
 
 class BattleModel(db.Model):

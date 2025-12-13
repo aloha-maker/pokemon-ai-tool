@@ -1,5 +1,3 @@
-# C:\pokemon-ai-tool\src\models\party_log_model.py
-# from src.database.manager import db
 from src.extensions import db 
 import json
 

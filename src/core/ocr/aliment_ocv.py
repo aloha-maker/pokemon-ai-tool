@@ -2,6 +2,8 @@ import cv2
 import os
 import json
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 def identify_ailment_from_cropped_image(cropped_image_path, icons_dir, threshold=0.8):
     """
     すでに切り取られた状態異常アイコン画像が、どの状態異常に最も一致するかを判別する。
@@ -16,7 +18,7 @@ def identify_ailment_from_cropped_image(cropped_image_path, icons_dir, threshold
              閾値を超えるアイコンが見つからない場合は None を返す。
     """
     # --- 1. 状態異常名の翻訳データを読み込み ---
-    aliment_json_path = r'C:\pokemon-ai-tool\instance\aliments.json'
+    aliment_json_path = os.path.join(basedir, 'instance', 'aliments.json')
     try:
         with open(aliment_json_path, 'r', encoding='utf-8') as f:
             aliment_data = json.load(f)
@@ -94,32 +96,3 @@ def identify_ailment_from_cropped_image(cropped_image_path, icons_dir, threshold
     else:
         print(f"[情報] 閾値を超える状態異常は見つかりませんでした。(最高信頼度: {best_match['score']:.2%})")
         return None
-
-# --- このスクリプトを直接実行した際のテスト処理 ---
-if __name__ == '__main__':
-    # テスト用の、すでに切り取られた状態異常アイコン画像のパス
-    # このパスを判別したい画像のパスに変更してください
-    test_cropped_image_path = r'C:\pokemon-ai-tool\.img\cropped_ailment_icon.png'
-    
-    # 状態異常アイコンが保存されているフォルダのパス
-    ailment_icons_directory = r'C:\pokemon-ai-tool\static\ailment_icons'
-    
-    # --------------------------------------------------------------------
-    # テキストログ出力
-    # --------------------------------------------------------------------
-    print("--- 状態異常の判別処理を開始 ---")
-    
-    # 状態異常の特定を実行
-    ailment_name = identify_ailment_from_cropped_image(
-        test_cropped_image_path,
-        ailment_icons_directory,
-        threshold=0.8
-    )
-
-    # 最終的な結果を標準出力（テキストログ）に出力
-    if ailment_name:
-        print(f"判別結果: {ailment_name}")
-    else:
-        print("判別結果: 状態異常なし")
-        
-    print("--- 判別処理を終了 ---")

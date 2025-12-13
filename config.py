@@ -7,7 +7,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = f'sqlite:///C:/pokemon-ai-tool/data/pokemon_ai.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'data', 'pokemon_ai.db')
     DATABASE_URL = SQLALCHEMY_DATABASE_URI
     TESSERACT_PATH = os.environ.get('TESSERACT_PATH')
     ROI_CONFIG_PATH = os.path.join(basedir, 'instance', 'roi_config.json')
