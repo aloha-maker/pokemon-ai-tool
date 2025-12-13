@@ -93,7 +93,11 @@ class BattleStateUpdater:
     def apply_event(self, roi_name: str, text: str):
         """各ROIのOCRテキストを解析して BattleState に反映"""
         
-        if roi_name == "my_pokemon_hp":
+        if roi_name == "my_pokemon_name":
+            self._active_pokemon(side="my", text=text)
+        elif roi_name == "opponent_pokemon_name":
+            self._active_pokemon(side="opponent", text=text)
+        elif roi_name == "my_pokemon_hp":
             self._update_hp(side="my", text=text)
         elif roi_name == "opponent_pokemon_hp":
             self._update_hp(side="opponent", text=text)
@@ -101,12 +105,21 @@ class BattleStateUpdater:
             self._update_win_lose(text)
         elif roi_name == "live_comment":
             self._parse_general_text(text)
-        elif roi_name not in ["my_pokemon_name", "opponent_pokemon_name"]:
+        else:
             print(f"[未分類] {roi_name}: {text}")
 
     # =====================================================
     # --- ROIごとの更新処理 ---
-    # =====================================================        
+    # =====================================================
+    def _active_pokemon(self, side: str, text: str):
+        """
+        場に出ているポケモンをactiveに設定する
+        """
+        target_side = self.state.side1 if side == "my" else self.state.side2
+        members = target_side.team.members
+        target_side.active = next((p for p in members if p.name == text), None)
+
+
     def _update_hp(self, side: str, text: str):
         """
         HPバーOCR（パーセンテージ小数対応）＋EV推定呼び出し

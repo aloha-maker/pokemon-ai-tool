@@ -57,7 +57,7 @@ class ImageMatcher:
             print(f"⚠ テンプレートファイルが見つかりません: {template_dir}")
             return False, 0.0, ""
         
-        print(f"  🔍 {roi_name}: {len(template_files)}個のテンプレートとマッチング")
+        # print(f"  🔍 {roi_name}: {len(template_files)}個のテンプレートとマッチング")
         
         for img_path in template_files:
             template = cv2.imread(img_path)
@@ -75,13 +75,13 @@ class ImageMatcher:
         if all_scores:
             # スコアでソート
             all_scores.sort(key=lambda x: x[1], reverse=True)
-            print(f"  📊 {roi_name} マッチングスコア詳細:")
-            for i, (file, score) in enumerate(all_scores[:5]):  # 上位5件を表示
-                indicator = "🏆" if i == 0 else "  "
-                print(f"    {indicator} {file}: {score:.3f}")
+            # print(f"  📊 {roi_name} マッチングスコア詳細:")
+            # for i, (file, score) in enumerate(all_scores[:5]):  # 上位5件を表示
+            #     indicator = "🏆" if i == 0 else "  "
+            #     print(f"    {indicator} {file}: {score:.3f}")
             
-            if len(all_scores) > 5:
-                print(f"    ... 他{len(all_scores) - 5}件")
+            # if len(all_scores) > 5:
+            #     print(f"    ... 他{len(all_scores) - 5}件")
         
         # 閾値ログ出力
         # if best_match_score > 0:
