@@ -1,0 +1,111 @@
+<!-- 右カラム: AIアドバイス -->
+<section class="d-flex flex-column h-100 w-100">
+    <div class="glass-card flex-grow-1 p-1 d-flex flex-column">
+        <ul class="nav nav-tabs nav-fill" id="ai-advice-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="selection-advice-tab" data-bs-toggle="tab"
+                    data-bs-target="#selection-advice-pane" type="button" role="tab"
+                    aria-controls="selection-advice-pane" aria-selected="true">選出アドバイス</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="battle-analysis-tab" data-bs-toggle="tab"
+                    data-bs-target="#battle-analysis-pane" type="button" role="tab"
+                    aria-controls="battle-analysis-pane" aria-selected="false">戦況分析</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="battle-advice-tab" data-bs-toggle="tab"
+                    data-bs-target="#battle-advice-pane" type="button" role="tab"
+                    aria-controls="battle-advice-pane" aria-selected="false">バトル中アドバイス</button>
+            </li>
+        </ul>
+        <div class="tab-content flex-grow-1 p-3" id="ai-advice-tabs-content">
+            <div class="tab-pane fade show active h-100" id="selection-advice-pane" role="tabpanel"
+                aria-labelledby="selection-advice-tab">
+                <!-- 予測結果表示エリア -->
+                <div id="prediction-result-area" class="h-100">
+                    <div class="text-center pt-5 h-100">
+                        <button id="predict-button" class="btn btn-lg btn-primary neon-border">
+                            <span class="spinner-border spinner-border-sm d-none" role="status"
+                                aria-hidden="true"></span>
+                            予測を開始
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade h-100" id="battle-analysis-pane" role="tabpanel"
+                aria-labelledby="battle-analysis-tab">
+                <div class="d-flex flex-column h-100">
+                    <!-- ターン行動順表示 -->
+                    <div id="turn-order-display" class="glass-card p-2 mb-2" style="height: 30%; overflow-y: auto;">
+                        <h6 class="text-white mb-1">行動順</h6>
+                        <div id="turn-order-output" class="text-white-50 small">
+                            <p><strong>自分:</strong> 先行</p>
+                            <p><strong>相手:</strong> 後攻</p>
+                        </div>
+                    </div>
+
+                    <!-- ダメージ計算結果 -->
+                    <div id="damage-calculation-results" class="glass-card p-2 mt-2 flex-grow-1" style="overflow-y: auto; max-height: 200px;">
+                        <h6 class="text-white mb-2">ダメージ計算結果</h6>
+                        <div id="damage-output" class="text-white-50 small">
+                            <div class="row">
+                                <div id="self-to-opponent-damage-cards" class="col-6">
+                                    <div class="card glass-card-sm mb-2">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title text-white mb-1">自分 → 相手 (技1)</h6>
+                                            <p class="card-text">80% ~ 95% (確定2発)</p>
+                                        </div>
+                                    </div>
+                                    <div class="card glass-card-sm mb-2">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title text-white mb-1">自分 → 相手 (技2)</h6>
+                                            <p class="card-text">50% ~ 60% (確定3発)</p>
+                                        </div>
+                                    </div>
+                                    <div class="card glass-card-sm mb-2">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title text-white mb-1">自分 → 相手 (技3)</h6>
+                                            <p class="card-text">100% (確定1発)</p>
+                                        </div>
+                                    </div>
+                                    <div class="card glass-card-sm mb-2">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title text-white mb-1">自分 → 相手 (技4)</h6>
+                                            <p class="card-text">20% ~ 30% (確定4発)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="opponent-to-self-damage-cards" class="col-6">
+                                    <div class="card glass-card-sm mb-2">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title text-white mb-1">相手 → 自分 (技A)</h6>
+                                            <p class="card-text">30% ~ 40% (確定3発)</p>
+                                        </div>
+                                    </div>
+                                    <div class="card glass-card-sm mb-2">
+                                        <div class="card-body p-2">
+                                            <h6 class="card-title text-white mb-1">相手 → 自分 (技B)</h6>
+                                            <p class="card-text">60% ~ 70% (確定2発)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade h-100" id="battle-advice-pane" role="tabpanel"
+                aria-labelledby="battle-advice-tab">
+                <div class="d-flex flex-column h-100">
+                    <!--  AIの行動提案 -->
+                    <div id="suggestion-overlay" class="h-100" style="overflow-y: auto;">
+                        <div class="text-center text-muted pt-5 h-100">
+                            <p>「解析を開始」すると、ここにAIの推奨アクションが表示されます。</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

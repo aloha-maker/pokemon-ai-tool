@@ -1,37 +1,38 @@
-// realtimeAnalysis.js - リアルタイム解析機能
-
 import { escapeHTML } from './utils.js';
 
 export class RealtimeAnalysis {
-    constructor() {
+    constructor(battleStateManager,predictionManager) {
         this.socket = io();
-        this.windowSelect = document.getElementById('window-select');
-        this.windowRefreshButton = document.getElementById('window-refresh-button');
-        this.toggleAnalysisButton = document.getElementById('toggle-analysis-button');
+        this.battleStateManager = battleStateManager;
+        this.predictionManager = predictionManager;
         this.captureImage = document.getElementById('capture-image');
-        this.suggestionRefreshButton = document.getElementById('suggestion-refresh-button');
         this.recognizePartyBtn = document.getElementById('recognize-opponent-party-btn');
-        this.logOutput = document.getElementById('realtime-log-output'); // 追加
+        this.confirmSelectionBtn = document.getElementById('confirm-selection-btn');
+        this.completeSelectionBtn = document.getElementById('complete-selection-btn');
+        this.logOutput = document.getElementById('realtime-log-output');
         this.startCameraBtn = document.getElementById('start-camera-btn');
-        this.startOcrBtn = document.getElementById('start-ocr-btn');
+        this.startBattleBtn = document.getElementById('start-battle-btn');
+        this.battleIdDisplay = document.getElementById('battle-id-display');
         this.logBuffer = [];
         this.sequence = 0;
+        this.partySaver = null;
         
-        if (this.toggleAnalysisButton) {
-            this.init();
-        }
+        this.init();
     }
 
     init() {
-        this.updateWindowList();
+        this.setUIState('stopped');
         this.initSocketListeners();
         
-        this.windowRefreshButton?.addEventListener('click', () => this.updateWindowList());
-        this.toggleAnalysisButton?.addEventListener('click', () => this.handleToggleAnalysis());
-        this.suggestionRefreshButton?.addEventListener('click', () => this.socket.emit('get_suggestion', {}));
         this.recognizePartyBtn?.addEventListener('click', () => this.handleRecognizeParty());
+        this.confirmSelectionBtn?.addEventListener('click', () => this.handleConfirmSelection());
+        this.completeSelectionBtn?.addEventListener('click', () => this.handleConfirmSelection());
         this.startCameraBtn?.addEventListener('click', () => this.handleStartCamera());
-        this.startOcrBtn?.addEventListener('click', () => this.handleStartOcr());
+        this.startBattleBtn?.addEventListener('click', () => this.handleStartBattle());
+    }
+
+    setPartySaver(partySaver) {
+        this.partySaver = partySaver;
     }
 
     initSocketListeners() {
@@ -39,19 +40,10 @@ export class RealtimeAnalysis {
             console.log('WebSocket connected!');
         });
 
-        this.socket.on('analysis_started', (data) => {
-            console.log('Analysis started by server.');
-            this.setUIState('running_window');
-
-            if (data.video_feed_url) {
-                this.captureImage.src = data.video_feed_url;
-            }
-        });
-
+        // パーティ取得ボタン押下
         this.socket.on('camera_started', (data) => {
             console.log('Camera stream started by server.');
             this.setUIState('running_camera');
-
             if (data.video_feed_url) {
                 this.captureImage.src = data.video_feed_url;
             }
@@ -71,16 +63,78 @@ export class RealtimeAnalysis {
             this.captureImage.src = "https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview";
         });
 
-        this.socket.on('ocr_update', (data) => {
-            const gameState = data.state;
-
-            // リアルタイムログの表示
-            if (this.logOutput && gameState) {
-                this.appendRealtimeLog(gameState);
+        this.socket.on('ocr_update', async (data) => {
+            const latest_events = data.latest_events;
+            if (this.logOutput && latest_events) {
+                this.appendRealtimeLog(latest_events);
+                // サーバーから battle_state が送られてきたらUIを更新する
+                if (data.battle_state) {
+                    console.log("Received battle state, updating UI.", data.battle_state);
+                    this.updateUIWithBattleState(data.battle_state);
+                }
             }
 
-            // AIの行動提案をリクエスト
-            this.socket.emit('get_suggestion', {});
+            const phase = data.phase_info['current_phase']
+            const sub_phase = data.phase_info['battle_sub_phase']
+
+            // フェーズとサブフェーズのUIを更新
+            const phaseDisplay = document.getElementById('phase-display');
+            const subPhaseDisplay = document.getElementById('sub-phase-display');
+            phaseDisplay.value = phase || '';
+            subPhaseDisplay.value = sub_phase || '';
+
+            console.log('phase',phase)
+            console.log('sub_phase',sub_phase)
+
+            if(phase === 'stay') {
+                // パーティ取得,選出完了,選択完了ボタン　非活性
+                this.recognizePartyBtn.disabled = true;
+                this.confirmSelectionBtn.disabled = true;
+                this.completeSelectionBtn.disabled = true;
+            }else if(phase === 'select'){
+                // パーティ取得,選出完了ボタン　活性
+                this.recognizePartyBtn.disabled = false;
+                this.confirmSelectionBtn.disabled = false;
+                this.handleRecognizeParty()
+            }else if(phase === 'battle'){
+                // パーティ取得,選出完了ボタン　非活性
+                this.recognizePartyBtn.disabled = true;
+                this.confirmSelectionBtn.disabled = true;
+                if(sub_phase === 'choose'){
+                    // 選択完了ボタン　活性
+                    this.completeSelectionBtn.disabled = false;
+                    const battleState = this.battleStateManager.getBattleState();
+
+                    const response = await fetch('/api/ai/get_suggestion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(battleState),
+                    });
+                    
+                    const jsonResponse = await response.json();
+                    console.log('Suggestion received:', jsonResponse); // サーバー内部で予期せぬエラーが発生しました。
+                    this.displaySuggestion(jsonResponse.recommendation);
+
+                    if (this.predictionManager && jsonResponse.damage_calcs) {
+                        this.predictionManager.displayDamageCalculations(jsonResponse.damage_calcs);
+                    }
+                }else if(sub_phase === 'act'){
+                    // 選択完了ボタン　非活性
+                    this.completeSelectionBtn.disabled = true;
+                }
+            }
+
+            // バトルが終わったらログ情報をDBに保存
+            // バトル終了判定条件を TODO act → stayに変更
+            if(data.result !== 'unknown'){
+                console.log(data.result,'バトルログを保存します。')
+                this.partySaver.saveBattleResult(data.result)
+                this.handleStartBattle()
+                await this.fetchAndSetNewBattleId();
+                const battleState = this.battleStateManager.getBattleState();
+                this.socket.emit('start_ocr', battleState, this.battleIdDisplay.value);
+                this.resetResultArea();
+            }
         });
 
         this.socket.on('suggestion_update', (data) => {
@@ -89,118 +143,146 @@ export class RealtimeAnalysis {
         });
     }
 
-    appendRealtimeLog(state) {
+    resetResultArea() {
+        const resultArea = document.getElementById('prediction-result-area');
+        resultArea.innerHTML = `
+            <div class="text-center pt-5 h-100">
+                <button id="predict-button" class="btn btn-lg btn-primary neon-border">
+                    <span class="spinner-border spinner-border-sm d-none" role="status"
+                        aria-hidden="true"></span>
+                    予測を開始
+                </button>
+            </div>
+        `;
+        
+        // ボタンの参照を再取得して、イベントリスナーを再設定する必要があります
+        this.predictButton = document.getElementById('predict-button');
+        // 必要に応じてイベントリスナーを再アタッチ
+        this.predictButton.addEventListener('click', () => this.predictionManager.handlePredict());
+    }
+
+    appendRealtimeLog(latest_events) {
         const logEntry = document.createElement('div');
         logEntry.classList.add('log-entry', 'mb-2', 'pb-1', 'border-bottom', 'border-secondary', 'border-opacity-25');
-
         const timestamp = new Date().toLocaleTimeString();
         let content = `<div class="text-muted small">[${timestamp}]</div>`;
-
-        const rawResult = state.raw_ocr_result;
+        const rawResult = latest_events;
         let hasContent = false;
-
         if (rawResult && typeof rawResult === 'object' && Object.keys(rawResult).length > 0) {
             content += '<ul class="list-unstyled mb-0 small">';
             for (const [key, value] of Object.entries(rawResult)) {
-                if (value && String(value).trim()) { // 値が空や空白でない場合のみ表示
-                    content += `<li><span class="text-info" style="min-width: 180px; display: inline-block;">${escapeHTML(key)}:</span> <strong>${escapeHTML(value)}</strong></li>`;
+                const text = value.text;
+                if (text && String(text).trim()) {
+                    content += `<li><span class="text-info" style="min-width: 180px; display: inline-block;">${escapeHTML(key)}:</span> <strong>${escapeHTML(text)}</strong></li>`;
                     hasContent = true;
                 }
             }
             content += '</ul>';
         }
-        
-        // 表示すべき内容がある場合のみログに追加
         if (hasContent) {
             logEntry.innerHTML = content;
             this.logOutput.prepend(logEntry);
         }
-
-        // ログが50件を超えたら古いものを削除
         if (this.logOutput.children.length > 50) {
             this.logOutput.removeChild(this.logOutput.lastChild);
         }
-
-        // バッファへの保存処理
         if (hasContent) {
             for (const [key, value] of Object.entries(rawResult)) {
                 if (value && String(value).trim()) {
-                    this.logBuffer.push({
-                        sequence: this.sequence,
-                        roi_name: key,
-                        ocr_text: value
-                    });
+                    this.logBuffer.push({ sequence: this.sequence, roi_name: key, ocr_text: value });
                 }
             }
-            this.sequence++; // 内容のあるイベントのみシーケンスを進める
+            this.sequence++;
         }
     }
 
     setUIState(state) {
         this.currentState = state;
-        const btn = this.toggleAnalysisButton;
         const cameraBtn = this.startCameraBtn;
-        const ocrBtn = this.startOcrBtn;
-
-        // デフォルト状態
-        btn.disabled = false;
-        cameraBtn.disabled = false;
-        ocrBtn.disabled = true;
-        this.windowSelect.disabled = false;
-        this.windowRefreshButton.disabled = false;
-        this.recognizePartyBtn.disabled = true;
-
-        btn.dataset.state = 'stopped';
-        btn.innerHTML = '<i class="bi bi-play-circle-fill"></i> 解析を開始';
-        btn.classList.remove('btn-danger');
-        btn.classList.add('btn-primary');
-
-        cameraBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i> 仮想カメラ読込';
-        cameraBtn.classList.remove('btn-danger');
-        cameraBtn.classList.add('btn-info');
-
+        const battleBtn = this.startBattleBtn;
+        if (cameraBtn) cameraBtn.disabled = false;
+        if (battleBtn) battleBtn.disabled = true;
+        if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = true;
+        if (cameraBtn) {
+            cameraBtn.innerHTML = '<i class="bi bi-camera-video-fill"></i> 仮想カメラ読込';
+            cameraBtn.classList.remove('btn-danger');
+            cameraBtn.classList.add('btn-info');
+        }
         if (state === 'stopped') {
-            // デフォルトのまま
-        } else if (state === 'running_window') {
-            btn.dataset.state = 'running';
-            btn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
-            btn.classList.add('btn-danger');
-            cameraBtn.disabled = true;
-            this.windowSelect.disabled = true;
-            this.windowRefreshButton.disabled = true;
-            this.recognizePartyBtn.disabled = false;
         } else if (state === 'running_camera') {
-            cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
-            cameraBtn.classList.add('btn-danger');
-            btn.disabled = true;
-            ocrBtn.disabled = false;
-            this.windowSelect.disabled = true;
-            this.windowRefreshButton.disabled = true;
-            this.recognizePartyBtn.disabled = false;
+            if (cameraBtn) {
+                cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
+                cameraBtn.classList.add('btn-danger');
+            }
+            if (battleBtn) battleBtn.disabled = false;
+            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
         } else if (state === 'running_camera_ocr') {
-            cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
-            cameraBtn.classList.add('btn-danger');
-            btn.disabled = true;
-            ocrBtn.disabled = true; // OCR実行中は無効
-            this.windowSelect.disabled = true;
-            this.windowRefreshButton.disabled = true;
-            this.recognizePartyBtn.disabled = false;
+            if (cameraBtn) {
+                cameraBtn.innerHTML = '<i class="bi bi-stop-circle-fill"></i> 停止';
+                cameraBtn.classList.add('btn-danger');
+            }
+            if (battleBtn) battleBtn.disabled = true;
+            if (this.recognizePartyBtn) this.recognizePartyBtn.disabled = false;
         }
     }
 
     handleStartCamera() {
+        console.log("handleStartCamera called!");
         const cameraIndex = document.getElementById('camera-index-input').value || 0;
         if (this.currentState === 'running_camera' || this.currentState === 'running_camera_ocr') {
             this.socket.emit('stop_analysis', {});
         } else {
             this.clearLogs();
+            console.log(`Attempting to emit start_camera with index: ${cameraIndex}`);
             this.socket.emit('start_camera', { camera_index: parseInt(cameraIndex, 10) });
         }
     }
 
     handleStartOcr() {
         if (this.currentState === 'running_camera') {
-            this.socket.emit('start_ocr', {});
+            const battleState = this.battleStateManager.getBattleState();
+            const battleId = this.battleIdDisplay ? this.battleIdDisplay.value : null; // バトルIDを取得
+
+            console.log("Sending battle state to server on OCR start:", battleState, "with Battle ID:", battleId);
+            this.socket.emit('start_ocr', battleState, battleId);
+        }
+    }
+
+    handleConfirmSelection() {
+        if (this.currentState === 'running_camera_ocr') {
+            const battleState = this.battleStateManager.getBattleState();
+            console.log('battleState',battleState)
+            this.socket.emit('resume_ocr', battleState);
+        }
+    }
+
+    async handleStartBattle() {
+        this.handleStartOcr();
+        await this.fetchAndSetNewBattleId();
+    }
+
+    async fetchAndSetNewBattleId() {
+        try {
+            const response = await fetch('/api/battle/new_id');
+            if (!response.ok) {
+                throw new Error('サーバーからバトルIDを取得できませんでした。');
+            }
+            const result = await response.json();
+            if (result.status === 'success' && result.data.battle_id) {
+                if (this.battleIdDisplay) {
+                    this.battleIdDisplay.value = result.data.battle_id;
+                    this.battleIdDisplay.dispatchEvent(new Event('input'));
+                }
+                console.log(`Fetched Battle ID: ${result.data.battle_id}`);
+            } else {
+                throw new Error('レスポンスにバトルIDが含まれていません。');
+            }
+        } catch (error) {
+            console.error('バトルIDの取得に失敗しました:', error);
+            if (this.battleIdDisplay) {
+                this.battleIdDisplay.value = 'エラー';
+                this.battleIdDisplay.dispatchEvent(new Event('input'));
+            }
         }
     }
 
@@ -208,7 +290,7 @@ export class RealtimeAnalysis {
         this.logBuffer = [];
         this.sequence = 0;
         if (this.logOutput) {
-            this.logOutput.innerHTML = ''; // 画面のログもクリア
+            this.logOutput.innerHTML = '';
         }
     }
 
@@ -216,54 +298,8 @@ export class RealtimeAnalysis {
         return this.logBuffer;
     }
 
-    async updateWindowList() {
-        try {
-            const response = await fetch('/api/windows');
-            const data = await response.json();
-            
-            if (data.error) {
-                console.error('ウィンドウリストの取得に失敗しました:', data.error);
-                return;
-            }
-            
-            const currentSelection = this.windowSelect.value;
-            this.windowSelect.innerHTML = '<option value="">ウィンドウを選択...</option>';
-            
-            data.windows.forEach(title => {
-                const option = document.createElement('option');
-                option.value = title;
-                option.textContent = title;
-                this.windowSelect.appendChild(option);
-            });
-
-            if (data.windows.includes(currentSelection)){
-                this.windowSelect.value = currentSelection;
-            }
-
-        } catch (error) {
-            console.error('ウィンドウリストの取得中にエラーが発生しました:', error);
-        }
-    }
-
-    handleToggleAnalysis() {
-        if (this.currentState === 'running_window') {
-            console.log('Requesting to stop analysis.');
-            this.socket.emit('stop_analysis', {});
-        } else {
-            const windowTitle = this.windowSelect.value;
-            if (!windowTitle) {
-                alert('キャプチャ対象のウィンドウを選択してください。');
-                return;
-            }
-            this.clearLogs();
-            console.log(`Requesting to start analysis for window: ${windowTitle}`);
-            this.socket.emit('start_analysis', { window_title: windowTitle });
-        }
-    }
-
     displaySuggestion(data) {
         const suggestionContainer = document.getElementById('suggestion-overlay');
-
         if (data && data.action) {
             let html = `
                 <div class="advice-card p-3 rounded-lg mb-4 glass-card-inside">
@@ -279,8 +315,6 @@ export class RealtimeAnalysis {
                 </div>
             `;
             suggestionContainer.innerHTML = html;
-
-            // バトル中アドバイスタブをアクティブにする
             const battleTab = new bootstrap.Tab(document.getElementById('battle-advice-tab'));
             battleTab.show();
         } else {
@@ -294,29 +328,28 @@ export class RealtimeAnalysis {
 
     async handleRecognizeParty() {
         if (!this.recognizePartyBtn || this.recognizePartyBtn.disabled) return;
-
         const originalHtml = this.recognizePartyBtn.innerHTML;
         this.recognizePartyBtn.disabled = true;
         this.recognizePartyBtn.innerHTML = `
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
             認識中...
         `;
-
         try {
             const response = await fetch('/api/party/recognize_opponent', { method: 'POST' });
             const data = await response.json();
-
-            console.log('Received data from API:', data); // デバッグ用に追加
-
-            if (data.success && data.party) {
+            console.log('Received data from API:', data);
+            if (data.status === 'success' && data.data.party) {
                 const opponentInputs = document.querySelectorAll('#opponent-party-display .pokemon-input');
-                data.party.forEach((pokemonName, index) => {
+                data.data.party.forEach((pokemonName, index) => {
                     if (opponentInputs[index]) {
-                        opponentInputs[index].value = pokemonName || ''; // 認識失敗時は空にする
+                        opponentInputs[index].value = pokemonName || '';
+                        opponentInputs[index].dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });
+                this.predictionManager.handlePredict();
             } else {
-                alert(`パーティの認識に失敗しました: ${data.error || '不明なエラー'}`);
+                const errorMessage = data.data ? data.data.error : (data.message || '不明なエラー');
+                alert(`パーティの認識に失敗しました: ${errorMessage}`);
             }
         } catch (error) {
             console.error('パーティ認識APIの呼び出し中にエラーが発生しました:', error);
@@ -324,6 +357,109 @@ export class RealtimeAnalysis {
         } finally {
             this.recognizePartyBtn.disabled = false;
             this.recognizePartyBtn.innerHTML = originalHtml;
+        }
+    }
+
+    /**
+     * サーバーから受信したBattleStateオブジェクトでUIを更新します。
+     * 正確な階層構造を反映しています。
+     * @param {object} battleState - サーバーから送信されたバトル状態オブジェクト。
+     */
+    updateUIWithBattleState(battleState) {
+
+        if (!battleState) {
+            console.warn("updateUIWithBattleState: battleState is null or undefined.");
+            return;
+        }
+
+        // side1 (自分側) のデータを更新
+        if (battleState.side1) {
+            this.updateSideUI('my', battleState.side1);
+        }
+
+        // side2 (相手側) のデータを更新
+        if (battleState.side2) {
+            this.updateSideUI('opponent', battleState.side2);
+        }
+
+        // フィールドの状態を更新
+        if (battleState.field) {
+            this.updateFieldUI(battleState.field);
+        }
+    }
+
+    /**
+     * 片方のサイド（自分または相手）のUIを更新します。
+     * @param {string} containerId - 'my-party' または 'opponent-party'。
+     * @param {object} sideData - BattleSideのデータ。
+     */
+    // TODO UIの更新状況強の最新化
+    updateSideUI(containerId, sideData) {
+        const displayContainer = document.getElementById(containerId + '-party-display');
+
+        // アクティブなポケモンのUIを更新
+        if (sideData.active) {
+            const pokemon = sideData.active;
+            // ポケモン名
+            document.getElementById(containerId + '-active-pokemon').value = pokemon.name
+        }
+
+        // パーティ全体の情報を詳細に更新
+        if (sideData.team && Array.isArray(sideData.team.members)) {
+            sideData.team.members.forEach((pokemon, index) => {
+                // 各パーティメンバーのUIコンテナを取得 (HTML構造を仮定)
+                // 例: <div class="party-member-container" data-pokemon-index="0"> ... </div>
+                const memberContainer = displayContainer.querySelector(`.party-member-container[data-pokemon-index="${index}"]`);
+                if (!memberContainer) return;
+
+                // 1. ポケモンアイコンの更新 (瀕死状態など)
+                const iconEl = memberContainer.querySelector('.party-pokemon-icon');
+                if (iconEl) {
+                    if (pokemon.current_hp === 0) {
+                        iconEl.classList.add('fainted');
+                    } else {
+                        iconEl.classList.remove('fainted');
+                    }
+                }
+
+                // 3. 状態異常アイコンの更新
+                const statusIcon = memberContainer.querySelector('.party-status-icon');
+                if (statusIcon) {
+                    if (pokemon.status) {
+                        statusIcon.src = `/static/ailment_icons/${pokemon.status}.png`;
+                        statusIcon.title = pokemon.status;
+                        statusIcon.style.display = 'inline';
+                    } else {
+                        statusIcon.style.display = 'none';
+                    }
+                }
+
+                // 4. ポケモン名やHPテキストなど、その他の情報の更新 (必要に応じて)
+                const nameEl = memberContainer.querySelector('.party-pokemon-name');
+                if (nameEl) {
+                    nameEl.textContent = pokemon.name;
+                }
+                const hpTextEl = memberContainer.querySelector('.party-hp-text');
+                if (hpTextEl) {
+                    hpTextEl.textContent = `${pokemon.current_hp}/${pokemon.max_hp}`;
+                }
+            });
+        }
+    }
+
+    /**
+     * バトルフィールド（天候など）のUIを更新します。
+     * @param {object} fieldData - BattleFieldのデータ。
+     */
+    updateFieldUI(fieldData) {
+        const weatherDisplay = document.getElementById('weather-display');
+        if (weatherDisplay) {
+            weatherDisplay.textContent = `天候: ${fieldData.weather || 'なし'}`;
+        }
+
+        const fieldEffectDisplay = document.getElementById('field-effect-display');
+        if (fieldEffectDisplay) {
+            fieldEffectDisplay.textContent = `フィールド: ${fieldData.terrain || 'なし'}`;
         }
     }
 }

@@ -78,7 +78,9 @@ export class ROIEditor {
     async initEditor() {
         try {
             const configResponse = await fetch('/api/roi/config');
-            this.roiConfig = await configResponse.json();
+            const configData = await configResponse.json();
+            if (configData.status !== 'success') throw new Error('ROI設定の読み込みに失敗しました。');
+            this.roiConfig = configData.data;
 
             // roiConfigのキーを元にドロップダウンを動的に生成
             this.selector.innerHTML = ''; // 既存のオプションをクリア
@@ -102,9 +104,10 @@ export class ROIEditor {
                 try {
                     const imgPathResponse = await fetch('/api/roi/image_path');
                     const imgPathData = await imgPathResponse.json();
-                    this.roiImage.src = imgPathData.image_path + '?t=' + new Date().getTime();
+                    if (imgPathData.status !== 'success') throw new Error('ROI画像のパス取得に失敗しました。');
+                    this.roiImage.src = imgPathData.data.image_path + '?t=' + new Date().getTime();
                 } catch (e) {
-                    console.warn("Could not load default ROI image. Using placeholder.");
+                    console.warn("Could not load default ROI image. Using placeholder.", e);
                     this.roiImage.src = 'https://placehold.co/1920x1080/0c0a24/e5bfff?text=No+Preview+Available';
                 }
             }
@@ -189,12 +192,13 @@ export class ROIEditor {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.roiConfig)
             });
-            const data = await response.json();
+            const responseData = await response.json();
             
-            if (response.ok) {
+            if (response.ok && responseData.status === 'success') {
                 alert('ROI設定を保存しました。');
             } else {
-                alert(`保存に失敗しました: ${data.error}`);
+                const errorMessage = responseData.data ? responseData.data.message : (responseData.message || '不明なエラー');
+                alert(`保存に失敗しました: ${errorMessage}`);
             }
         } catch (error) {
             console.error("Error saving ROI config:", error);

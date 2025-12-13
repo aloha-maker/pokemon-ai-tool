@@ -12,8 +12,89 @@
 
                 <!-- Ability -->
                 <div class="mb-4">
+<<<<<<< HEAD
                     <label for="details-ability-select" class="form-label">特性</label>
                     <select id="details-ability-select" class="form-select"></select>
+=======
+                    <label for="details-ability-input" class="form-label">特性</label>
+                    <input type="text" id="details-ability-input" class="form-control" list="ability-datalist" placeholder="特性を入力...">
+                </div>
+
+                <!-- Nature -->
+                <div class="mb-4">
+                    <label for="details-nature-select" class="form-label">性格</label>
+                    <select class="form-select" id="details-nature-select"></select>
+                </div>
+
+                <!-- Effort Values (EVs) -->
+                <div class="mb-4">
+                    <label class="form-label">努力値 (EVs)</label>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <label for="details-ev-hp" class="form-label small">HP</label>
+                            <input type="number" id="details-ev-hp" class="form-control form-control-sm ev-input" min="0" max="252" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-ev-atk" class="form-label small">攻撃</label>
+                            <input type="number" id="details-ev-atk" class="form-control form-control-sm ev-input" min="0" max="252" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-ev-def" class="form-label small">防御</label>
+                            <input type="number" id="details-ev-def" class="form-control form-control-sm ev-input" min="0" max="252" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-ev-spa" class="form-label small">特攻</label>
+                            <input type="number" id="details-ev-spa" class="form-control form-control-sm ev-input" min="0" max="252" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-ev-spd" class="form-label small">特防</label>
+                            <input type="number" id="details-ev-spd" class="form-control form-control-sm ev-input" min="0" max="252" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-ev-spe" class="form-label small">素早さ</label>
+                            <input type="number" id="details-ev-spe" class="form-control form-control-sm ev-input" min="0" max="252" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Boosts -->
+                <div class="mb-4">
+                    <label class="form-label">能力ランク (Boosts)</label>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <label for="details-boost-atk" class="form-label small">攻撃</label>
+                            <input type="number" id="details-boost-atk" class="form-control form-control-sm boost-input" min="-6" max="6" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-boost-def" class="form-label small">防御</label>
+                            <input type="number" id="details-boost-def" class="form-control form-control-sm boost-input" min="-6" max="6" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-boost-spa" class="form-label small">特攻</label>
+                            <input type="number" id="details-boost-spa" class="form-control form-control-sm boost-input" min="-6" max="6" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-boost-spd" class="form-label small">特防</label>
+                            <input type="number" id="details-boost-spd" class="form-control form-control-sm boost-input" min="-6" max="6" value="0">
+                        </div>
+                        <div class="col-4">
+                            <label for="details-boost-spe" class="form-label small">素早さ</label>
+                            <input type="number" id="details-boost-spe" class="form-control form-control-sm boost-input" min="-6" max="6" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terastal Type -->
+                <div class="mb-4">
+                    <label for="details-tera-type-select" class="form-label">テラスタイプ</label>
+                    <select class="form-select" id="details-tera-type-select"></select>
+                </div>
+
+                <!-- Item -->
+                <div class="mb-4">
+                    <label for="details-item-input" class="form-label">持ち物</label>
+                    <input type="text" id="details-item-input" class="form-control" list="item-datalist" placeholder="持ち物を入力...">
+>>>>>>> パーティ欄UIの変更
                 </div>
 
                 <!-- Moves -->
@@ -22,7 +103,11 @@
                     <!-- Move 1 -->
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col-8">
+<<<<<<< HEAD
                             <select class="form-select details-move-select" id="details-move-1"></select>
+=======
+                            <input type="text" class="form-control details-move-input" id="details-move-input-1" list="move-datalist" placeholder="技1を入力...">
+>>>>>>> パーティ欄UIの変更
                         </div>
                         <div class="col-4">
                             <div class="input-group">
@@ -35,7 +120,11 @@
                     <!-- Move 2 -->
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col-8">
+<<<<<<< HEAD
                             <select class="form-select details-move-select" id="details-move-2"></select>
+=======
+                            <input type="text" class="form-control details-move-input" id="details-move-input-2" list="move-datalist" placeholder="技2を入力...">
+>>>>>>> パーティ欄UIの変更
                         </div>
                         <div class="col-4">
                             <div class="input-group">
@@ -48,7 +137,11 @@
                     <!-- Move 3 -->
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col-8">
+<<<<<<< HEAD
                             <select class="form-select details-move-select" id="details-move-3"></select>
+=======
+                            <input type="text" class="form-control details-move-input" id="details-move-input-3" list="move-datalist" placeholder="技3を入力...">
+>>>>>>> パーティ欄UIの変更
                         </div>
                         <div class="col-4">
                             <div class="input-group">
@@ -61,7 +154,11 @@
                     <!-- Move 4 -->
                     <div class="row g-2 align-items-center mb-3">
                         <div class="col-8">
+<<<<<<< HEAD
                             <select class="form-select details-move-select" id="details-move-4"></select>
+=======
+                            <input type="text" class="form-control details-move-input" id="details-move-input-4" list="move-datalist" placeholder="技4を入力...">
+>>>>>>> パーティ欄UIの変更
                         </div>
                         <div class="col-4">
                             <div class="input-group">

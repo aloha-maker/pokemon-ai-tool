@@ -47,24 +47,26 @@ export class PartyGenerator {
         registerAlert.style.display = 'none';
 
         try {
-            const response = await fetch('/generate-party', {
+            const response = await fetch('/api/ai/generate-party', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ available_pokemon, concept }),
             });
 
-            const data = await response.json();
+            const jsonResponse = await response.json();
 
-            if (response.ok) {
-                this.lastGeneratedParty = data.party;
-                this.displayGeneratedParty(data, resultArea);
-                registerArea.classList.remove('d-none');
-            } else {
-                resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${data.error || '不明なエラー'}</div>`;
+            if (!response.ok || jsonResponse.status !== 'success') {
+                const errorInfo = (jsonResponse.data && jsonResponse.data.error) || jsonResponse.message || '不明なエラー';
+                throw new Error(errorInfo);
             }
+
+            this.lastGeneratedParty = jsonResponse.data.party;
+            this.displayGeneratedParty(jsonResponse.data, resultArea);
+            registerArea.classList.remove('d-none');
+
         } catch (error) {
             console.error('パーティ生成APIの呼び出し中にエラーが発生しました:', error);
-            resultArea.innerHTML = `<div class="alert alert-danger">APIの呼び出しに失敗しました。</div>`;
+            resultArea.innerHTML = `<div class="alert alert-danger">エラー: ${error.message}</div>`;
         } finally {
             setButtonLoading(this.generateButton, false);
         }
@@ -120,16 +122,17 @@ export class PartyGenerator {
                 })
             });
 
-            const result = await response.json();
-            
-            if (response.ok) {
-                showAlert('register-party-alert', result.message, 'success');
-            } else {
-                showAlert('register-party-alert', `エラー: ${result.error}`, 'danger');
+            const jsonResponse = await response.json();
+
+            if (!response.ok || jsonResponse.status !== 'success') {
+                const errorInfo = (jsonResponse.data && jsonResponse.data.error) || jsonResponse.message || '不明なエラー';
+                throw new Error(errorInfo);
             }
 
+            showAlert('register-party-alert', jsonResponse.data.message, 'success');
+
         } catch (error) {
-            showAlert('register-party-alert', '登録中に不明なエラーが発生しました。', 'danger');
+            showAlert('register-party-alert', `エラー: ${error.message}`, 'danger');
         } finally {
             setButtonLoading(this.registerButton, false);
         }

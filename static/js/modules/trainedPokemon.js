@@ -1,7 +1,5 @@
-// trainedPokemon.js - 育成済みポケモン管理機能
-
 import { escapeHTML, showAlert } from './utils.js';
-import { updateAbilitiesForPokemon } from './formHelpers.js';
+import { updatePokemonDatalists } from './formHelpers.js';
 
 export class TrainedPokemonManager {
     constructor() {
@@ -12,8 +10,42 @@ export class TrainedPokemonManager {
         this.showAddBtn = document.getElementById('show-add-pokemon-modal');
         this.evTotalEl = document.getElementById('ev-total');
         
+        this.pokemonList = [];
+        this.itemList = [];
+        this.movesList = [];
+        this.abilityList = [];
+
         if (this.modal) {
             this.init();
+        }
+    }
+
+    async _cacheMasterData() {
+        try {
+            // TODO: これらのAPIもレスポンス形式統一に対応させる
+            if (this.pokemonList.length === 0) {
+                const response = await fetch('/api/master/pokemons');
+                const result = await response.json();
+                this.pokemonList = result.data.pokemons;
+            }
+            if (this.itemList.length === 0) {
+                const response = await fetch('/api/master/items');
+                const result = await response.json();
+                this.itemList = result.data.items;
+            }
+            if (this.movesList.length === 0) {
+                const response = await fetch('/api/master/moves');
+                const result = await response.json();
+                this.movesList = result.data.moves;
+            }
+            if (this.abilityList.length === 0) {
+                const response = await fetch('/api/master/abilities');
+                const result = await response.json();
+                this.abilityList = result.data.abilities;
+            }
+        } catch (e) {
+            console.error("Failed to cache master data", e);
+            alert('マスターデータの読み込みに失敗しました。');
         }
     }
 
@@ -31,13 +63,24 @@ export class TrainedPokemonManager {
         document.querySelectorAll('.ev-input').forEach(input => {
             input.addEventListener('change', () => this.updateEvTotal());
         });
+
+        const pokemonMasterInput = document.getElementById('pokemon-master-input');
+        if (pokemonMasterInput) {
+            pokemonMasterInput.addEventListener('change', async (event) => {
+                await this._cacheMasterData(); // Ensure pokemonList is loaded
+                updatePokemonDatalists(event.target.value, this.pokemonList);
+            });
+        }
     }
 
     async loadTrainedPokemons() {
         try {
             const response = await fetch('/api/trained-pokemons');
-            if (!response.ok) throw new Error('Failed to fetch trained pokemons');
-            const pokemons = await response.json();
+            const responseData = await response.json();
+            if (!response.ok || responseData.status !== 'success') {
+                throw new Error(responseData.message || 'Failed to fetch trained pokemons');
+            }
+            const pokemons = responseData.data;
 
             this.tbody.innerHTML = '';
             if (pokemons.length === 0) {
@@ -45,11 +88,14 @@ export class TrainedPokemonManager {
                 return;
             }
 
+            console.log(pokemons)
+
             pokemons.forEach(p => {
+                
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${p.id}</td>
-                    <td>${escapeHTML(p.pokemon_name) || 'N/A'}</td>
+                    <td>${escapeHTML(p.name) || 'N/A'}</td>
                     <td>${escapeHTML(p.nickname) || ''}</td>
                     <td>${p.level}</td>
                     <td>${escapeHTML(p.tera_type_name) || 'N/A'}</td>
@@ -73,10 +119,10 @@ export class TrainedPokemonManager {
     }
 
     attachActionListeners() {
-        document.querySelectorAll('.edit-btn').forEach(btn => {
+        this.tbody.querySelectorAll('.edit-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.handleEditClick(e));
         });
-        document.querySelectorAll('.delete-btn').forEach(btn => {
+        this.tbody.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.handleDeleteClick(e));
         });
     }
@@ -85,8 +131,11 @@ export class TrainedPokemonManager {
         const id = event.currentTarget.dataset.id;
         try {
             const response = await fetch(`/api/trained-pokemons/${id}`);
-            if (!response.ok) throw new Error('Failed to fetch pokemon details');
-            const pokemon = await response.json();
+            const responseData = await response.json();
+            if (!response.ok || responseData.status !== 'success') {
+                throw new Error(responseData.message || 'Failed to fetch pokemon details');
+            }
+            const pokemon = responseData.data;
             await this.showPokemonForm(pokemon);
         } catch (error) {
             console.error(`Error fetching pokemon ${id}:`, error);
@@ -99,7 +148,10 @@ export class TrainedPokemonManager {
         if (confirm(`ID: ${id} のポケモンを本当に削除しますか?`)) {
             try {
                 const response = await fetch(`/api/trained-pokemons/${id}`, { method: 'DELETE' });
-                if (!response.ok) throw new Error('Failed to delete pokemon');
+                const responseData = await response.json();
+                if (!response.ok || responseData.status !== 'success') {
+                    throw new Error(responseData.data?.message || 'Failed to delete pokemon');
+                }
                 showAlert('trained-pokemon-alert', 'ポケモンを削除しました。', 'success');
                 this.loadTrainedPokemons();
             } catch (error) {
@@ -112,8 +164,9 @@ export class TrainedPokemonManager {
     async showPokemonForm(pokemon = null) {
         this.form.reset();
         document.getElementById('pokemon-id').value = '';
+        await this._cacheMasterData();
 
-        const fields = ['pokemon-master-id', 'nickname', 'tera-type-id', 'held-item-id', 'ability-id', 'nature-id', 'move1-id', 'move2-id', 'move3-id', 'move4-id', 'ev-hp', 'ev-atk', 'ev-def', 'ev-spa', 'ev-spd', 'ev-spe'];
+        const fields = ['pokemon-master-input', 'nickname', 'tera-type-id', 'held-item-input', 'ability-input', 'nature-id', 'move1-input', 'move2-input', 'move3-input', 'move4-input', 'ev-hp', 'ev-atk', 'ev-def', 'ev-spa', 'ev-spd', 'ev-spe'];
         fields.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
@@ -121,29 +174,43 @@ export class TrainedPokemonManager {
 
         if (pokemon) {
             document.getElementById('pokemon-id').value = pokemon.id || '';
-            document.getElementById('pokemon-master-id').value = pokemon.pokemon_id || '';
+            console.log("編集",pokemon);
+            
+            const pokemonInfo = this.pokemonList.find(p => p.id == pokemon.pokemon_id);
+            const pokemonName = pokemonInfo ? pokemonInfo.name_ja : '';
+            document.getElementById('pokemon-master-input').value = pokemonName;
+            // Trigger datalist update for the loaded pokemon
+            if (pokemonName) {
+                updatePokemonDatalists(pokemonName, this.pokemonList);
+            }
+
             document.getElementById('nickname').value = pokemon.nickname || '';
             document.getElementById('level').value = pokemon.level || 50;
-            document.getElementById('tera-type-id').value = pokemon.tera_type_id || '';
-            document.getElementById('held-item-id').value = pokemon.held_item_id || '';
-            
-            await updateAbilitiesForPokemon(pokemon.pokemon_id);
-            document.getElementById('ability-id').value = pokemon.ability_id || '';
+            document.getElementById('tera-type-id').value = pokemon.tera_type || '';
 
-            document.getElementById('nature-id').value = pokemon.nature_id || '';
-            
-            document.getElementById('ev-hp').value = pokemon.ev_hp || 0;
-            document.getElementById('ev-atk').value = pokemon.ev_atk || 0;
-            document.getElementById('ev-def').value = pokemon.ev_def || 0;
-            document.getElementById('ev-spa').value = pokemon.ev_spa || 0;
-            document.getElementById('ev-spd').value = pokemon.ev_spd || 0;
-            document.getElementById('ev-spe').value = pokemon.ev_spe || 0;
+            const itemInfo = this.itemList.find(i => i.id == pokemon.item);
+            document.getElementById('held-item-input').value = itemInfo ? itemInfo.name_ja : '';
 
-            for (let i = 1; i <= 4; i++) {
-                document.getElementById(`move${i}-id`).value = pokemon[`move${i}_id`] || '';
-            }
+            const abilityInfo = this.abilityList.find(a => a.id == pokemon.ability);
+            document.getElementById('ability-input').value = abilityInfo ? abilityInfo.name_ja : '';
+
+            document.getElementById('nature-id').value = pokemon.nature || '';
+            
+            document.getElementById('ev-hp').value = pokemon.ev.hp || 0;
+            document.getElementById('ev-atk').value = pokemon.ev.atk || 0;
+            document.getElementById('ev-def').value = pokemon.ev.def || 0;
+            document.getElementById('ev-spa').value = pokemon.ev.spa || 0;
+            document.getElementById('ev-spd').value = pokemon.ev.spd || 0;
+            document.getElementById('ev-spe').value = pokemon.ev.spe || 0;
+
+            pokemon.moves.forEach((move, i) => {
+                const moveInfo = this.movesList.find(m => m.id == move.id);
+                document.getElementById(`move${i + 1}-input`).value = moveInfo ? moveInfo.name_ja : '';
+            });
+
         } else {
-            await updateAbilitiesForPokemon(null);
+            // Clear datalists when adding a new pokemon
+            updatePokemonDatalists('', this.pokemonList);
         }
         
         this.updateEvTotal();
@@ -153,18 +220,24 @@ export class TrainedPokemonManager {
     async handleFormSubmit(event) {
         event.preventDefault();
         const id = document.getElementById('pokemon-id').value;
+
+        const getPokemonId = (name) => this.pokemonList.find(p => p.name_ja === name)?.id || null;
+        const getItemId = (name) => this.itemList.find(i => i.name_ja === name)?.id || null;
+        const getMoveId = (name) => this.movesList.find(m => m.name_ja === name)?.id || null;
+        const getAbilityId = (name) => this.abilityList.find(a => a.name_ja === name)?.id || null;
+
         const formData = {
-            pokemon_id: document.getElementById('pokemon-master-id').value,
-            nickname: document.getElementById('nickname').value,
+            pokemon_id: getPokemonId(document.getElementById('pokemon-master-input').value.trim()),
+            nickname: document.getElementById('nickname').value.trim(),
             level: document.getElementById('level').value,
             tera_type_id: document.getElementById('tera-type-id').value,
-            held_item_id: document.getElementById('held-item-id').value,
-            ability_id: document.getElementById('ability-id').value,
+            held_item_id: getItemId(document.getElementById('held-item-input').value.trim()),
+            ability_id: getAbilityId(document.getElementById('ability-input').value.trim()),
             nature_id: document.getElementById('nature-id').value,
-            move1_id: document.getElementById('move1-id').value,
-            move2_id: document.getElementById('move2-id').value,
-            move3_id: document.getElementById('move3-id').value,
-            move4_id: document.getElementById('move4-id').value,
+            move1_id: getMoveId(document.getElementById('move1-input').value.trim()),
+            move2_id: getMoveId(document.getElementById('move2-input').value.trim()),
+            move3_id: getMoveId(document.getElementById('move3-input').value.trim()),
+            move4_id: getMoveId(document.getElementById('move4-input').value.trim()),
             ev_hp: document.getElementById('ev-hp').value,
             ev_atk: document.getElementById('ev-atk').value,
             ev_def: document.getElementById('ev-def').value,
@@ -182,7 +255,10 @@ export class TrainedPokemonManager {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
-            if (!response.ok) throw new Error('Failed to save pokemon');
+            const responseData = await response.json();
+            if (!response.ok || responseData.status !== 'success') {
+                throw new Error(responseData.data?.message || 'Failed to save pokemon');
+            }
             this.formModal.hide();
             this.loadTrainedPokemons();
         } catch (error) {

@@ -135,8 +135,9 @@ body {
 
 .item-icon,
 .tera-type-icon {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
     object-fit: contain; /* 画像のアスペクト比を保ちつつ、エリア内に収める */
 }
 
@@ -148,4 +149,11 @@ body {
     transform: scale(2.5); /* サイズを1.5倍に */
     filter: brightness(1.5); /* 輝度を1.5倍に（値は調整可能） */
     transition: transform 0.2s ease-out, filter 0.2s ease-out; /* スムーズなアニメーション */
+}
+
+/* Custom style for a wider ROI editor modal */
+@media (min-width: 1200px) {
+    .roi-modal-large {
+        max-width: 1700px; /* Default is 1140px for modal-xl */
+    }
 }

@@ -1,0 +1,86 @@
+<!-- 育成済みポケモン登録・編集用フォームモーダル (ネストされたモーダル) -->
+<div class="modal fade" id="pokemon-form-modal" tabindex="-1" aria-labelledby="pokemonFormModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-card-inside">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pokemonFormModalLabel">ポケモン情報</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="pokemon-form">
+                    <input type="hidden" id="pokemon-id">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="pokemon-master-input" class="form-label">ポケモン</label>
+                            <input type="text" class="form-control" id="pokemon-master-input" list="pokemon-datalist" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nickname" class="form-label">ニックネーム</label>
+                            <input type="text" class="form-control" id="nickname">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="level" class="form-label">レベル</label>
+                            <input type="number" class="form-control" id="level" value="50" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="tera-type-id" class="form-label">テラスタイプ</label>
+                            <select class="form-select" id="tera-type-id"></select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="held-item-input" class="form-label">持ち物</label>
+                            <input type="text" class="form-control" id="held-item-input" list="item-datalist">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ability-input" class="form-label">特性</label>
+                            <input type="text" class="form-control" id="ability-input" list="ability-datalist">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nature-id" class="form-label">性格</label>
+                            <select class="form-select" id="nature-id"></select>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6>技構成</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><input type="text" class="form-control move-input" id="move1-input" list="move-datalist"></div>
+                        <div class="col-md-6 mb-3"><input type="text" class="form-control move-input" id="move2-input" list="move-datalist"></div>
+                        <div class="col-md-6 mb-3"><input type="text" class="form-control move-input" id="move3-input" list="move-datalist"></div>
+                        <div class="col-md-6 mb-3"><input type="text" class="form-control move-input" id="move4-input" list="move-datalist"></div>
+                    </div>
+
+                    <hr>
+                    <h6>努力値 (EV)</h6>
+                    <div class="row">
+                        <div class="col-sm-4 col-md-2 mb-3"><label for="ev-hp">HP</label><input type="number"
+                                class="form-control ev-input" id="ev-hp" value="0" min="0" max="252" step="4"></div>
+                        <div class="col-sm-4 col-md-2 mb-3"><label for="ev-atk">攻撃</label><input type="number"
+                                class="form-control ev-input" id="ev-atk" value="0" min="0" max="252" step="4"></div>
+                        <div class="col-sm-4 col-md-2 mb-3"><label for="ev-def">防御</label><input type="number"
+                                class="form-control ev-input" id="ev-def" value="0" min="0" max="252" step="4"></div>
+                        <div class="col-sm-4 col-md-2 mb-3"><label for="ev-spa">特攻</label><input type="number"
+                                class="form-control ev-input" id="ev-spa" value="0" min="0" max="252" step="4"></div>
+                        <div class="col-sm-4 col-md-2 mb-3"><label for="ev-spd">特防</label><input type="number"
+                                class="form-control ev-input" id="ev-spd" value="0" min="0" max="252" step="4"></div>
+                        <div class="col-sm-4 col-md-2 mb-3"><label for="ev-spe">素早</label><input type="number"
+                                class="form-control ev-input" id="ev-spe" value="0" min="0" max="252" step="4"></div>
+                    </div>
+                    <div class="text-end"><small>合計: <span id="ev-total">0</span> / 510</small></div>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                <button type="submit" class="btn btn-primary neon-border" form="pokemon-form">保存</button>
+            </div>
+        </div>
+    </div>
+</div>

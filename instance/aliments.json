@@ -1,0 +1,28 @@
+{
+    "状態異常一覧": [
+      {
+        "ja": "まひ",
+        "en": "Paralysis"
+      },
+      {
+        "ja": "ねむり",
+        "en": "Sleep"
+      },
+      {
+        "ja": "こおり",
+        "en": "Freeze"
+      },
+      {
+        "ja": "やけど",
+        "en": "Burn"
+      },
+      {
+        "ja": "どく",
+        "en": "Poison"
+      },
+      {
+        "ja": "もうどく",
+        "en": "Badly_Poisoned"
+      }
+    ]
+  }

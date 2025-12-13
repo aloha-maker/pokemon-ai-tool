@@ -1,81 +1,85 @@
 import sqlite3
 import os
+import argparse
+import re
 
-def update_database():
+def recreate_tables(tables_to_recreate):
     """
-    既存のデータベースに新しいテーブルを追加する。
+    指定されたテーブルを schema.sql に基づいて再構築する。
+    注意: 指定されたテーブルのデータはすべて消去されます。
     """
+    conn = None
     try:
-        # データベースファイルのパスを構築
-        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'pokemon_ai.db')
+        # --- Path setup ---
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        db_path = os.path.join(base_dir, 'data', 'pokemon_ai.db')
+        schema_path = os.path.join(base_dir, 'data', 'schema.sql')
+        
         print(f"データベースファイル: {db_path}")
+        print(f"スキーマファイル: {schema_path}")
+        print(f"再構築対象のテーブル: {', '.join(tables_to_recreate)}")
 
-        # 追加するテーブルのCREATE文
-        create_battles_table = """
-        CREATE TABLE IF NOT EXISTS battles (
-            battle_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            battle_date TEXT NOT NULL DEFAULT (DATETIME('now', 'localtime')),
-            season INTEGER,
-            regulation TEXT,
-            battle_format TEXT NOT NULL CHECK(battle_format IN ('シングル', 'ダブル')),
-            my_rank INTEGER,
-            opponent_rank INTEGER,
-            result TEXT NOT NULL CHECK(result IN ('win', 'lose', 'unknown')),
-            my_first_pokemon TEXT,
-            opponent_first_pokemon TEXT,
-            memo TEXT
-        );
-        """
+        # --- Read Schema ---
+        if not os.path.exists(schema_path):
+            raise FileNotFoundError(f"スキーマファイルが見つかりません: {schema_path}")
+        
+        with open(schema_path, 'r', encoding='utf-8') as f:
+            sql_script = f.read()
 
-        create_pokemons_log_table = """
-        CREATE TABLE IF NOT EXISTS pokemons_log (
-            pokemon_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pokemon_name TEXT NOT NULL,
-            nickname TEXT,
-            moves TEXT,
-            terastal_type TEXT,
-            item TEXT,
-            ability TEXT,
-            UNIQUE(pokemon_name, nickname, moves, terastal_type, item, ability)
-        );
-        """
-
-        create_parties_log_table = """
-        CREATE TABLE IF NOT EXISTS parties_log (
-            party_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            battle_id INTEGER NOT NULL,
-            pokemon_id INTEGER,
-            pokemon_name TEXT NOT NULL,
-            is_opponent BOOLEAN NOT NULL,
-            is_selected BOOLEAN NOT NULL,
-            FOREIGN KEY (battle_id) REFERENCES battles (battle_id),
-            FOREIGN KEY (pokemon_id) REFERENCES pokemons_log (pokemon_id)
-        );
-        """
-
-        # データベースに接続
+        # --- Recreate tables ---
         print("データベースに接続しています...")
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         print("接続しました。")
 
-        # テーブルを作成
-        print("battles テーブルを作成します...")
-        cursor.execute(create_battles_table)
-        print("pokemons_log テーブルを作成します...")
-        cursor.execute(create_pokemons_log_table)
-        print("parties_log テーブルを作成します...")
-        cursor.execute(create_parties_log_table)
+        cursor.execute("PRAGMA foreign_keys = OFF;")
 
-        # 接続を閉じる
+        # Drop tables first (in user-provided order, reversed)
+        print("既存テーブルを削除します...")
+        for table_name in reversed(tables_to_recreate):
+            print(f"  - 削除中: {table_name}")
+            cursor.execute(f"DROP TABLE IF EXISTS {table_name};")
+
+        # Find and execute CREATE statements from schema.sql
+        print("新しいスキーマでテーブルを作成します...")
+        sql_statements = [s.strip() for s in sql_script.split(';')]
+        
+        for table_name in tables_to_recreate:
+            found_statement = None
+            for statement in sql_statements:
+                if re.search(f"CREATE TABLE( IF NOT EXISTS)?\\s+`?{table_name}`?\\s*\\(", statement, re.IGNORECASE):
+                    found_statement = statement
+                    break
+            
+            if found_statement:
+                print(f"  - 作成中: {table_name}...")
+                cursor.execute(found_statement + ';')
+            else:
+                print(f"  - 警告: テーブル '{table_name}' のCREATE文がschema.sqlに見つかりませんでした。")
+
+        cursor.execute("PRAGMA foreign_keys = ON;")
+        
         conn.commit()
-        conn.close()
-
         print("\nデータベースの更新が正常に完了しました。")
-        print("新しいテーブル (battles, pokemons_log, parties_log) が追加されました。")
 
     except Exception as e:
         print(f"\nエラーが発生しました: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            conn.close()
 
 if __name__ == '__main__':
-    update_database()
+    parser = argparse.ArgumentParser(
+        description="schema.sqlから特定のテーブルを再構築します。テーブルのデータはすべて失われます。",
+        epilog="例: python update_db.py battles parties_log raw_battle_events"
+    )
+    parser.add_argument(
+        'tables', 
+        nargs='+', 
+        help='再構築するテーブル名のリスト。依存関係のあるテーブルは、依存される側を先に指定してください (例: battles parties_log)。'
+    )
+    
+    args = parser.parse_args()
+    recreate_tables(args.tables)

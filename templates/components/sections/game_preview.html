@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!-- components/sections/game_preview.html -->
 <div id="game-preview" class="glass-card p-3 d-flex flex-column mb-3">
     <div class="row g-2 align-items-center mb-3">
@@ -25,11 +26,28 @@
                 <i class="bi bi-play-circle-fill"></i> 解析を開始
             </button>
         </div>
+=======
+<!-- リアルタイム解析 -->
+<div id="game-preview" class="glass-card p-3 d-flex flex-column w-100">
+
+    <div class="row g-2 align-items-center mb-1">
+
+<div class="col-auto">
+            <input type="text" id="phase-display" class="form-control form-control-sm" placeholder="フェーズ" readonly disabled style="width: 100px;">
+        </div>
+        <div class="col-auto">
+            <input type="text" id="sub-phase-display" class="form-control form-control-sm" placeholder="サブフェーズ" readonly disabled style="width: 120px;">
+        </div>
+
+        <div class="col"></div>
+
+>>>>>>> パーティ欄UIの変更
         <div class="col-auto">
             <div class="input-group input-group-sm">
                 <button id="start-camera-btn" class="btn btn-sm btn-info neon-border">
                     <i class="bi bi-camera-video-fill"></i> 仮想カメラ読込
                 </button>
+<<<<<<< HEAD
                 <input type="number" id="camera-index-input" class="form-control" value="0" title="カメラデバイスのインデックス" style="width: 60px;">
             </div>
         </div>
@@ -43,5 +61,51 @@
     <!-- ゲーム画面プレビュー -->
     <div class="text-center bg-black ratio ratio-16x9">
         <img id="capture-image" src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview" class="img-fluid" alt="ゲーム画面プレビュー">
+=======
+                <input type="number" id="camera-index-input" class="form-control" value="2"
+                    title="カメラデバイスのインデックス" style="width: 60px;">
+            </div>
+        </div>
+
+        <div class="col-auto">
+            <div class="input-group input-group-sm">
+                <select class="form-select form-select-sm" id="my-party-select" style="width: 150px;">
+                    <option selected value="">登録済みパーティから選ぶ...</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
+            </div>
+        </div>
+        <div class="col-auto">
+            <button id="recognize-opponent-party-btn" class="btn btn-sm btn-info neon-border" disabled>
+                <i class="bi bi-camera-video"></i> パーティ取得
+            </button>
+        </div>
+        <div class="col-auto">
+            <button id="confirm-selection-btn" class="btn btn-sm btn-warning neon-border">
+                <i class="bi bi-check-circle"></i> 選出完了
+            </button>
+        </div>
+        <div class="col-auto">
+            <button id="complete-selection-btn" class="btn btn-sm btn-primary neon-border">
+                <i class="bi bi-check-all"></i> 選択完了
+            </button>
+        </div>
+        <div class="col-auto">
+            <button id="start-battle-btn" class="btn btn-sm btn-danger neon-border">
+                <i class="bi bi-joystick"></i> バトル開始
+            </button>
+        </div>
+        <div class="col-auto">
+            <input type="text" id="battle-id-display" class="form-control form-control-sm" placeholder="バトルID" readonly style="width: 240px;">
+        </div>
+
+    </div>
+
+    <!-- ゲーム画面プレビュー -->
+    <div class="text-center bg-black ratio ratio-16x9">
+        <img id="capture-image"
+            src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview"
+            class="img-fluid" alt="ゲーム画面プレビュー">
+>>>>>>> パーティ欄UIの変更
     </div>
 </div>

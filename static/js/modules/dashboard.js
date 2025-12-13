@@ -33,15 +33,18 @@ export class DashboardManager {
 
         try {
             const response = await fetch('/api/dashboard');
-            if (!response.ok) {
-                throw new Error(`APIエラー: ${response.status} ${response.statusText}`);
+            const jsonResponse = await response.json();
+
+            if (!response.ok || jsonResponse.status !== 'success') {
+                const errorInfo = (jsonResponse.data && jsonResponse.data.error) || jsonResponse.message || `APIエラー: ${response.status}`;
+                throw new Error(errorInfo);
             }
-            const data = await response.json();
-            this.updateUI(data);
+            
+            this.updateUI(jsonResponse.data);
 
         } catch (error) {
             console.error('ダッシュボードデータの取得に失敗しました:', error);
-            showAlert('dashboard-alert-container', 'ダッシュボードデータの取得に失敗しました。', 'danger');
+            showAlert('dashboard-alert-container', `ダッシュボードデータの取得に失敗しました: ${error.message}`, 'danger');
         } finally {
             loadingEl.classList.add('d-none');
             contentEl.classList.remove('d-none');
@@ -187,10 +190,14 @@ export class DashboardManager {
 
         try {
             const response = await fetch(`/api/dashboard/customization?pokemon_name=${encodeURIComponent(pokemonName)}`);
-            if (!response.ok) {
-                throw new Error('カスタマイズデータの取得に失敗しました。');
+            const jsonResponse = await response.json();
+
+            if (!response.ok || jsonResponse.status !== 'success') {
+                const errorInfo = (jsonResponse.data && jsonResponse.data.error) || jsonResponse.message || 'カスタマイズデータの取得に失敗しました。';
+                throw new Error(errorInfo);
             }
-            const data = await response.json();
+            
+            const data = jsonResponse.data;
 
             const renderList = (ulId, items, type) => {
                 const ul = document.getElementById(ulId);
@@ -221,7 +228,7 @@ export class DashboardManager {
 
         } catch (error) {
             console.error('カスタマイズデータの分析中にエラーが発生しました:', error);
-            showAlert('dashboard-alert-container', 'カスタマイズデータの分析に失敗しました。', 'danger');
+            showAlert('dashboard-alert-container', `カスタマイズデータの分析に失敗しました: ${error.message}`, 'danger');
         } finally {
             analyzeBtn.innerHTML = originalBtnText;
             analyzeBtn.disabled = false;

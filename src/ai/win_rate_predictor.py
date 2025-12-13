@@ -1,20 +1,17 @@
 import itertools
 import os
 from ..core.type_chart import get_effectiveness
-from ..database.manager import DatabaseManager
+from src.models import PokemonModel
 
 class WinRatePredictor:
     """
     対戦前の選出フェーズで、有利な選出を予測・推薦するクラス。
     """
-    def __init__(self):
-        self.db_manager = DatabaseManager()
-
-    def _get_pokemon_types(self, db, pokemon_name):
+    def _get_pokemon_types(self, pokemon_name):
         """データベースからポケモン名に対応するタイプを取得する"""
-        pokemon = db.get_pokemon_by_name(pokemon_name)
+        pokemon = PokemonModel.query.filter_by(name_ja=pokemon_name).first()
         if pokemon:
-            return [t for t in [pokemon['type1'], pokemon['type2']] if t]
+            return [t for t in [pokemon.type1, pokemon.type2] if t]
         return []
 
     def _calculate_matchup_score(self, my_types, opponent_types):
@@ -45,40 +42,36 @@ class WinRatePredictor:
         Returns:
             dict: 最適な選出チームとスコア、またはエラーメッセージ
         """
-        if len(my_party_names) != 6 or len(opponent_party_names) != 6:
-            return {"error": "パーティはそれぞれ6体入力してください。"}
+        my_party_types = {name: self._get_pokemon_types(name) for name in my_party_names}
+        opponent_party_types = {name: self._get_pokemon_types(name) for name in opponent_party_names}
 
-        with self.db_manager as db:
-            my_party_types = {name: self._get_pokemon_types(db, name) for name in my_party_names}
-            opponent_party_types = {name: self._get_pokemon_types(db, name) for name in opponent_party_names}
+        # DBに存在しないポケモンがいた場合のエラーハンドリング
+        for name, types in {**my_party_types, **opponent_party_types}.items():
+            if not types:
+                return {"error": f"ポケモン「{name}」がデータベースに見つかりません。"}
+        
+        best_team = None
+        best_score = -float('inf')
 
-            # DBに存在しないポケモンがいた場合のエラーハンドリング
-            for name, types in {**my_party_types, **opponent_party_types}.items():
-                if not types:
-                    return {"error": f"ポケモン「{name}」がデータベースに見つかりません。"}
-            
-            best_team = None
-            best_score = -float('inf')
-
-            # 自パーティから3体選出する全ての組み合わせを試行 (20通り)
-            for team_combination in itertools.combinations(my_party_names, 3):
-                current_team_score = 0
-                # 選出した3体それぞれについて、相手パーティ全体との相性を評価
-                for my_pokemon_name in team_combination:
-                    pokemon_score_vs_opponent_party = 0
-                    for opponent_pokemon_name in opponent_party_names:
-                        my_types = my_party_types[my_pokemon_name]
-                        opponent_types = opponent_party_types[opponent_pokemon_name]
-                        
-                        # 1対1の相性スコアを加算
-                        pokemon_score_vs_opponent_party += self._calculate_matchup_score(my_types, opponent_types)
+        # 自パーティから3体選出する全ての組み合わせを試行 (20通り)
+        for team_combination in itertools.combinations(my_party_names, 3):
+            current_team_score = 0
+            # 選出した3体それぞれについて、相手パーティ全体との相性を評価
+            for my_pokemon_name in team_combination:
+                pokemon_score_vs_opponent_party = 0
+                for opponent_pokemon_name in opponent_party_names:
+                    my_types = my_party_types[my_pokemon_name]
+                    opponent_types = opponent_party_types[opponent_pokemon_name]
                     
-                    current_team_score += pokemon_score_vs_opponent_party
+                    # 1対1の相性スコアを加算
+                    pokemon_score_vs_opponent_party += self._calculate_matchup_score(my_types, opponent_types)
                 
-                # ベストスコアを更新
-                if current_team_score > best_score:
-                    best_score = current_team_score
-                    best_team = team_combination
+                current_team_score += pokemon_score_vs_opponent_party
+            
+            # ベストスコアを更新
+            if current_team_score > best_score:
+                best_score = current_team_score
+                best_team = team_combination
 
         return {
             "recommended_team": list(best_team),

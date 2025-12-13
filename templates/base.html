@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<<<<<<< HEAD
 
     <!-- Google Fonts (Poppins) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -81,3 +82,57 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+=======
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+
+<body>
+    <div class="container-fluid vh-100 p-3 d-flex flex-column" style="overflow: hidden;">
+        <header class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="neon-text-purple mb-0">ポケモン対戦補助AIツール</h1>
+            <div>
+                <!-- 各ボタン -->
+                <!-- <button id="load-master-data-btn" class="btn btn-outline-light neon-border me-2">
+                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <i class="button-icon bi bi-database-down"></i>
+                    <span class="button-text">データ読込</span>
+                </button> -->
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#video-manager-modal"><i class="bi bi-film"></i> 動画管理</button>
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#party-generator-modal"><i class="bi bi-magic"></i> パーティ自動生成</button>
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#dashboard-modal"><i class="bi bi-graph-up"></i> 分析ダッシュボード</button>
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#trained-pokemon-modal"><i class="bi bi-archive"></i> 育成済みポケモン管理</button>
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#party-management-modal"><i class="bi bi-collection"></i> パーティ管理</button>
+                <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
+                    data-bs-target="#calculator-modal"><i class="bi bi-calculator"></i> 計算機</button>
+                <button class="btn btn-outline-light neon-border" data-bs-toggle="modal"
+                    data-bs-target="#simulator-modal"><i class="bi bi-joystick"></i> シミュレーター</button>
+                <button class="btn btn-outline-light neon-border ms-2" data-bs-toggle="modal"
+                    data-bs-target="#roi-editor-modal"><i class="bi bi-pencil-square"></i> ROI設定</button>
+            </div>
+        </header>
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    {% block modals %}{% endblock %}
+
+    <!-- Custom JS -->
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+</body>
+</html>
+>>>>>>> パーティ欄UIの変更

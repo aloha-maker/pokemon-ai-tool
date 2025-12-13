@@ -2,25 +2,24 @@
 
 import json
 from collections import Counter
-from src.database.manager import DatabaseManager
+from src.services.battle_service import BattleService
 
 class LogAnalyzer:
     """
     battle_logsテーブルに蓄積された対戦データを分析するクラス。
     """
 
-    def __init__(self):
+    def __init__(self, app_state):
         """
-        初期化時にデータベースマネージャーをインスタンス化する。
+        初期化時にバトルサービスをインスタンス化する。
         """
-        self.db_manager = DatabaseManager()
+        self.battle_service = BattleService(app_state=app_state)
 
     def get_all_logs(self) -> list[dict]:
         """
         すべての対戦ログを取得する。
         """
-        with self.db_manager as db:
-            return db.get_all_battle_logs()
+        return self.battle_service.get_all_battle_logs()
 
     def calculate_move_frequencies(self, pokemon_name: str) -> Counter:
         """

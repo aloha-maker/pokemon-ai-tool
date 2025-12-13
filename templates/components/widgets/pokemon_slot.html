@@ -1,0 +1,42 @@
+<div class="col-2 position-relative pokemon-slot" data-party-type="{{ party_type }}" data-slot-index="{{ slot_index }}">
+    <span class="starter-icon d-none"><i class="bi bi-star-fill"></i></span>
+    <span class="pokemon-settings-icon"><i class="bi bi-gear-fill"></i></span>
+    <div class="position-relative">
+        <img src="https://placehold.co/96x96/333/ccc?text=P{{ slot_index }}"
+            class="img-fluid rounded w-100 pokemon-image">
+        <div class="hp-bar-container progress" style="height: 20px;">
+            <div class="hp-bar progress-bar bg-success" role="progressbar"
+                style="width: 100%;" aria-valuenow="100" aria-valuemin="0"
+                aria-valuemax="100"></div>
+            <span
+                class="hp-text small text-white position-absolute top-50 start-50 translate-middle w-100">100%</span>
+        </div>
+        <input type="text" class="form-control form-control-sm pokemon-input"
+            placeholder="ポケモン{{ slot_index }}" list="pokemon-datalist">
+    </div>
+    <div class="d-flex justify-content-start align-items-center mt-1">
+        <div class="item-container d-flex align-items-center me-1">
+            <img src="https://placehold.co/24x24/333/ccc?text=?" class="item-icon"
+                alt="持ち物アイコン" id="{{ party_type }}-item-icon-{{ slot_index }}">
+            <span class="item-name small text-muted" id="{{ party_type }}-item-name-{{ slot_index }}" hidden>持ち物</span>
+        </div>
+        <div class="tera-type-container d-flex align-items-center me-1">
+            <img src="https://placehold.co/24x24/333/ccc?text=?" class="tera-type-icon"
+                alt="テラスタイプアイコン" id="{{ party_type }}-tera-icon-{{ slot_index }}">
+            <span class="tera-type-name small text-muted" id="{{ party_type }}-tera-name-{{ slot_index }}" hidden>テラスタイプ</span>
+        </div>
+        <div class="speed-stat-container d-flex align-items-center">
+            <i class="bi me-1" title="すばやさ種族値"></i>
+            <span class="speed-stat-value small text-muted">S: --</span>
+        </div>
+    </div>
+    <!-- Status -->
+    <select class="form-select form-select-sm mt-1 pokemon-status-select" data-party-type="{{ party_type }}" data-slot-index="{{ slot_index }}">
+        <option value="">状態異常なし</option>
+        <option value="poison">どく</option>
+        <option value="paralysis">まひ</option>
+        <option value="burn">やけど</option>
+        <option value="freeze">こおり</option>
+        <option value="sleep">ねむり</option>
+    </select>
+</div>

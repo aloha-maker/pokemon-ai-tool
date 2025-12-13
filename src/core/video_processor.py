@@ -2,7 +2,6 @@ import cv2
 import os
 import numpy as np
 from src.core.ocr import GameStateParser
-from src.database.manager import DatabaseManager
 from src.core.turn_reconstructor import TurnReconstructor
 
 class VideoProcessor:
