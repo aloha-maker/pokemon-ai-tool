@@ -5,7 +5,7 @@ import json
 import numpy as np
 from src.core.ocr.ocr_processor import OCRProcessor
 from src.core.ocr.name_corrector import PokemonNameCorrector, AbilityNameCorrector
-from src.core.ocr import config  # configモジュールをインポート
+from src.core.ocr import config
 
 from src.schemas.pokemon_battle.move import Move
 from src.schemas.pokemon_battle.pokemon import Pokemon
@@ -144,18 +144,6 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
     try:            
         # OCRプロセッサーから直接OCR結果を取得
         raw_results = ocr_processor.ocr_processor.last_ocr_results
-        
-        # ライブコメントなどのテキスト情報を抽出
-        # game_text_parts = []
-        # for roi_name in ['live_comment_row1', 'live_comment_row2']:
-        #     if roi_name in raw_results and raw_results[roi_name].get('text'):
-        #         game_text_parts.append(raw_results[roi_name]['text'])
-            
-        # # 特性情報を抽出
-        # ability_parts = []
-        # for roi_name in ['my_tokusei_row1', 'my_tokusei_row2', 'your_tokusei_row1', 'your_tokusei_row2']:
-        #     if roi_name in raw_results and raw_results[roi_name].get('text'):
-        #         ability_parts.append(raw_results[roi_name]['text'])
         
         # RawBattleEventModelにセット
         raw_battle_event_model_list = []

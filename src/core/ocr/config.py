@@ -12,6 +12,7 @@ PROCESSED_DIR = os.path.join(APP_ROOT, '.traindata', 'video', 'processed_videos'
 ROI_FILE = os.path.join(APP_ROOT, 'instance', 'roi_config.json')
 POKEMON_MASTER_PATH = os.path.join(APP_ROOT, 'data', 'master_data', 'pokemons.csv')
 ABILITY_MASTER_PATH = os.path.join(APP_ROOT, 'data', 'master_data', 'abilities.csv')
+LIVE_TEXT_MASTER_PATH = os.path.join(APP_ROOT, 'instance', 'live_text_master.json')
 
 EXTRACT_PER_SECOND = 1.2  # 1秒に3枚抽出
 

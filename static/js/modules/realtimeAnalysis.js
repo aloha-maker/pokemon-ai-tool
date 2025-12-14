@@ -83,9 +83,6 @@ export class RealtimeAnalysis {
             phaseDisplay.value = phase || '';
             subPhaseDisplay.value = sub_phase || '';
 
-            console.log('phase',phase)
-            console.log('sub_phase',sub_phase)
-
             if(phase === 'stay') {
                 // パーティ取得,選出完了,選択完了ボタン　非活性
                 this.recognizePartyBtn.disabled = true;
@@ -393,7 +390,6 @@ export class RealtimeAnalysis {
      * @param {string} containerId - 'my-party' または 'opponent-party'。
      * @param {object} sideData - BattleSideのデータ。
      */
-    // TODO UIの更新状況強の最新化
     updateSideUI(containerId, sideData) {
         const displayContainer = document.getElementById(containerId + '-party-display');
 
@@ -403,6 +399,16 @@ export class RealtimeAnalysis {
             // ポケモン名
             document.getElementById(containerId + '-active-pokemon').value = pokemon.name
         }
+
+        // 壁
+        document.getElementById(containerId + '-reflect').checked = sideData.screens['reflect'];
+        document.getElementById(containerId + '-light-screen').checked = sideData.screens['light_screen'];
+        document.getElementById(containerId + '-aurora-veil').checked = sideData.screens['aurora_veil'];
+        // 設置技・その他
+        document.getElementById(containerId + '-spikes').value = sideData.screens['spikes'];
+        document.getElementById(containerId + '-toxic-spikes').value = sideData.screens['toxic_spikes'];
+        document.getElementById(containerId + '-stealth-rock').checked = sideData.screens['stealth_rock'];
+        document.getElementById(containerId + '-tailwind').checked = sideData.screens['tailwind'];
 
         // パーティ全体の情報を詳細に更新
         if (sideData.team && Array.isArray(sideData.team.members)) {
@@ -452,14 +458,11 @@ export class RealtimeAnalysis {
      * @param {object} fieldData - BattleFieldのデータ。
      */
     updateFieldUI(fieldData) {
-        const weatherDisplay = document.getElementById('weather-display');
-        if (weatherDisplay) {
-            weatherDisplay.textContent = `天候: ${fieldData.weather || 'なし'}`;
-        }
-
-        const fieldEffectDisplay = document.getElementById('field-effect-display');
-        if (fieldEffectDisplay) {
-            fieldEffectDisplay.textContent = `フィールド: ${fieldData.terrain || 'なし'}`;
-        }
+        // 天候
+        document.getElementById('battle-weather').value = fieldData.weather || 'なし';
+        // フィールド
+        document.getElementById('battle-terrain').value = fieldData.terrain || 'なし';
+        // ターン数
+        document.getElementById('battle-turn').value = fieldData.turn || 0;        
     }
 }

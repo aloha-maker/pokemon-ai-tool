@@ -27,41 +27,22 @@ class OCRROIProcessor(BaseROIProcessor):
     def apply_name_correction(self, text, roi_name):
         """OCR後の文字列をマスターデータに基づいて補正（類似度0.6以上のみ適用）"""
         if roi_name in POKEMON_NAME_ROIS:
-            original_text = text
-            corrected_text = self.pokemon_corrector.find_closest_name(text, threshold=0.6)
+            corrected_text,success = self.pokemon_corrector.find_closest_name(text)
             
-            # 修正: 完全一致の場合は常に許可
-            if corrected_text == text and text in self.pokemon_corrector.name_list:
+            # 有効・無効
+            if success:
                 return corrected_text
-            
-            # 修正: 閾値チェック（完全一致でない場合のみ）
-            if corrected_text == text:
-                print(f"  ❌ ポケモン名補正スキップ: '{original_text}' (類似度 < 0.6)")
+            else:
                 return None
-
-            if original_text != corrected_text:
-                print(f"  🟢 ポケモン名補正: '{original_text}' → '{corrected_text}'")
-            return corrected_text
 
         elif roi_name in ABILITY_NAME_ROIS:
-            original_text = text
-            if hasattr(self.ability_corrector, 'find_closest_name'):
-                corrected_text = self.ability_corrector.find_closest_name(text, threshold=0.6)
-            else:
-                corrected_text = self.ability_corrector.find_closest_name(text)
+            corrected_text,success = self.ability_corrector.find_closest_name(text)
             
-            # 修正: 完全一致の場合は常に許可
-            if corrected_text == text and text in self.ability_corrector.name_list:
+            # 有効・無効
+            if success:
                 return corrected_text
-            
-            # 修正: 閾値チェック（完全一致でない場合のみ）
-            if corrected_text == text:
-                print(f"  ❌ 特性名補正スキップ: '{original_text}' (類似度 < 0.6)")
+            else:
                 return None
-
-            if original_text != corrected_text:
-                print(f"  🔵 特性名補正: '{original_text}' → '{corrected_text}'")
-            return corrected_text
 
         return text
 
@@ -213,5 +194,5 @@ class OCRROIProcessor(BaseROIProcessor):
         # # テキスト保存
         # self.save_roi_text(roi_name, video_name, frame_idx, short_hash, final_text)
 
-        print(f"📝 {roi_name}_{frame_idx:06d}: '{final_text}' (OCR信頼度: 最大{confidence['max']:.1f}, 平均{confidence['avg']:.1f})")
+        # print(f"📝 {roi_name}_{frame_idx:06d}: '{final_text}' (OCR信頼度: 最大{confidence['max']:.1f}, 平均{confidence['avg']:.1f})")
         return True, final_text, confidence

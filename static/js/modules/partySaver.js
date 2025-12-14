@@ -133,6 +133,33 @@ export class PartySaver {
                 if (this.pokemonDetailEditor) {
                     this.pokemonDetailEditor.clearOpponentDetails();
                 }
+
+                // 壁
+                document.getElementById('my-reflect').checked = false;
+                document.getElementById('my-light-screen').checked = false;
+                document.getElementById('my-aurora-veil').checked = false;
+
+                document.getElementById('opponent-reflect').checked = false;
+                document.getElementById('opponent-light-screen').checked = false;
+                document.getElementById('opponent-aurora-veil').checked = false;
+                // 設置技・その他
+                document.getElementById('my-spikes').value = 0;
+                document.getElementById('my-toxic-spikes').value = 0;
+                document.getElementById('my-stealth-rock').checked = false;
+                document.getElementById('my-tailwind').checked = false;
+
+                document.getElementById('opponent-spikes').value = 0;
+                document.getElementById('opponent-toxic-spikes').value = 0;
+                document.getElementById('opponent-stealth-rock').checked = false;
+                document.getElementById('opponent-tailwind').checked = false;
+
+                // 天候
+                document.getElementById('battle-weather').value = 'なし';
+                // フィールド
+                document.getElementById('battle-terrain').value = 'なし';
+                // ターン数
+                document.getElementById('battle-turn').value = 0; 
+
             } else {
                 const errorMessage = responseData.data ? responseData.data.error : (responseData.message || '不明なエラーが発生しました。');
                 throw new Error(errorMessage);

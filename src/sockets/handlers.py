@@ -34,7 +34,12 @@ def register_socket_handlers(socketio):
         app_state.background_thread_stop_event.clear()
         
         camera_index = data.get('camera_index', 0)
-        app_state.capture_thread = socketio.start_background_task(target=camera_capture_worker, socketio=socketio, camera_index=camera_index, state=app_state)
+        app_state.capture_thread = socketio.start_background_task(
+            target=camera_capture_worker
+            , socketio=socketio
+            , camera_index=camera_index
+            , state=app_state
+        )
 
         video_feed_url = f'/camera_feed?camera_index={camera_index}'
         emit('camera_started', {'video_feed_url': video_feed_url, 'ocr_started': False})

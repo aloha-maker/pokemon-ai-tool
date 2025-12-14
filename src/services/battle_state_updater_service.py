@@ -1,8 +1,11 @@
+import json
 import re
 from itertools import groupby
 from typing import List,Optional
 from src.schemas.pokemon_battle import BattleState
 from src.services.calculate_service import DamageCalculator
+from src.core.ocr.name_corrector import LiveTextCorrector
+from src.core.ocr import config
 
 class BattleStateUpdater:
     """
@@ -16,6 +19,8 @@ class BattleStateUpdater:
         self.state = battle_state
         # self.calculator = calculator
         self.frame_count = 0
+        self.weather_rules = self._load_weather_rules()
+        self.live_text_corrector = LiveTextCorrector(live_text_master_path=config.LIVE_TEXT_MASTER_PATH)
 
     # =====================================================
     # --- フレーム単位処理 ---
@@ -52,8 +57,10 @@ class BattleStateUpdater:
         def combine_rows(base_name):
             row1 = roi_dict.pop(f"{base_name}_row1", "")
             row2 = roi_dict.pop(f"{base_name}_row2", "")
-            combined = (row1 + " " + row2).strip()
+            combined = (row1 + row2).strip()
             if combined:
+                if base_name  == "live_comment":
+                    combined,_ = self.live_text_corrector.find_closest_name(combined)
                 roi_dict[base_name] = combined
 
         combine_rows("live_comment")
@@ -105,8 +112,8 @@ class BattleStateUpdater:
             self._update_win_lose(text)
         elif roi_name == "live_comment":
             self._parse_general_text(text)
-        else:
-            print(f"[未分類] {roi_name}: {text}")
+        # else:
+        #     print(f"[未分類] {roi_name}: {text}")
 
     # =====================================================
     # --- ROIごとの更新処理 ---
@@ -195,6 +202,16 @@ class BattleStateUpdater:
         else:
             print("[結果] 判定中…")
 
+    def _load_weather_rules(self):
+        """JSONからテキスト→天候ルールを読み込む"""
+        with open(config.LIVE_TEXT_MASTER_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+
+        # live_text をキーにした辞書を作る
+        return {
+            item["live_text"]: item
+            for item in data["live_text"]
+        }
 
     # =========================
     # --- OCRテキスト解析 ---
@@ -204,19 +221,21 @@ class BattleStateUpdater:
         ROIに依存しないバトルテキストを解析
         （天候・技発動・交代・特性など）
         """
-        print(text)
-        # --- 天候変化 ---
-        if "あめ" in text and "ふりはじめ" in text:
-            self.state.field.weather = "rain"
-            print("[天候] あめが ふりはじめた")
 
-        elif "日差しが強くなった！" == text:
-            self.state.field.weather = "sunny"
-            print("[天候] 日差しが強くなった！")
+        # --- 天候・フィールド・場の状態変化 ---
+        rule = self.weather_rules.get(text)
+        if rule:
+            # 天候とフィールドの処理
+            if rule["category"] == "wether":
+                self.state.field.weather = rule["description"] if rule["switch"] == "on" else None
+            elif rule["category"] == "terrain":
+                self.state.field.terrain = rule["description"] if rule["switch"] == "on" else None
 
-        elif "すなあらし" in text and "ふきはじめ" in text:
-            self.state.field.weather = "sandstorm"
-            print("[天候] すなあらしが ふきはじめた")
+            # サイド効果の処理
+            elif rule["category"] == "side":
+                print('サイド効果の処理',text,rule)
+                self._apply_side_effect(rule)
+                print('サイド効果の処理',self.state.to_dict())
 
         # --- 技の使用（2パターン対応） ---
         elif match := re.search(r"(相手の)?\s*([^\sは]+?)は\s*(.+?)を\s*(?:つかった)[！!]", text):
@@ -263,10 +282,31 @@ class BattleStateUpdater:
                 print(f"[警告] {side_label}側に {name} が見つかりません")
 
         # --- その他未分類 ---
-        else:
-            # 任意でデバッグ表示
-            print(f"[未分類交代検出?] {text}")
+        # else:
+        #     # 任意でデバッグ表示
+        #     print(f"[未分類交代検出?] {text}")
                 
+    def _apply_side_effect(self, rule):
+        """サイド効果(スクリーン、設置技など)を適用する"""
+        # サイドの選択
+        side = self.state.side1 if rule["side"] == "my" else self.state.side2
+        
+        # 効果のオン/オフ
+        is_active = rule["switch"] == "on"
+        
+        # スクリーン系
+        if rule["description"] in ("reflect", "light_screen", "aurora_veil"):
+            side.screens[rule["description"]] = is_active
+        # 設置技系
+        elif rule["description"] in ("stealth_rock", "tailwind"):
+            print('ステルスロック')
+            side.side_conditions[rule["description"]] = is_active
+        
+        elif rule["description"] in ("spikes", "toxic_spikes"):
+            if is_active:
+                side.side_conditions[rule["description"]] += 1
+            else:
+                side.side_conditions[rule["description"]] = 0
 
     def _switch_active_pokemon(self, side, name: str):
         """指定サイドのアクティブポケモンを交代"""

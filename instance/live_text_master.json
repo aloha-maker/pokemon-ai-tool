@@ -1,0 +1,319 @@
+{
+    "live_text": [
+        {
+          "live_text": "日差しが強くなった！",
+          "description": "sunny",
+          "switch": "on",
+          "side": "-",
+          "category": "wether"
+        },
+        {
+          "live_text": "日差しが元に戻った！",
+          "description": "sunny",
+          "switch": "off",
+          "side": "-",
+          "category": "wether"
+        },
+        {
+          "live_text": "雨が降り始めた！",
+          "description": "rain",
+          "switch": "on",
+          "side": "-",
+          "category": "wether"
+        },
+        {
+          "live_text": "雨が上がった！",
+          "description": "rain",
+          "switch": "off",
+          "side": "-",
+          "category": "wether"
+        },
+        {
+          "live_text": "砂あらしが吹き始めた！",
+          "description": "sandstorm",
+          "switch": "on",
+          "side": "-",
+          "category": "wether"
+        },
+        {
+          "live_text": "砂あらしがおさまった！",
+          "description": "sandstorm",
+          "switch": "off",
+          "side": "-",
+          "category": "wether"
+        },
+        {
+          "live_text": "雪が降り始めた！",
+          "description": "snow",
+          "switch": "on",
+          "side": "-",
+          "category": "wether"
+        },
+        {
+          "live_text": "雪が止んだ！",
+          "description": "snow",
+          "switch": "off",
+          "side": "-",
+          "category": "wether"
+        },
+        {
+          "live_text": "ミライドンはエレキフィールドをはりミライの機関を躍動させる！！",
+          "description": "electric",
+          "switch": "on",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "足下に電気がかけめぐる！",
+          "description": "electric",
+          "switch": "on",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "足下の電気が消え去った！",
+          "description": "electric",
+          "switch": "off",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "足下に草がおいしげった！",
+          "description": "grassy",
+          "switch": "on",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "足下の草が消え去った！",
+          "description": "grassy",
+          "switch": "off",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "足下が不思議な感じになった！",
+          "description": "psychic",
+          "switch": "on",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "足下の不思議感が消え去った！",
+          "description": "psychic",
+          "switch": "off",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "足下に霧が立ち込めた！",
+          "description": "misty",
+          "switch": "on",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "足下の霧が消え去った！",
+          "description": "misty",
+          "switch": "off",
+          "side": "-",
+          "category": "terrain"
+        },
+        {
+          "live_text": "味方はひかりのかべで特殊に強くなった！",
+          "description": "light_screen",
+          "switch": "on",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手はひかりのかべで特殊に強くなった！",
+          "description": "light_screen",
+          "switch": "on",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "味方のひかりのかべがなくなった！",
+          "description": "light_screen",
+          "switch": "off",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手のひかりのかべがなくなった！",
+          "description": "light_screen",
+          "switch": "off",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "味方はリフレクターで物理に強くなった！",
+          "description": "reflect",
+          "switch": "on",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手はリフレクターで物理に強くなった！",
+          "description": "reflect",
+          "switch": "on",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "味方のリフレクターがなくなった！",
+          "description": "reflect",
+          "switch": "off",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手のリフレクターがなくなった！",
+          "description": "reflect",
+          "switch": "off",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "味方はオーロラベールで物理と特殊に強くなった！",
+          "description": "aurora_veil",
+          "switch": "on",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手はオーロラベールで物理と特殊に強くなった！",
+          "description": "aurora_veil",
+          "switch": "on",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "味方のオーロラベールがなくなった！",
+          "description": "aurora_veil",
+          "switch": "off",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手のオーロラベールがなくなった！",
+          "description": "aurora_veil",
+          "switch": "off",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "相手の周りにとがった岩がただよい始めた！",
+          "description": "stealth_rock",
+          "switch": "on",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "自分の周りにとがった岩がただよい始めた！",
+          "description": "stealth_rock",
+          "switch": "on",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "味方の周りのステルスロックが消え去った！",
+          "description": "stealth_rock",
+          "switch": "off",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手の周りのステルスロックが消え去った！",
+          "description": "stealth_rock",
+          "switch": "off",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "相手の足下にまきびしが散らばった！",
+          "description": "spikes",
+          "switch": "on",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "自分の足下にまきびしが散らばった！",
+          "description": "spikes",
+          "switch": "on",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "味方の周りのまきびしが消え去った！",
+          "description": "spikes",
+          "switch": "off",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手の周りのまきびしが消え去った！",
+          "description": "spikes",
+          "switch": "off",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "相手の足下にどくびしが散らばった！",
+          "description": "toxic_spikes",
+          "switch": "on",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "自分の足下にどくびしが散らばった！",
+          "description": "toxic_spikes",
+          "switch": "on",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "味方の周りのどくびしが消え去った！",
+          "description": "toxic_spikes",
+          "switch": "off",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手の周りのどくびしが消え去った！",
+          "description": "toxic_spikes",
+          "switch": "off",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "味方に追い風が吹き始めた！",
+          "description": "tailwind",
+          "switch": "on",
+          "side": "opponent",
+          "category": "side"
+        },
+        {
+          "live_text": "相手に追い風が吹き始めた！",
+          "description": "tailwind",
+          "switch": "on",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "味方の追い風が止んだ！",
+          "description": "tailwind",
+          "switch": "off",
+          "side": "my",
+          "category": "side"
+        },
+        {
+          "live_text": "相手の追い風が止んだ！",
+          "description": "tailwind",
+          "switch": "off",
+          "side": "opponent",
+          "category": "side"
+        }
+      ]
+}

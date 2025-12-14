@@ -83,7 +83,6 @@ class OCRProcessor:
             # actフェーズ: win_loseの検出でstayに戻る または 新しいポケモンでchooseに戻る
             elif self.phase_manager.battle_sub_phase == "act":
                 # win_loseの検出でstayに戻る
-                print(f"  🔍 battle.actフェーズ: 勝敗画面を検出中...")
                 match_result, max_val, best_file = self.image_matcher.match_multiple_images(
                     frame, 'win_lose', WIN_LOSE_IMAGES_DIR, width, height
                 )
@@ -194,13 +193,13 @@ class OCRProcessor:
                     self.phase_manager.mark_processed(roi_name)
                     processed_count += 1
             
-            elif roi_name in ['my_ailment', 'your_ailment']:
-                success = self.special_processor.process_ailment_roi(
-                    frame, roi_name, video_name, frame_idx, short_hash, width, height, 0.8
-                )
-                if success:
-                    self.phase_manager.mark_processed(roi_name)
-                    processed_count += 1
+            # elif roi_name in ['my_ailment', 'your_ailment']:
+            #     success = self.special_processor.process_ailment_roi(
+            #         frame, roi_name, video_name, frame_idx, short_hash, width, height, 0.8
+            #     )
+            #     if success:
+            #         self.phase_manager.mark_processed(roi_name)
+            #         processed_count += 1
         
         return processed_count
     
@@ -226,14 +225,14 @@ class OCRProcessor:
         )
         
         # テラスタル
-        tera_rois = ['terastal', 'terastal_me']
-        for roi_name in tera_rois:
-            success, _ = self.special_processor.process_tera_roi(
-                frame, roi_name, video_name, frame_idx, short_hash, width, height,
-                TERA_ICONS_DIR, None, TERA_MATCHING_THRESHOLD
-            )
-            if success:
-                processed_count += 1
+        # tera_rois = ['terastal', 'terastal_me']
+        # for roi_name in tera_rois:
+        #     success, _ = self.special_processor.process_tera_roi(
+        #         frame, roi_name, video_name, frame_idx, short_hash, width, height,
+        #         TERA_ICONS_DIR, None, TERA_MATCHING_THRESHOLD
+        #     )
+        #     if success:
+        #         processed_count += 1
         
         return processed_count
 

@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 from typing import List, Dict, Any, Optional
 from difflib import SequenceMatcher
@@ -131,12 +132,20 @@ class NameCorrector:
             return []
     
     def _load_name_list(self):
-        """マスタファイルから名前リストを読み込む"""
+        """マスタファイルから名前リストを読み込む（CSV / JSON対応）"""
         try:
             if self.master_file_path.endswith('.csv'):
                 df = pd.read_csv(self.master_file_path)
+            elif self.master_file_path.endswith('.json'):
+                with open(self.master_file_path, encoding="utf-8") as f:
+                    data = json.load(f)
+
+                # "live_text" 配列をDataFrame化
+                df = pd.json_normalize(data["live_text"])
+
             else:
-                df = pd.read_excel(self.master_file_path)
+                print("⚠ 対応していないファイル形式です（CSV / JSONのみ）")
+                return []
             
             if self.name_column in df.columns:
                 return df[self.name_column].dropna().unique().tolist()
@@ -170,13 +179,11 @@ class NameCorrector:
             if self.name_dict_list
             else [(name, name) for name in self.name_list]
         )
-        print('text',text)
-        print('candidates',candidates)
 
         for normalized, original in candidates:
             # 完全一致チェック
             if normalized == text:
-                return original
+                return original,True
             
             # 類似度ベースで検索
             similarity = self._simple_similarity(text, normalized)
@@ -187,13 +194,13 @@ class NameCorrector:
         
         # 閾値チェック
         if best_similarity >= threshold:
-            print(f"  📊 検索: '{text}' → '{best_match}' (類似度: {best_similarity:.2f})")
-            if self.name_dict_list:
-                print(f"  🔄 辞書逆引き: '{best_match}' → '{best_original_name}'")
-            return best_original_name
+            # print(f"  📊 検索: '{text}' → '{best_match}' (類似度: {best_similarity:.2f})")
+            # if self.name_dict_list:
+            #     print(f"  🔄 辞書逆引き: '{best_match}' → '{best_original_name}'")
+            return best_original_name,True
         else:
-            print(f"  ⚠ 類似度不足: '{text}' (最良: '{best_match}', 類似度: {best_similarity:.2f} < {threshold})")
-            return text
+            # print(f"  ⚠ 類似度不足: '{text}' (最良: '{best_match}', 類似度: {best_similarity:.2f} < {threshold})")
+            return text,False
     
     def _simple_similarity(self, text1, text2):
         """
@@ -255,4 +262,18 @@ class AbilityNameCorrector(NameCorrector):
             master_file_path=ability_master_path,
             name_column='name_ja',
             name_list=abilities_name_list
+        )
+
+class LiveTextCorrector(NameCorrector):
+    def __init__(
+        self, 
+        live_text_master_path: Optional[str] = None
+    ):
+        """
+        Args:
+            live_text_master_path: 実況テキストの固定文言のマスタ（"日差しが強くなった！"など）
+        """
+        super().__init__(
+            master_file_path=live_text_master_path,
+            name_column='live_text'
         )
