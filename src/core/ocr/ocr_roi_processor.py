@@ -1,10 +1,8 @@
-import os
 import cv2
 import re
 import pytesseract
 from .base_roi_processor import BaseROIProcessor
 from .config import CUSTOM_CONFIG, POKEMON_NAME_ROIS, ABILITY_NAME_ROIS, POKEMON_NO_ROIS, TESSDATA_PREFIX
-from .db_access import DatabaseManager
 
 class OCRROIProcessor(BaseROIProcessor):
     def __init__(self, output_dir, pokemon_corrector, ability_corrector):
@@ -12,13 +10,8 @@ class OCRROIProcessor(BaseROIProcessor):
         self.pokemon_corrector = pokemon_corrector
         self.ability_corrector = ability_corrector
         
-        # 直前のポケモン名を保持
-        # self.last_my_pokemon_name = ""
-        # self.last_opponent_pokemon_name = ""
-        
         # 現在のバトルIDとポケモンリスト
         self.current_battle_id = ""
-        self.available_pokemon_names = []  # バトルIDに紐づく全ポケモン名
         
         # フレームごとのOCR結果を保持
         self.last_ocr_results = {}
@@ -30,43 +23,15 @@ class OCRROIProcessor(BaseROIProcessor):
     def set_battle_id(self, battle_id):
         """バトルIDを設定し、対応するポケモン名リストを取得"""
         self.current_battle_id = battle_id
-        self.available_pokemon_names = []
-        
-        if battle_id:
-            try:
-                with DatabaseManager() as db:
-                    result = db.get_pokemon_names_by_battle_id(battle_id)
-                    if result:
-                        # 自分のポケモンと相手のポケモンを結合
-                        self.available_pokemon_names = (
-                            result["my_pokemons"] + result["opponent_pokemons"]
-                        )
-                        print(f"🔍 バトルID '{battle_id}' のポケモンリスト: {self.available_pokemon_names}")
-                    else:
-                        print(f"⚠ バトルID '{battle_id}' に対応するポケモンが見つかりません")
-            except Exception as e:
-                print(f"⚠ バトルID '{battle_id}' のポケモンリスト取得エラー: {e}")
 
     def apply_name_correction(self, text, roi_name):
         """OCR後の文字列をマスターデータに基づいて補正（類似度0.6以上のみ適用）"""
         if roi_name in POKEMON_NAME_ROIS:
             original_text = text
-            
-            # バトルIDが設定されている場合は、そのバトルのポケモン名から検索
-            if self.current_battle_id and self.available_pokemon_names:
-                if hasattr(self.pokemon_corrector, 'find_closest_name_in_list'):
-                    corrected_text = self.pokemon_corrector.find_closest_name_in_list(
-                        text, self.available_pokemon_names, threshold=0.6
-                    )
-                else:
-                    corrected_text = self.pokemon_corrector.find_closest_name(text, threshold=0.6)
-            else:
-                corrected_text = self.pokemon_corrector.find_closest_name(text, threshold=0.6)
+            corrected_text = self.pokemon_corrector.find_closest_name(text, threshold=0.6)
             
             # 修正: 完全一致の場合は常に許可
             if corrected_text == text and text in self.pokemon_corrector.name_list:
-                # 完全一致の場合はそのまま通過
-                print(f"  ✅ 完全一致: '{text}' - 補正不要")
                 return corrected_text
             
             # 修正: 閾値チェック（完全一致でない場合のみ）
@@ -87,7 +52,6 @@ class OCRROIProcessor(BaseROIProcessor):
             
             # 修正: 完全一致の場合は常に許可
             if corrected_text == text and text in self.ability_corrector.name_list:
-                print(f"  ✅ 完全一致: '{text}' - 補正不要")
                 return corrected_text
             
             # 修正: 閾値チェック（完全一致でない場合のみ）
@@ -130,8 +94,6 @@ class OCRROIProcessor(BaseROIProcessor):
                 if int(conf) > 30 and data['text'][i].strip():
                     text_parts.append(data['text'][i].strip())
                     confidences.append(float(conf))
-                # else:
-                #     print("❌️確信度が30以下：",int(conf),roi_name)
 
             text = " ".join(text_parts)
             text = self.clean_text(text)

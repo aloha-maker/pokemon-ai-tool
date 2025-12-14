@@ -29,3 +29,4 @@ static/pokemon_icons/
 tests/
 new_env/
 static/item_icons/rusted-sword.png
+production.log

@@ -269,10 +269,8 @@ class OCRProcessor:
         """ポケモン名補正器を再設定"""
         self.pokemon_corrector = new_corrector
         self.ocr_processor.pokemon_corrector = new_corrector
-        print("✅ pokemon_corrector を再設定しました。")
     
     def set_ability_corrector(self, new_corrector):
         """特性名補正器を再設定"""
         self.ability_corrector = new_corrector
         self.ocr_processor.ability_corrector = new_corrector
-        print("✅ ability_corrector を再設定しました。")
