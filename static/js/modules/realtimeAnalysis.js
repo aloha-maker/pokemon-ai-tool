@@ -2,7 +2,7 @@ import { escapeHTML } from './utils.js';
 
 export class RealtimeAnalysis {
     constructor(battleStateManager,predictionManager) {
-        this.socket = io();
+        this.socket = io("http://localhost:8000");
         this.battleStateManager = battleStateManager;
         this.predictionManager = predictionManager;
         this.captureImage = document.getElementById('capture-image');
