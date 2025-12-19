@@ -405,10 +405,10 @@ export class RealtimeAnalysis {
         document.getElementById(containerId + '-light-screen').checked = sideData.screens['light_screen'];
         document.getElementById(containerId + '-aurora-veil').checked = sideData.screens['aurora_veil'];
         // 設置技・その他
-        document.getElementById(containerId + '-spikes').value = sideData.screens['spikes'];
-        document.getElementById(containerId + '-toxic-spikes').value = sideData.screens['toxic_spikes'];
-        document.getElementById(containerId + '-stealth-rock').checked = sideData.screens['stealth_rock'];
-        document.getElementById(containerId + '-tailwind').checked = sideData.screens['tailwind'];
+        document.getElementById(containerId + '-spikes').value = sideData.side_conditions['spikes'];
+        document.getElementById(containerId + '-toxic-spikes').value = sideData.side_conditions['toxic_spikes'];
+        document.getElementById(containerId + '-stealth-rock').checked = sideData.side_conditions['stealth_rock'];
+        document.getElementById(containerId + '-tailwind').checked = sideData.side_conditions['tailwind'];
 
         // パーティ全体の情報を詳細に更新
         if (sideData.team && Array.isArray(sideData.team.members)) {

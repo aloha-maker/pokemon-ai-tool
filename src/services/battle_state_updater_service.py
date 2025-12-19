@@ -233,9 +233,7 @@ class BattleStateUpdater:
 
             # サイド効果の処理
             elif rule["category"] == "side":
-                print('サイド効果の処理',text,rule)
                 self._apply_side_effect(rule)
-                print('サイド効果の処理',self.state.to_dict())
 
         # --- 技の使用（2パターン対応） ---
         elif match := re.search(r"(相手の)?\s*([^\sは]+?)は\s*(.+?)を\s*(?:つかった)[！!]", text):
