@@ -20,13 +20,14 @@ from src.models.party_log_model import PartyLogModel
 
 from src.services.battle_state_updater_service import BattleStateUpdater
 
-def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
+def ocr_worker(socketio, state, battle_state,battle_log : BattleLog,ocr_processor: OCRProcessor):
     """
     バックグラウンドでOCRを定期的に実行するワーカー
     OCRProcessorを使用して高度なフェーズ管理とROI処理を行う
     """
     frame_count = 0
-    last_pahse_info = {'current_phase': None, 'battle_sub_phase': None}
+    _ ,frame_count = battle_log.get_latest_sequence_events()
+    last_phase_info = {'current_phase': None, 'battle_sub_phase': None}
     
     while not state.background_thread_stop_event.is_set():
         frame_bytes = None
@@ -40,6 +41,7 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                 frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
                 if frame is not None:
+                    frame_count += 1
                     # OCR処理には常に1920x1080の解像度を期待
                     frame_resized = cv2.resize(frame, (1920, 1080))
                     
@@ -58,63 +60,73 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                         "realtime",  # 短いハッシュ
                         width, height
                     )
-                    
-                    # 解析結果を取得
-                    battle_log, battle_state_after = _extract_state_from_ocr_processor(ocr_processor, current_phase_info, battle_log, frame_count, battle_state)
-                    
-                    with state.game_state_lock:
-                        state.shared_game_state["last_updated"] = time.time()
-                        state.shared_game_state["phase_info"] = current_phase_info
-                        state.shared_game_state["battle_log"] = battle_log
-                        state.shared_game_state["latest_events"] = battle_log.get_latest_sequence_events(as_dict=True)
-                        state.shared_game_state["battle_state"] = battle_state_after
-                        state.shared_game_state["ocr_processor"] = ocr_processor
 
-                    # フェーズ遷移判定
+                    # ログ登録判定
                     should_emit = False
-
-                    # フェーズが変わった場合の処理
-                    if current_phase_info['current_phase'] == 'select':
-                        if last_pahse_info['current_phase'] == 'stay':
-                            # stay → select のときのみ
-                            should_emit = True
-                        elif last_pahse_info['current_phase'] == None:
-                            should_emit = False
+                    if current_phase_info['current_phase'] == 'select' and last_phase_info['current_phase'] == 'stay':
+                        # stay → select
+                        should_emit = True
+                        print('phase:stay → select')
+                        
+                    elif current_phase_info['battle_sub_phase'] == 'act':
+                        # select → battle.act
+                        # battle.choose → battle.act
+                        # battle.act → battle.act
+                        should_emit = True
+                        print('phase:act')
                     
-                    elif current_phase_info['battle_sub_phase'] == 'act' and current_phase_info['battle_sub_phase'] == 'choose':
-                        # act → choose のときのみ
+                    elif current_phase_info['battle_sub_phase'] == 'choose' and last_phase_info['battle_sub_phase'] == 'act':
+                        # act → choose
+                        should_emit = True
+                        print('phase:act → choose')
+                    
+                    elif current_phase_info['current_phase'] == 'stay' and last_phase_info['battle_sub_phase'] == 'act':
+                        # battle.act → stay
+                        print('phase:battle.act → stay')
                         should_emit = True
                     
                     # stayの場合は1度だけ送信
-                    elif current_phase_info['current_phase'] == 'stay' and last_pahse_info['current_phase'] == 'stay':
-                        should_emit = False
-
-                    else:
+                    elif current_phase_info['current_phase'] == 'stay' and last_phase_info['current_phase'] != 'stay':
                         should_emit = True
 
-                    # stay → select
-                    # select → battle.act
-                    # battle.act → battle.choose
-                    # battle.choose → battle.act
-                    # battle.act → battle.act
-                    # battle.act → stay
                     # if ocr_processor.phase_manager.return_flag == True: TODO return_flagはいらないかも
                     if should_emit:
+                        # 解析結果を取得
+                        battle_log, battle_state_after = _extract_state_from_ocr_processor(
+                            ocr_processor
+                            , current_phase_info
+                            , battle_log
+                            , frame_count
+                            , battle_state)
+
+                        latest_events = None
                         battle_state_after_dict = None
-                        if current_phase_info['current_phase'] not in ('stay','select'):
-                            battle_state_after_dict = battle_state_after.to_dict()
+                        if processed_count != 0:
+                            latest_events ,frame_count = battle_log.get_latest_sequence_events(as_dict=True)
+                            
+                            if current_phase_info['current_phase'] not in ('stay','select'):
+                                battle_state_after_dict = battle_state_after.to_dict()
+                        
+                        with state.game_state_lock:
+                            state.shared_game_state["last_updated"] = time.time()
+                            state.shared_game_state["phase_info"] = current_phase_info
+                            if processed_count != 0:
+                                state.shared_game_state["battle_log"] = battle_log
+                                state.shared_game_state["latest_events"] = latest_events
+                                state.shared_game_state["battle_state"] = battle_state_after
+                                state.shared_game_state["ocr_processor"] = ocr_processor
 
                         # クライアントに状態更新を通知
                         socketio.emit('ocr_update', {
                             'phase_info': current_phase_info,
                             'processed_count': processed_count,
-                            'latest_events' : battle_log.get_latest_sequence_events(as_dict=True),
+                            'latest_events' : latest_events,
                             'battle_state' : battle_state_after_dict,
                             'result' : battle_log.result
                         })
 
                     # 送信したフェーズを記録
-                    last_pahse_info = current_phase_info
+                    last_phase_info = current_phase_info
 
                     # 入力待ちなどの判断とする場合は一時停止
                     if ocr_processor.phase_manager.stop_flag == True:
@@ -123,8 +135,6 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
                     
                     if frame_count % 10 == 0:  # 10フレームごとにログ出力
                         print(f"📊 フレーム {frame_count}: フェーズ={current_phase_info['current_phase']}, 処理ROI数={processed_count}")
-                    
-                    frame_count += 1
                     
                 else:
                     print("❌ OCRワーカー: フレームの読み込みに失敗しました。")
@@ -137,7 +147,7 @@ def ocr_worker(socketio, state, battle_state,battle_log,ocr_processor):
 
     print("🛑 OCRワーカーを停止しました。")
 
-def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, frame_count, battle_state):
+def _extract_state_from_ocr_processor(ocr_processor : OCRProcessor, phase_info, battle_log, frame_count, battle_state):
     """
     OCRProcessorの内部状態からゲーム状態を抽出する
     """    
@@ -156,8 +166,7 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
                         phase=phase_info['current_phase']
                     )
             raw_battle_event_model_list.append(raw_battle_event_model)
-        # battle_logにセット
-        battle_log.events = raw_battle_event_model_list
+            battle_log.events.append(raw_battle_event_model)
 
         # win/lose
         battle_log.result = ocr_processor.result
@@ -165,7 +174,6 @@ def _extract_state_from_ocr_processor(ocr_processor, phase_info, battle_log, fra
         # battle_stateを最新化する
         updater = BattleStateUpdater(battle_state)
         battle_state = updater.apply_frame(raw_battle_event_model_list)
-
                     
     except Exception as e:
         print(f"⚠️ 状態抽出エラー: {e}")

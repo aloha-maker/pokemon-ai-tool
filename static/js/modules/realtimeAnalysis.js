@@ -122,7 +122,6 @@ export class RealtimeAnalysis {
             }
 
             // バトルが終わったらログ情報をDBに保存
-            // バトル終了判定条件を TODO act → stayに変更
             if(data.result !== 'unknown'){
                 console.log(data.result,'バトルログを保存します。')
                 this.partySaver.saveBattleResult(data.result)

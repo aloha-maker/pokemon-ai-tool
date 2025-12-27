@@ -202,6 +202,7 @@ class BattleService:
 
         try:
             # BattleLogインスタンスを作成
+            battle_data["events"] = self.state.shared_game_state["battle_log"].events
             battle_log = BattleLog.from_dict(battle_data)
             
             # 一括保存（BattleLogのsave_to_dbメソッドを使用）

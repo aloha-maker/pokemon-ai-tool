@@ -23,8 +23,7 @@ def save_battle_result_with_log():
         "my_rank": 0,
         "opponent_rank": 0,
         "memo": "",
-        "parties": [data.get('my_party'),data.get('opponent_party')],
-        "events": data.get('raw_events')
+        "parties": [data.get('my_party'),data.get('opponent_party')]
     }
     
     try:        

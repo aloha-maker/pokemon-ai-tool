@@ -67,13 +67,14 @@ class OCRProcessor:
             # chooseフェーズ: my_pokemon_nameの検出
             if self.phase_manager.battle_sub_phase == "choose":
                 # TODO：if has_text and text and text.strip()がTRUEの場合は何もしない
-                print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
+                # print(f"  🔍 battle.chooseフェーズ: 自分のポケモン名を検出中...")
                 has_text, text, conf = self.ocr_processor.process_ocr_roi(
                     frame, 'my_pokemon_name', "", 0, "", width, height
                 )
                 
                 if has_text and text and text.strip():
-                    print(f"  ⏭️ battle.chooseフェーズ継続: ポケモン名検出中")
+                    # print(f"  ⏭️ battle.chooseフェーズ継続: ポケモン名検出中")
+                    pass
                 else:
                     self.phase_manager.set_phase("battle", "act")
                     self.phase_manager.reset_battle_flags()

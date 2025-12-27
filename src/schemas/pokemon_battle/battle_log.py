@@ -28,7 +28,7 @@ class BattleLog:
         result: Optional[str] = None,
         memo: Optional[str] = None,
         parties: Optional[List[PartyLogModel]] = None, # 相手パーティと自分パーティ
-        events: Optional[List[RawBattleEventModel]] = None,
+        events: Optional[List[RawBattleEventModel]] = [],
     ):
         self.battle_id = battle_id
         self.battle_date = battle_date
@@ -138,7 +138,8 @@ class BattleLog:
         
         for event in self.events:
             event.battle_id = model.battle_id
-            event.ocr_text = event.ocr_text['text']
+            print("event",event.sequence,event.roi_name,event.ocr_text)
+            event.ocr_text = event.ocr_text
             db.session.add(event)
 
         db.session.commit()
@@ -173,8 +174,14 @@ class BattleLog:
             as_dict=True: Dict[str, Dict[str, str]] - {roi_name: {"text": ocr_text}, ...}
             eventsが空の場合は空リスト or 空辞書
         """
+        max_sequence = 0
+        result = {}
+        latest_events = []
         if not self.events:
-            return {} if as_dict else []
+            if as_dict:
+                return result, max_sequence
+            else:
+                return latest_events, max_sequence
         
         # 最新のsequenceを取得
         max_sequence = max(event.sequence for event in self.events)
@@ -184,16 +191,16 @@ class BattleLog:
         
         # 辞書形式での返却が指定されている場合
         if as_dict:
-            result = {}
+            
             for event in latest_events:
                 if event.roi_name and event.ocr_text:
                     result[event.roi_name] = {
                         "text": event.ocr_text
                     }
-            return result
+            return result,max_sequence
         
         # デフォルトはリスト形式
-        return latest_events
+        return latest_events,max_sequence
 
     # ======================================================
     # --- ユーティリティ ---
