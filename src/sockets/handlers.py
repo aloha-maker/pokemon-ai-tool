@@ -1,10 +1,7 @@
 from flask import current_app
 from flask_socketio import emit
-from urllib.parse import quote
 
-from src.workers.capture import camera_capture_worker # window_capture_worker
-from src.workers.ocr import ocr_worker
-from src.ai.predictor import ActionAIModel
+from src.workers.capture import camera_capture_worker
 
 def register_socket_handlers(socketio):
     """
