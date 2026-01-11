@@ -3,35 +3,23 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}ポケモン対戦補助AIツール{% endblock %}</title>
+    <title>ポケモン対戦補助AIツール</title>
+
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Socket.IO -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 </head>
-
 <body>
-    <div class="container-fluid vh-100 p-3 d-flex flex-column" style="overflow: hidden;">
-        <header class="d-flex justify-content-between align-items-center mb-3">
+    <div class="container-fluid vh-100 d-flex flex-column">
+        <header class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 gap-2">
             <h1 class="neon-text-purple mb-0">ポケモン対戦補助AIツール</h1>
             <div>
                 <!-- 各ボタン -->
-                <!-- <button id="load-master-data-btn" class="btn btn-outline-light neon-border me-2">
-                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    <i class="button-icon bi bi-database-down"></i>
-                    <span class="button-text">データ読込</span>
-                </button> -->
                 <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
                     data-bs-target="#video-manager-modal"><i class="bi bi-film"></i> 動画管理</button>
                 <button class="btn btn-outline-light neon-border me-2" data-bs-toggle="modal"
@@ -54,12 +42,12 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
     {% block modals %}{% endblock %}
 
-    <!-- Custom JS -->
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}" defer></script>
 </body>
 </html>

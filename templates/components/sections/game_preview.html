@@ -1,65 +1,84 @@
-<!-- リアルタイム解析 -->
-<div id="game-preview" class="glass-card p-3 d-flex flex-column w-100">
+<!-- ゲーム画面プレビュー -->
+<div id="game-preview" class="game-capture-container rounded shadow position-relative">
+    <img id="capture-image"
+        src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview"
+        alt="ゲーム画面プレビュー">
 
-    <div class="row g-2 align-items-center mb-1">
+    <!-- 3つのオーバーレイパネルのトグルボタン (青色のエリアの四隅に配置) -->
+    <!-- 左上トグルボタン (天候・場状態: List/Infoアイコン) -->
+    <button id="toggle-top-left" class="overlay-toggle-btn top-0 start-0 m-3 rounded-circle hover-bg-secondary transition duration-150 transform hover-scale-110">
+        <i class="bi bi-list-stars fs-5"></i>
+    </button>
+    <!-- 右上トグルボタン (バトルログ: Chat/Historyアイコン) -->
+    <button id="toggle-top-right" class="overlay-toggle-btn top-0 end-0 m-3 rounded-circle hover-bg-secondary transition duration-150 transform hover-scale-110">
+        <i class="bi bi-chat-left-text fs-5"></i>
+    </button>
+    <!-- 左下トグルボタン (プレビューボタン群) -->
+    <button id="toggle-bottom-left" class="overlay-toggle-btn bottom-0 start-0 m-3 rounded-circle hover-bg-secondary transition duration-150 transform hover-scale-110">
+        <i class="bi bi-caret-down-square fs-5"></i>
+    </button>
+    <!-- 右下トグルボタン (メモ: Pencilアイコン) -->
+    <button id="toggle-bottom-right" class="overlay-toggle-btn bottom-0 end-0 m-3 rounded-circle hover-bg-secondary transition duration-150 transform hover-scale-110">
+        <i class="bi bi-pencil-square fs-5"></i>
+    </button>
+</div>
 
-<div class="col-auto">
-            <input type="text" id="phase-display" class="form-control form-control-sm" placeholder="フェーズ" readonly disabled style="width: 100px;">
-        </div>
-        <div class="col-auto">
-            <input type="text" id="sub-phase-display" class="form-control form-control-sm" placeholder="サブフェーズ" readonly disabled style="width: 120px;">
-        </div>
+<!-- 操作パネル　リアルタイム解析 -->
+<div id="command-area" class="position-absolute bottom-0 start-0 end-0 mx-3 mb-2">
+    <div id="command-content" class="transition-all duration-300 ease-in-out">
+        <div class="row g-2 align-items-center mb-1">
+            <div class="col-auto">
+                <input type="text" id="phase-display" class="form-control form-control-sm phase-text-area" placeholder="フェーズ" readonly disabled>
+            </div>
+            <div class="col-auto">
+                <input type="text" id="sub-phase-display" class="form-control form-control-sm phase-text-area" placeholder="サブフェーズ" readonly disabled>
+            </div>
 
-        <div class="col"></div>
+            <div class="col"></div>
 
-        <div class="col-auto">
-            <div class="input-group input-group-sm">
-                <button id="start-camera-btn" class="btn btn-sm btn-info neon-border">
-                    <i class="bi bi-camera-video-fill"></i> 仮想カメラ読込
+            <div class="col-auto">
+                <div class="input-group input-group-sm">
+                    <button id="start-camera-btn" class="btn btn-sm btn-info neon-border">
+                        <i class="bi bi-camera-video-fill"></i> 仮想カメラ読込
+                    </button>
+                    <input type="number" id="camera-index-input" class="form-control camera-index-text-area" value="2"
+                        title="カメラデバイスのインデックス">
+                </div>
+            </div>
+
+            <div class="col-auto">
+                <div class="input-group input-group-sm">
+                    <select id="my-party-select" class="form-select form-select-sm party-text-area">
+                        <option selected value="">登録済みパーティから選ぶ...</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
+                </div>
+            </div>
+            <div class="col-auto">
+                <button id="recognize-opponent-party-btn" class="btn btn-sm btn-info neon-border" disabled>
+                    <i class="bi bi-camera-video"></i> パーティ取得
                 </button>
-                <input type="number" id="camera-index-input" class="form-control" value="2"
-                    title="カメラデバイスのインデックス" style="width: 60px;">
+            </div>
+            <div class="col-auto">
+                <button id="confirm-selection-btn" class="btn btn-sm btn-warning neon-border">
+                    <i class="bi bi-check-circle"></i> 選出完了
+                </button>
+            </div>
+            <div class="col-auto">
+                <button id="complete-selection-btn" class="btn btn-sm btn-primary neon-border">
+                    <i class="bi bi-check-all"></i> 選択完了
+                </button>
+            </div>
+            <div class="col-auto">
+                <button id="start-battle-btn" class="btn btn-sm btn-danger neon-border">
+                    <i class="bi bi-joystick"></i> バトル開始
+                </button>
+            </div>
+            <div class="col-auto">
+                <input type="text" id="battle-id-display" class="form-control form-control-sm battle-id-text-area" placeholder="バトルID" readonly>
             </div>
         </div>
-
-        <div class="col-auto">
-            <div class="input-group input-group-sm">
-                <select class="form-select form-select-sm" id="my-party-select" style="width: 150px;">
-                    <option selected value="">登録済みパーティから選ぶ...</option>
-                </select>
-                <button class="btn btn-sm btn-outline-secondary" type="button" id="load-my-party-btn">読み込み</button>
-            </div>
-        </div>
-        <div class="col-auto">
-            <button id="recognize-opponent-party-btn" class="btn btn-sm btn-info neon-border" disabled>
-                <i class="bi bi-camera-video"></i> パーティ取得
-            </button>
-        </div>
-        <div class="col-auto">
-            <button id="confirm-selection-btn" class="btn btn-sm btn-warning neon-border">
-                <i class="bi bi-check-circle"></i> 選出完了
-            </button>
-        </div>
-        <div class="col-auto">
-            <button id="complete-selection-btn" class="btn btn-sm btn-primary neon-border">
-                <i class="bi bi-check-all"></i> 選択完了
-            </button>
-        </div>
-        <div class="col-auto">
-            <button id="start-battle-btn" class="btn btn-sm btn-danger neon-border">
-                <i class="bi bi-joystick"></i> バトル開始
-            </button>
-        </div>
-        <div class="col-auto">
-            <input type="text" id="battle-id-display" class="form-control form-control-sm" placeholder="バトルID" readonly style="width: 240px;">
-        </div>
-
-    </div>
-
-    <!-- ゲーム画面プレビュー -->
-    <div class="text-center bg-black ratio ratio-16x9">
-        <img id="capture-image"
-            src="https://placehold.co/1280x720/0c0a24/e5bfff?text=Game+Capture+Preview"
-            class="img-fluid" alt="ゲーム画面プレビュー">
     </div>
 </div>
+
+<!-- パーティ欄 -->

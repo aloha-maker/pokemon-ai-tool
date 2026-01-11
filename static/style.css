@@ -4,6 +4,24 @@ body {
     font-family: 'Poppins', 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
 }
 
+/* メインコンテナ用の専用クラス */
+.main-container {
+    overflow: hidden;
+    padding: 1rem;
+}
+
+@media (max-width: 992px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    header > div {
+        width: 100%;
+        overflow-x: auto;
+    }
+}
+
 /* グラスモーフィズム効果を持つカード */
 .glass-card {
     background: rgba(43, 40, 80, 0.4); /* 半透明の紫がかった背景 */
@@ -156,4 +174,194 @@ body {
     .roi-modal-large {
         max-width: 1700px; /* Default is 1140px for modal-xl */
     }
+}
+
+/* 親要素の100vhに収めるための強制設定 */
+.flex-fill-limit {
+    flex: 1 1 auto;
+    min-height: 0; /* これがないと中身の画像サイズまで膨らんでしまいます */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ゲームプレビュー画像が親の高さに合わせてリサイズされるようにする */
+/* 1. 親コンテナ：ヘッダー以外の残り全域を埋める */
+.game-capture-container {
+    flex: 1;            /* 残りの高さをすべて占有 */
+    min-height: 0;      /* 子要素が縮小できるようにする */
+    display: flex;
+    justify-content: center; /* 横方向中央 */
+    align-items: center;     /* 縦方向中央 */
+    background-color: #000;  /* 16:9の隙間を埋める黒帯 */
+    overflow: hidden;
+    position: relative;
+}
+
+/* 2. 画像：縦幅を100%にしつつ、16:9を維持 */
+#capture-image {
+    height: 100%;       /* 親の高さ（縦幅）いっぱいに広げる */
+    width: auto;        /* 縦幅に合わせて横幅を自動計算 */
+    aspect-ratio: 16 / 9; /* 16:9の比率を強制 */
+    object-fit: contain;  /* 枠内に収める（万一横幅が足りない場合用） */
+    max-width: 100%;    /* 横幅が画面を突き抜けないようにガード */
+}
+
+.game-capture-container img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain; /* アスペクト比を維持して枠内に収める */
+}
+
+
+/* オーバーレイパネルのトグルボタンの共通スタイル */
+/* ゲーム画面に相対的な絶対配置 */
+.overlay-toggle-btn {
+    position: absolute;
+    z-index: 1045; 
+    width: 2rem;
+    height: 2rem;
+    background-color: #495057; /* Gray-700 */
+    color: #f8f9fa; /* Light text */
+    border-radius: 0.25rem;
+    border: 2px solid #343a40; /* Gray-800 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    cursor: pointer;
+}
+
+#toggle-command{
+    top: -1.5rem;
+}
+
+.phase-text-area{
+    width: 100px;
+}
+
+.camera-index-text-area{
+    width: 60px;
+}
+
+.party-text-area{
+    width: 150px;
+}
+
+.battle-id-text-area{
+    width: 240px;
+}
+
+/* 左右パーティパネルの基本スタイルとアニメーション */
+.panel {
+    position: fixed;
+    top: 0;
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+    z-index: 1050; 
+}
+
+/* 左パネル (自分のパーティ) */
+#left-panel {
+    left: 0;
+    top: 50%;
+    width: 50vw;
+    /* パネル幅300pxからボタンの半分(2rem)を見せる分だけ隠す */
+    transform: translateX(calc(-100% + 2rem)) translateY(-50%); 
+    padding-right: 70px !important;
+}
+
+
+#left-panel.open {
+    transform: translateX(0) translateY(-50%);
+    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* 右パネル (相手のパーティ) */
+#right-panel {
+    right: 0;
+    top: 50%;
+    width: 50vw;
+    /* パネル幅300pxからボタンの半分(2rem)を見せる分だけ隠す */
+    transform: translateX(calc(100% - 2rem)) translateY(-50%); 
+}
+
+#right-panel.open {
+    transform: translateX(0) translateY(-50%);
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* 左右パネルの開閉ボタンのスタイル */
+.party-toggle-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1051; 
+    width: 4rem; 
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* --- オーバーレイパネルの共通スタイル --- */
+/* 閉じた状態: 透明にし、画面外に移動 */
+.overlay-panel {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none; /* 非アクティブ化 */
+}
+/* 開いた状態: 元の位置に戻す */
+.overlay-panel.open {
+    transform: translate(0, 0) !important; /* 個別のtransformを上書き */
+    opacity: 1;
+    pointer-events: auto; /* アクティブ化 */
+}
+
+/* 個別パネルの位置と初期変形 */
+/* 左上パネル (天候・場状態) */
+#top-left-panel {
+    top: 1rem;
+    left: 1rem;
+    transform: translateY(-150%);
+}
+/* 右上パネル (ログ) */
+#top-right-panel {
+    top: 1rem;
+    right: 1rem;
+    transform: translateY(-150%);
+}
+/* 右下パネル (メモ) */
+#bottom-right-panel {
+    bottom: 1rem;
+    right: 1rem;
+    transform: translateY(150%);
+}
+/* 左下パネル (コマンド) - New! */
+#bottom-left-panel {
+    bottom: 1rem;
+    left: 1rem;
+    width: 400px; /* コマンドボタンに合わせて少し広く */
+    max-height: 50vh;
+    transform: translateY(150%);
+}
+
+
+/* オーバーレイパネルのトグルボタンの共通スタイル */
+.overlay-toggle-btn {
+    position: absolute;
+    z-index: 1045; 
+    width: 2rem;
+    height: 2rem;
+    background-color: #495057; 
+    color: #f8f9fa; 
+    border-radius: 0.25rem;
+    border: 2px solid #343a40; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out, transform 0.15s ease-in-out;
 }

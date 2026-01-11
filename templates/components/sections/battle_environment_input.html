@@ -1,135 +1,37 @@
 <!-- Battle Field & Side Conditions Input -->
-<div class="glass-card p-3 mb-3 w-100">
-    <h5 class="neon-text-blue mb-3"><i class="bi bi-globe"></i> バトル環境設定</h5>
-
+<div id="top-left-panel" class="overlay-panel glass-card p-3 mb-3" style="width: 20vw;">
     <!-- BattleField Settings -->
-    <div class="row mb-4">
-        <div class="col-md-4 mb-3">
-            <label for="battle-weather" class="form-label">天候</label>
-            <select class="form-select" id="battle-weather">
-                <option value="none" selected>なし</option>
-                <option value="sunny">晴れ</option>
-                <option value="rain">雨</option>
-                <option value="snow">雪</option>
-                <option value="sandstorm">砂嵐</option>
-            </select>
-        </div>
-        <div class="col-md-4 mb-3">
-            <label for="battle-terrain" class="form-label">フィールド</label>
-            <select class="form-select" id="battle-terrain">
-                <option value="none" selected>なし</option>
-                <option value="electric">エレキフィールド</option>
-                <option value="grassy">グラスフィールド</option>
-                <option value="misty">ミストフィールド</option>
-                <option value="psychic">サイコフィールド</option>
-            </select>
-        </div>
-        <div class="col-md-2 mb-3">
-            <label for="battle-turn" class="form-label">ターン数</label>
-            <input type="number" class="form-control" id="battle-turn" value="0" min="0">
-        </div>
-        <div class="col-md-2 mb-3 d-flex align-items-end">
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="battle-is-double">
-                <label class="form-check-label" for="battle-is-double">ダブルバトル</label>
-            </div>
-        </div>
+    <div class="mb-3">
+        <label for="battle-weather" class="form-label">天候</label>
+        <select class="form-select" id="battle-weather">
+            <option value="none" selected>なし</option>
+            <option value="sunny">晴れ</option>
+            <option value="rain">雨</option>
+            <option value="snow">雪</option>
+            <option value="sandstorm">砂嵐</option>
+        </select>
     </div>
-
-    <!-- BattleSide Conditions -->
-    <div class="row">
-        <!-- My Side Conditions -->
-        <div class="col-md-6">
-            <h6 class="neon-text-purple mb-2"><i class="bi bi-person-fill"></i> 自サイドの状態</h6>
-            <div class="mb-3">
-                <label for="my-active-pokemon" class="form-label">場に出ているポケモン</label>
-                <select class="form-select" id="my-active-pokemon">
-                    <!-- JavaScriptで動的に生成 -->
-                </select>
-            </div>
-            <div class="row">
-                <div class="col-6">
-                    <label class="form-label">壁</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="my-reflect">
-                        <label class="form-check-label" for="my-reflect">リフレクター</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="my-light-screen">
-                        <label class="form-check-label" for="my-light-screen">ひかりのかべ</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="my-aurora-veil">
-                        <label class="form-check-label" for="my-aurora-veil">オーロラベール</label>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <label class="form-label">設置技・その他</label>
-                    <div class="mb-2">
-                        <label for="my-spikes" class="form-label small mb-0">まきびし</label>
-                        <input type="number" class="form-control form-control-sm" id="my-spikes" value="0" min="0" max="3">
-                    </div>
-                    <div class="mb-2">
-                        <label for="my-toxic-spikes" class="form-label small mb-0">どくびし</label>
-                        <input type="number" class="form-control form-control-sm" id="my-toxic-spikes" value="0" min="0" max="2">
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="my-stealth-rock">
-                        <label class="form-check-label" for="my-stealth-rock">ステルスロック</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="my-tailwind">
-                        <label class="form-check-label" for="my-tailwind">おいかぜ</label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Opponent Side Conditions -->
-        <div class="col-md-6">
-            <h6 class="neon-text-purple mb-2"><i class="bi bi-person-bounding-box"></i> 相手サイドの状態</h6>
-            <div class="mb-3">
-                <label for="opponent-active-pokemon" class="form-label">場に出ているポケモン</label>
-                <select class="form-select" id="opponent-active-pokemon">
-                    <!-- JavaScriptで動的に生成 -->
-                </select>
-            </div>
-            <div class="row">
-                <div class="col-6">
-                    <label class="form-label">壁</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="opponent-reflect">
-                        <label class="form-check-label" for="opponent-reflect">リフレクター</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="opponent-light-screen">
-                        <label class="form-check-label" for="opponent-light-screen">ひかりのかべ</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="opponent-aurora-veil">
-                        <label class="form-check-label" for="opponent-aurora-veil">オーロラベール</label>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <label class="form-label">設置技・その他</label>
-                    <div class="mb-2">
-                        <label for="opponent-spikes" class="form-label small mb-0">まきびし</label>
-                        <input type="number" class="form-control form-control-sm" id="opponent-spikes" value="0" min="0" max="3">
-                    </div>
-                    <div class="mb-2">
-                        <label for="opponent-toxic-spikes" class="form-label small mb-0">どくびし</label>
-                        <input type="number" class="form-control form-control-sm" id="opponent-toxic-spikes" value="0" min="0" max="2">
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="opponent-stealth-rock">
-                        <label class="form-check-label" for="opponent-stealth-rock">ステルスロック</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="opponent-tailwind">
-                        <label class="form-check-label" for="opponent-tailwind">おいかぜ</label>
-                    </div>
-                </div>
-            </div>
+    
+    <div class="mb-3">
+        <label for="battle-terrain" class="form-label">フィールド</label>
+        <select class="form-select" id="battle-terrain">
+            <option value="none" selected>なし</option>
+            <option value="electric">エレキフィールド</option>
+            <option value="grassy">グラスフィールド</option>
+            <option value="misty">ミストフィールド</option>
+            <option value="psychic">サイコフィールド</option>
+        </select>
+    </div>
+    
+    <div class="mb-3">
+        <label for="battle-turn" class="form-label">ターン数</label>
+        <input type="number" class="form-control" id="battle-turn" value="0" min="0">
+    </div>
+    
+    <div class="mb-3">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="battle-is-double">
+            <label class="form-check-label" for="battle-is-double">ダブルバトル</label>
         </div>
     </div>
 </div>

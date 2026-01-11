@@ -3,36 +3,18 @@
 {% block title %}ポケモン対戦補助AIツール{% endblock %}
 
 {% block content %}
-<main class="d-flex flex-column vh-100">
-    <div class="row gx-2 h-100">
-        <!-- 左カラム -->
-        <div class="col-lg-6 d-flex flex-column h-100">
-          <!-- 上：ゲームプレビュー -->
-          <div class="d-flex flex-grow-8 mb-3 overflow-hidden">
-            {% include 'components/sections/game_preview.html' %}
-          </div>
-          <!-- 下：リアルタイムログ -->
-          <div class="d-flex flex-grow-2" style="flex-grow: 3;">
-            {% include 'components/sections/realtime_log.html' %}
-          </div>
-        </div>
-    
-        <!-- 右カラム -->
-        <div class="col-lg-6 d-flex flex-column h-100">
-            <!-- Top-Right -->
-            <div class="d-flex mb-3" style="flex-grow: 7.5;">
-                {% include 'components/sections/ai_advice.html' %}
-            </div>
-            <!-- Middle-Right -->
-            <div class="d-flex">
-                {% include 'components/sections/battle_environment_input.html' %}
-            </div>
-            <!-- Bottom-Right -->
-            <div class="d-flex">
-                {% include 'components/sections/party_input.html' %}
-            </div>
-        </div>
+<main class="flex-fill-limit">
+    <div class="flex-fill-limit mb-2">
+        {% include 'components/sections/game_preview.html' %}
     </div>
+    <!-- 2. 左右パネル: パーティ  -->
+    {% include 'components/sections/party_input.html' %}
+    <!-- 3. 左上パネル: 天候・場状態 -->
+    {% include 'components/sections/battle_environment_input.html' %}
+    <!-- 4. 右上パネル: バトルログ -->
+    {% include 'components/sections/realtime_log.html' %}
+    <!-- 5. 右下パネル: AIサジェスト -->
+    {% include 'components/sections/ai_advice.html' %}
 </main>
 {% endblock %}
 
